@@ -16,25 +16,25 @@ El sistema sigue una arquitectura distribuida basada en contenedores, separando 
 ```mermaid
 graph TD
     %% Nodos de Interfaz de Usuario
-    UserWeb([Usuario Web]) -->|HTTP/REST| Frontend
-    UserBot([Usuario Telegram]) -->|Telegram API| Bot
+    UserWeb(["Usuario Web"]) -->|HTTP/REST| Frontend
+    UserBot(["Usuario Telegram"]) -->|Telegram API| Bot
 
     %% Componentes Principales
     subgraph "Capa de Presentación & IA"
-        Frontend[Frontend Web<br/>(Vue, Vite, Tailwind)]
-        Bot[Bot de Telegram<br/>(Python)]
-        Agente[Agente de IA<br/>(FastAPI, LLM)]
+        Frontend["Frontend Web<br/>(Vue, Vite, Tailwind)"]
+        Bot["Bot de Telegram<br/>(Python)"]
+        Agente["Agente de IA<br/>(FastAPI, LLM)"]
     end
 
     %% Capa de Backend
     subgraph "Capa de Servicios Core"
-        Backend[Backend API<br/>(Node.js, Express, Drizzle)]
+        Backend["Backend API<br/>(Node.js, Express, Drizzle)"]
     end
 
     %% Capa de Datos
     subgraph "Capa de Persistencia"
-        DB[(Base de Datos<br/>Supabase / Turso)]
-        Storage[(Almacenamiento<br/>Cloudinary / FTP)]
+        DB[("Base de Datos<br/>Supabase / Turso")]
+        Storage[("Almacenamiento<br/>Cloudinary / FTP")]
     end
 
     %% Conexiones
