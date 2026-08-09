@@ -1,0 +1,138 @@
+services:
+  db:
+    image: supabase/postgres:15.8.1.060
+    container_name: inventario-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./supabase/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ftps:
+    image: fauria/vsftpd
+    container_name: inventario-ftp
+    ports:
+      - "21:21"
+      - "21100-21110:21100-21110"
+    environment:
+      FTP_USER: ftpuser
+      FTP_PASS: MiPassword
+      # IP pública real del host donde corre Docker (requerida para el modo pasivo de FTP).
+      # Definila en un .env junto a este compose, ej: PASV_ADDRESS=203.0.113.10
+      PASV_ADDRESS: ${PASV_ADDRESS:?Definí PASV_ADDRESS con la IP pública del host en un .env}
+      PASV_MIN_PORT: 21100
+      PASV_MAX_PORT: 21110
+    volumes:
+      - ftpdata:/home/vsftpd/ftpuser
+
+  backend:
+    build: ./backend
+    container_name: inventario-backend
+    ports:
+      - "4000:4000"
+    env_file:
+      # Acá va JWT_SECRET (requerido) y CLOUDINARY_* (no usadas con STORAGE=ftp, pero
+      # requeridas por backend/src/services/cloudinaryService.ts si se cambia a cloudinary)
+      - ./backend/.env
+    environment:
+      PORT: 4000
+      ENGINE: local
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/postgres
+      STORAGE: ftp
+      FTP_HOST: ftps
+      FTP_PORT: 21
+      FTP_USER: ftpuser
+      FTP_PASS: MiPassword
+      FTP_FOLDER: /
+      FTP_LOCAL_PATH: /ftpfiles
+      # Sobreescribir con la URL pública real del backend en despliegues fuera de localhost
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4000}
+    volumes:
+      - ftpdata:/ftpfiles:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:$${PORT}/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      ftps:
+        condition: service_started
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Sobreescribir con la URL pública real del backend en despliegues fuera de localhost
+        # (ej. VITE_API_URL=https://mi-servidor.com:4000 en un .env junto a este compose)
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000}
+    container_name: inventario-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  agente:
+    build: ./agente
+    container_name: inventario-agente
+    ports:
+      - "5000:5000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # BACKEND_URL/PUBLIC_URL/OLLAMA_* son de red interna del compose: se definen acá (no en
+    # agente/.env, que NO puede sobreescribir claves ya listadas en `environment:`). Para
+    # cambiarlas usá un .env junto a este compose (ver variables ${...} abajo).
+    environment:
+      BACKEND_URL: http://inventario-backend:4000
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4000}
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: llama3.2
+      MODE: server
+      PORT: 5000
+    env_file:
+      # Acá van INVENTARIO_USER / INVENTARIO_PASS (credenciales de login del agente contra el backend)
+      - path: ./agente/.env
+        required: false
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  bot:
+    build: ./bot
+    container_name: inventario-bot
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # AGENT_URL es de red interna del compose: se define acá (no en bot/.env, que NO puede
+    # sobreescribir claves ya listadas en `environment:`).
+    environment:
+      AGENT_URL: http://inventario-agente:5000
+    env_file:
+      # Acá va TELEGRAM_TOKEN (requerido, obtenido de BotFather)
+      - path: ./bot/.env
+        required: false
+    depends_on:
+      agente:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  ftpdata:
