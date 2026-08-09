@@ -1,0 +1,46 @@
+{
+  "name": "inventario-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "npx rimraf dist && tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:generate:pg": "drizzle-kit generate --config=drizzle.config.pg.ts",
+    "db:push:pg": "drizzle-kit push --config=drizzle.config.pg.ts",
+    "user:create": "tsx src/scripts/createUser.ts",
+    "sync:turso": "tsx src/scripts/syncToTurso.ts",
+    "sync:supabase": "tsx src/scripts/syncToSupabase.ts",
+    "sync:images:ftp": "tsx src/scripts/syncImagesToFtp.ts",
+    "sync:images:cloudinary": "tsx src/scripts/syncImagesToCloudinary.ts"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "basic-ftp": "^6.0.1",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.36.4",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "minisearch": "^7.2.0",
+    "multer": "^1.4.5-lts.1",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.10.2",
+    "drizzle-kit": "^0.28.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
