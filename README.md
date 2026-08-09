@@ -41,9 +41,9 @@ graph TD
     Frontend -->|API REST| Backend
     Bot -->|API Interna| Agente
     Agente -->|Llamado a Herramientas| Backend
-    Backend -->|ORM (Drizzle)| DB
+    Backend -->|ORM Drizzle| DB
     Backend -->|Uploads| Storage
-    Agente -.->|Inferencia NLP| Ollama[(Motor LLM)]
+    Agente -.->|Inferencia NLP| Ollama[("Motor LLM")]
 ```
 
 ## 🛠 Stack Tecnológico
