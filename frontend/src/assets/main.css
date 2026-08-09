@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-amber-50 font-sans text-slate-900;
+  }
+}
+
+@layer components {
+  .cartoon-card {
+    @apply rounded-2xl border-4 border-slate-900 bg-white shadow-[6px_6px_0px_0px_rgba(15,23,42,1)];
+  }
+
+  .cartoon-panel {
+    @apply rounded-3xl border-4 border-slate-900 bg-pink-100 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)];
+  }
+
+  .cartoon-btn {
+    @apply inline-flex items-center justify-center rounded-xl border-4 border-slate-900 px-5 py-2.5 font-bold text-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] transition-all duration-150 active:translate-x-[4px] active:translate-y-[4px] active:shadow-none;
+  }
+
+  .cartoon-btn-primary {
+    @apply cartoon-btn bg-sky-300 hover:bg-sky-400;
+  }
+
+  .cartoon-btn-secondary {
+    @apply cartoon-btn bg-lime-300 hover:bg-lime-400;
+  }
+
+  .cartoon-btn-danger {
+    @apply cartoon-btn bg-rose-300 hover:bg-rose-400;
+  }
+
+  .cartoon-input {
+    @apply rounded-xl border-4 border-slate-900 bg-white px-3 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-yellow-300;
+  }
+}
