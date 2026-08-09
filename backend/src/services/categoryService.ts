@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db, categories } from "../db/client.js";
 import { type Category, type NewCategory } from "../db/schema.js";
 import CategoryBuilder from "../builders/categoryBuilder.js";
+import { searchService } from "./searchService.js";
 
 export class CategoryService {
   async list(): Promise<Category[]> {
@@ -31,6 +32,7 @@ export class CategoryService {
       .insert(categories)
       .values(newCategory)
       .returning();
+    searchService.invalidate();
     return created;
   }
 
@@ -49,11 +51,13 @@ export class CategoryService {
       .set(updatedCategory)
       .where(eq(categories.id, id))
       .returning();
+    searchService.invalidate();
     return updated;
   }
 
   async remove(id: number): Promise<void> {
     await db.delete(categories).where(eq(categories.id, id));
+    searchService.invalidate();
   }
 }
 

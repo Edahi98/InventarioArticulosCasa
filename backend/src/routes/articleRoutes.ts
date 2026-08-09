@@ -8,7 +8,8 @@ import { deleteArticle } from "../controllers/articleDeleteController.js";
 import ArticleService from "../services/articleService.js";
 
 const articleService = new ArticleService();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+// 4MB, por debajo del límite de payload de las funciones serverless de Vercel (~4.5MB)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 * 1024 * 1024 } });
 
 export const articleRoutes = Router();
 

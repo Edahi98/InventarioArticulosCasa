@@ -7,7 +7,10 @@ export class SupabaseAdapter implements IDatabaseAdapter {
   readonly db: ReturnType<typeof drizzle<typeof schema>>;
 
   constructor() {
-    const client = postgres(process.env.DATABASE_URL ?? "");
+    // prepare: false -- requerido para funcionar con el connection pooler de Supabase en modo
+    // transacción (PgBouncer); sin esto, las prepared statements fallan intermitentemente en
+    // entornos serverless donde cada invocación puede abrir una conexión nueva.
+    const client = postgres(process.env.DATABASE_URL ?? "", { prepare: false });
     this.db = drizzle(client, { schema });
   }
 }
