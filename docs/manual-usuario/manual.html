@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Manual de Usuario — Inventario de Casa</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    color: #1e1b16;
+    font-size: 11.5pt;
+    line-height: 1.5;
+    margin: 0;
+  }
+  .cover {
+    height: 233mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    page-break-after: always;
+    background: linear-gradient(160deg, #fdf6e3 0%, #fff9ec 60%, #eaf6ff 100%);
+    padding: 0 6mm;
+  }
+  .cover .badge {
+    display: inline-block;
+    background: #ffe27a;
+    border: 2px solid #1e1b16;
+    border-radius: 999px;
+    padding: 6px 18px;
+    font-weight: 700;
+    font-size: 12pt;
+    margin-bottom: 22px;
+  }
+  .cover h1 {
+    font-size: 34pt;
+    margin: 0 0 6px 0;
+    line-height: 1.1;
+  }
+  .cover h1 span { color: #2fa8e0; }
+  .cover p.subtitle {
+    font-size: 13pt;
+    color: #4a4438;
+    max-width: 400px;
+    margin-top: 14px;
+  }
+  .cover .meta {
+    margin-top: 60px;
+    font-size: 10pt;
+    color: #7a7263;
+    border-top: 1px solid #ddd4c0;
+    padding-top: 14px;
+    width: 100%;
+    max-width: 460px;
+  }
+  .toc {
+    page-break-after: always;
+  }
+  .toc h2 {
+    font-size: 20pt;
+    border-bottom: 3px solid #1e1b16;
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+  }
+  .toc ol {
+    list-style: none;
+    padding: 0;
+    counter-reset: toc-counter;
+  }
+  .toc li {
+    counter-increment: toc-counter;
+    display: flex;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px dotted #cfc7b3;
+    font-size: 12pt;
+  }
+  .toc li::before {
+    content: counter(toc-counter, decimal-leading-zero);
+    font-weight: 700;
+    color: #2fa8e0;
+    width: 34px;
+    flex-shrink: 0;
+  }
+  .toc li .dots { flex: 1; }
+  section {
+    page-break-before: always;
+    padding-top: 4mm;
+  }
+  section:first-of-type { page-break-before: auto; }
+  .section-kicker {
+    display: inline-block;
+    background: #d7f4c8;
+    border: 1.5px solid #1e1b16;
+    border-radius: 999px;
+    padding: 3px 12px;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  h2.section-title {
+    font-size: 19pt;
+    margin: 0 0 4px 0;
+  }
+  p.section-desc {
+    color: #4a4438;
+    margin: 6px 0 16px 0;
+    font-size: 11pt;
+  }
+  .shot {
+    border: 2px solid #1e1b16;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 4px 4px 0 #1e1b16;
+    margin: 10px 0 6px 0;
+  }
+  .shot img {
+    width: 100%;
+    display: block;
+  }
+  .caption {
+    font-size: 9.5pt;
+    color: #7a7263;
+    margin-bottom: 14px;
+    font-style: italic;
+  }
+  ul.steps {
+    margin: 10px 0;
+    padding-left: 20px;
+  }
+  ul.steps li {
+    margin-bottom: 5px;
+  }
+  .note-box {
+    background: #fff3d6;
+    border: 1.5px solid #e0c060;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 10pt;
+    margin-top: 10px;
+  }
+  .footer-tag {
+    position: running(footer);
+  }
+  code {
+    background: #f1ede0;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 10pt;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <span class="badge">📦 Inventario del Hogar</span>
+  <h1>Manual de <span>Usuario</span></h1>
+  <p class="subtitle">Guía visual del sistema de inventario doméstico: categorías, artículos, notas, búsqueda inteligente y reportes.</p>
+  <div class="meta">
+    Verificado end-to-end sobre el despliegue Docker (frontend + backend + base de datos + almacenamiento de imágenes).<br/>
+    Generado automáticamente a partir de una sesión de pruebas real.
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Índice</h2>
+  <ol>
+    <li><span class="dots">Pantalla de inicio</span></li>
+    <li><span class="dots">Iniciar sesión</span></li>
+    <li><span class="dots">Panel de categorías</span></li>
+    <li><span class="dots">Crear una categoría</span></li>
+    <li><span class="dots">Artículos de una categoría</span></li>
+    <li><span class="dots">Crear un artículo</span></li>
+    <li><span class="dots">Detalle de artículo y notas</span></li>
+    <li><span class="dots">Búsqueda inteligente</span></li>
+    <li><span class="dots">Gestión de usuarios</span></li>
+    <li><span class="dots">Exportar el inventario a Excel</span></li>
+    <li><span class="dots">Cerrar sesión y rutas protegidas</span></li>
+    <li><span class="dots">Asistente por Telegram</span></li>
+  </ol>
+</div>
+
+<section>
+  <span class="section-kicker">01 · Bienvenida</span>
+  <h2 class="section-title">Pantalla de inicio</h2>
+  <p class="section-desc">Landing pública del sistema, con acceso directo al dashboard.</p>
+  <div class="shot"><img src="capturas/01-inicio.jpg" /></div>
+  <p class="caption">http://localhost/ — pantalla de bienvenida.</p>
+  <ul class="steps">
+    <li>Botón <code>Ir al Dashboard</code>: lleva directo al listado de categorías (pide login si no hay sesión activa).</li>
+    <li>Botón <code>Explorar Funciones</code>: despliega el resto de la landing con las características del sistema.</li>
+  </ul>
+</section>
+
+<section>
+  <span class="section-kicker">02 · Acceso</span>
+  <h2 class="section-title">Iniciar sesión</h2>
+  <p class="section-desc">Acceso protegido por usuario y contraseña. El sistema emite un token que se guarda en el navegador.</p>
+  <div class="shot"><img src="capturas/02-login.jpg" /></div>
+  <p class="caption">Formulario de login completado, listo para enviar.</p>
+  <div class="note-box">Los usuarios se crean desde <code>Gestión de usuarios</code> (sección 9) o con el script <code>npm run user:create</code> del backend.</div>
+</section>
+
+<section>
+  <span class="section-kicker">03 · Organización</span>
+  <h2 class="section-title">Panel de categorías</h2>
+  <p class="section-desc">Vista principal tras iniciar sesión: todas las categorías del inventario, con accesos rápidos a las acciones más comunes.</p>
+  <div class="shot"><img src="capturas/03-categorias.jpg" /></div>
+  <p class="caption">Categoría "Herramientas" ya creada, con imagen y descripción.</p>
+  <ul class="steps">
+    <li><code>+ Categoría</code>: crea una nueva categoría.</li>
+    <li><code>+ Artículo</code>: crea un artículo directamente.</li>
+    <li><code>Exportar a Excel</code>: descarga el inventario completo (ver sección 10).</li>
+  </ul>
+</section>
+
+<section>
+  <span class="section-kicker">04 · Categorías</span>
+  <h2 class="section-title">Crear una categoría</h2>
+  <p class="section-desc">Formulario para dar de alta una nueva categoría, con nombre, descripción e imagen opcional.</p>
+  <div class="shot"><img src="capturas/04-nueva-categoria-vacio.jpg" /></div>
+  <p class="caption">Formulario vacío.</p>
+  <div class="shot"><img src="capturas/05-nueva-categoria-completo.jpg" /></div>
+  <p class="caption">Formulario completo, con la vista previa de la imagen ya cargada antes de guardar.</p>
+</section>
+
+<section>
+  <span class="section-kicker">05 · Organización</span>
+  <h2 class="section-title">Artículos de una categoría</h2>
+  <p class="section-desc">Al entrar a una categoría se listan los artículos que contiene, con su stock disponible.</p>
+  <div class="shot"><img src="capturas/06-articulos-de-categoria.jpg" /></div>
+  <p class="caption">Artículo "Martillo" con 3 unidades en stock.</p>
+</section>
+
+<section>
+  <span class="section-kicker">06 · Artículos</span>
+  <h2 class="section-title">Crear un artículo</h2>
+  <p class="section-desc">Cada artículo pertenece a una categoría y tiene nombre, descripción, stock, estado de reparación e imagen.</p>
+  <div class="shot"><img src="capturas/07-nuevo-articulo-vacio.jpg" /></div>
+  <p class="caption">Formulario vacío.</p>
+  <div class="shot"><img src="capturas/08-nuevo-articulo-completo.jpg" /></div>
+  <p class="caption">Formulario completo, con categoría seleccionada, stock e imagen.</p>
+</section>
+
+<section>
+  <span class="section-kicker">07 · Artículos</span>
+  <h2 class="section-title">Detalle de artículo y notas</h2>
+  <p class="section-desc">La vista de detalle permite editar o eliminar el artículo, y llevar notas asociadas (por ejemplo, seguimiento de reparaciones).</p>
+  <div class="shot"><img src="capturas/09-detalle-articulo-notas.jpg" /></div>
+  <p class="caption">Nota "Revisar mango" agregada al artículo.</p>
+</section>
+
+<section>
+  <span class="section-kicker">08 · Búsqueda</span>
+  <h2 class="section-title">Búsqueda inteligente</h2>
+  <p class="section-desc">Busca artículos por nombre o descripción con tolerancia a errores de tipeo (búsqueda difusa).</p>
+  <div class="shot"><img src="capturas/10-busqueda.jpg" /></div>
+  <p class="caption">La búsqueda "martillo" encuentra el artículo aunque haya diferencias de tipeo.</p>
+</section>
+
+<section>
+  <span class="section-kicker">09 · Administración</span>
+  <h2 class="section-title">Gestión de usuarios</h2>
+  <p class="section-desc">Alta, edición y baja de usuarios con acceso al sistema.</p>
+  <div class="shot"><img src="capturas/11-gestion-usuarios.jpg" /></div>
+  <p class="caption">Usuario de prueba con fecha de creación.</p>
+</section>
+
+<section>
+  <span class="section-kicker">10 · Reportes</span>
+  <h2 class="section-title">Exportar el inventario a Excel</h2>
+  <p class="section-desc">El botón <code>Exportar a Excel</code> del panel de categorías (sección 3) genera y descarga un archivo <code>.xlsx</code> con dos hojas: categorías y artículos.</p>
+  <div class="note-box">Verificado directamente contra la API: el archivo generado es un <code>.xlsx</code> válido (formato "Microsoft Excel 2007+"), con todos los artículos y categorías del inventario.</div>
+</section>
+
+<section>
+  <span class="section-kicker">11 · Seguridad</span>
+  <h2 class="section-title">Cerrar sesión y rutas protegidas</h2>
+  <p class="section-desc">Al cerrar sesión se elimina el token guardado y cualquier intento de acceder a una ruta protegida redirige automáticamente al login.</p>
+  <div class="shot"><img src="capturas/12-logout-ruta-protegida.jpg" /></div>
+  <p class="caption">Redirección automática a <code>/login?redirect=/categories</code> al intentar acceder sin sesión.</p>
+</section>
+
+<section>
+  <span class="section-kicker">12 · Asistente</span>
+  <h2 class="section-title">Asistente por Telegram</h2>
+  <p class="section-desc">Además de la web, el inventario se puede consultar por Telegram hablándole al bot en lenguaje natural. El bot usa un modelo de IA (Ollama) para entender el mensaje y llamar a las mismas funciones del backend.</p>
+  <div class="shot"><img src="capturas/13-bot-telegram-consulta-articulo.jpg" /></div>
+  <p class="caption">Consultas directas ("Muéstrame el artículo Martillo") devuelven una tarjeta con la información real del inventario.</p>
+  <div class="shot"><img src="capturas/14-bot-telegram-respuesta-texto.jpg" /></div>
+  <p class="caption">Si la pregunta no requiere datos del inventario, el bot responde solo con texto.</p>
+  <div class="note-box">
+    <strong>Cómo funciona:</strong> cada mensaje se procesa de forma independiente — el bot no recuerda mensajes anteriores,
+    así que conviene escribir preguntas completas en un solo mensaje ("Muéstrame el artículo Martillo") en vez de
+    depender de respuestas tipo "sí"/"dale" a algo dicho antes. Cuando la respuesta incluye una tarjeta de artículo o
+    categoría, el bot envía solo la imagen (sin texto adicional); si no hay datos que mostrar, responde en texto.
+  </div>
+</section>
+
+</body>
+</html>
