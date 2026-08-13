@@ -1,7 +1,7 @@
 from __future__ import annotations
 import io
-import os
-import urllib.request
+from src.red_utilerias import RedUtilerias
+from src.sys_utilerias import SysUtilerias
 from PIL import Image, ImageDraw, ImageFont
 
 # ── Paleta tierna ─────────────────────────────────────────────────────────────
@@ -26,50 +26,6 @@ IMG_SZ  = 200   # cuadrado de foto
 PAD     = 22
 RADIUS  = 18
 
-# Para resolver URLs internas de Docker
-_BACKEND_INTERNAL = os.getenv("BACKEND_URL", "http://inventario-backend:4000")
-_BACKEND_PUBLIC   = os.getenv("PUBLIC_URL",  "http://localhost:4000")
-
-
-def _fix_url(url: str) -> str:
-    """Reemplaza la URL pública por la interna del contenedor."""
-    if url and _BACKEND_PUBLIC in url:
-        return url.replace(_BACKEND_PUBLIC, _BACKEND_INTERNAL)
-    return url
-
-
-def _font(size: int, bold: bool = False):
-    for path in (
-        "arialbd.ttf" if bold else "arial.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold
-        else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    ):
-        try:
-            return ImageFont.truetype(path, size)
-        except Exception:
-            pass
-    return ImageFont.load_default()
-
-
-def _fetch(url: str, size: tuple[int, int]) -> Image.Image | None:
-    url = _fix_url(url)
-    if not url:
-        return None
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=8) as r:
-            data = r.read()
-        photo = Image.open(io.BytesIO(data)).convert("RGB")
-        # Recorte cuadrado centrado
-        w, h = photo.size
-        side = min(w, h)
-        photo = photo.crop(((w - side) // 2, (h - side) // 2,
-                             (w + side) // 2, (h + side) // 2))
-        photo = photo.resize(size, Image.LANCZOS)
-        return photo
-    except Exception:
-        return None
-
 
 def _circle_photo(photo: Image.Image, size: int) -> Image.Image:
     """Recorta la foto en círculo."""
@@ -82,7 +38,7 @@ def _circle_photo(photo: Image.Image, size: int) -> Image.Image:
 
 def _pill(draw: ImageDraw.ImageDraw, x: int, y: int, text: str,
           bg: tuple, fg: tuple = TEXT) -> int:
-    f = _font(12, bold=True)
+    f = SysUtilerias.get_font(12, bold=True)
     tw = draw.textbbox((0, 0), text, font=f)[2]
     pw = tw + 20
     draw.rounded_rectangle([x, y, x + pw, y + 24], radius=12, fill=bg)
@@ -112,7 +68,7 @@ def _render_article_card(article: dict) -> bytes:
 
     # ── Foto circular ─────────────────────────────────────────────────────
     photo_size = 130
-    photo = _fetch(article.get("imageUrl", ""), (photo_size, photo_size))
+    photo = RedUtilerias.fetch_image(article.get("imageUrl", ""), (photo_size, photo_size))
     px = CARD_W - PAD - photo_size - 20
     py = PAD + 24
 
@@ -184,7 +140,7 @@ def _render_category_card(cat: dict) -> bytes:
                            radius=RADIUS, fill=LAVENDER)
 
     photo_size = 120
-    photo = _fetch(cat.get("imageUrl", ""), (photo_size, photo_size))
+    photo = RedUtilerias.fetch_image(cat.get("imageUrl", ""), (photo_size, photo_size))
     px = CARD_W - PAD - photo_size - 20
     py = PAD + 24
 
