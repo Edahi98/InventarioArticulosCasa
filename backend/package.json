@@ -12,17 +12,11 @@
     "start": "node dist/src/server.js",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:generate:pg": "drizzle-kit generate --config=drizzle.config.pg.ts",
-    "db:push:pg": "drizzle-kit push --config=drizzle.config.pg.ts",
     "user:create": "tsx src/scripts/createUser.ts",
-    "sync:turso": "tsx src/scripts/syncToTurso.ts",
-    "sync:supabase": "tsx src/scripts/syncToSupabase.ts",
-    "sync:images:ftp": "tsx src/scripts/syncImagesToFtp.ts",
-    "sync:images:cloudinary": "tsx src/scripts/syncImagesToCloudinary.ts"
+    "data:download": "tsx src/scripts/downloadData.ts",
+    "data:upload": "tsx src/scripts/uploadData.ts"
   },
   "dependencies": {
-    "@libsql/client": "^0.14.0",
-    "basic-ftp": "^6.0.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.5.1",
     "cors": "^2.8.5",
