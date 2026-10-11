@@ -4,6 +4,10 @@ import { type Note } from "../db/schema.js";
 import NoteBuilder from "../builders/noteBuilder.js";
 
 export default class NoteService {
+  async listAll(): Promise<Note[]> {
+    return db.select().from(notes).orderBy(asc(notes.createdAt));
+  }
+
   async listByArticle(articleId: number): Promise<Note[]> {
     return db
       .select()
