@@ -6,7 +6,7 @@ Sistema integral para la gestión y seguimiento del inventario de artículos del
 - **Dashboard Web**: Interfaz construida con Vue y Tailwind CSS para administrar artículos, categorías, notas y stock.
 - **Asistente de IA (Agente)**: Un agente inteligente (Python) que permite hacer consultas por coincidencia aproximada y operaciones con lenguaje natural.
 - **Bot de Telegram**: Interfaz conversacional accesible desde cualquier lugar para registrar o consultar el inventario rápidamente.
-- **Almacenamiento Adaptable**: Soporte para bases de datos locales (PostgreSQL/Supabase) y Edge (Turso/libSQL), con soporte para imágenes (Cloudinary o FTP interno).
+- **Persistencia**: Base de datos en Supabase (PostgreSQL) e imágenes en Cloudinary.
 - **Gestión de Reportes**: Descarga y exportación de reportes de inventario a Excel.
 
 ## 🏗 Arquitectura del Sistema
@@ -32,8 +32,8 @@ graph TD
 
     %% Capa de Datos
     subgraph "Capa de Persistencia"
-        DB[("Base de Datos<br/>Supabase / Turso")]
-        Storage[("Almacenamiento<br/>Cloudinary / FTP")]
+        DB[("Base de Datos<br/>Supabase")]
+        Storage[("Almacenamiento<br/>Cloudinary")]
     end
 
     %% Conexiones
