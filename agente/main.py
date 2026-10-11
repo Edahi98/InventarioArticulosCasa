@@ -1,83 +1,88 @@
+import logging
 import os
 import sys
 from dotenv import load_dotenv
 
-from src.infrastructure.http.base_client import BaseHttpClient
-from src.infrastructure.http.auth_client import AuthHttpClient
-from src.infrastructure.http.article_client import ArticleHttpClient
-from src.infrastructure.http.category_client import CategoryHttpClient
-from src.infrastructure.http.image_client import ImageHttpClient
-from src.infrastructure.http.note_client import NoteHttpClient
-from src.application.services.auth_service import AuthService
-from src.application.services.article_service import ArticleService
-from src.application.services.category_service import CategoryService
-from src.application.services.image_service import ImageService
-from src.application.services.note_service import NoteService
-from src.application.services.search_service import SearchService
-from src.agent.builder import build_agent
+from src.agent.chat_agent import AgentChat
+from src.agent.toolkit_image import ImageToolkit
+from src.agent.toolkit_search import SearchToolkit
+from src.agent.toolkit_inventory import AgentToolkit
+from src.backend import Backend
+from src.bot.handlers_bot import BotHandlers
+from src.builders.builder_agent import AgentBuilder
+from src.builders.builder_telegram_bot import TelegramBotBuilder
+from src.constantes.constantes_agente import DEFAULT_OPENROUTER_MODEL
+from src.services.search_fuzzy import FuzzySearch
+from src.services.uploader_image import ImageUploader
+from src.services.client_inventory import InventoryClient
+from src.services.search_inventory import InventorySearch
 
 load_dotenv()
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
 
-def _wire():
-    backend_url = os.environ["BACKEND_URL"]
-    ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
-    ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+class InventoryAgentApp:
+    """Cablea el backend, las tools y el agente, y lo expone por CLI, API Flask o bot de Telegram."""
 
-    http = BaseHttpClient(backend_url)
+    def __init__(self) -> None:
+        self._api = Backend(os.environ["BACKEND_URL"])
+        self._login()
+        inventory, search = InventoryClient(self._api), FuzzySearch()
+        tools = [
+            *AgentToolkit(inventory, search).tools(),
+            *SearchToolkit(InventorySearch(inventory, search)).tools(),
+            *ImageToolkit(ImageUploader(inventory)).tools(),
+        ]
+        agent = (
+            AgentBuilder()
+            .with_model(os.getenv("OPENROUTER_MODEL", DEFAULT_OPENROUTER_MODEL), os.environ["OPENROUTER_API_KEY"])
+            .with_tools(tools)
+            .build()
+        )
+        self._chat = AgentChat(agent)
 
-    article_client = ArticleHttpClient(http)
-    category_client = CategoryHttpClient(http)
-    note_client = NoteHttpClient(http)
+    def run(self) -> None:
+        modes = {"cli": self._run_cli, "server": self._run_server, "telegram": self._run_telegram}
+        mode = next((arg for arg in sys.argv[1:] if arg in modes), os.getenv("MODE", "cli"))
+        modes[mode]()
 
-    auth_service = AuthService(AuthHttpClient(http))
-    article_service = ArticleService(article_client)
-    category_service = CategoryService(category_client)
-    note_service = NoteService(note_client)
-    search_service = SearchService(article_client, category_client, note_client)
-    image_service = ImageService(ImageHttpClient(http))
+    def _login(self) -> None:
+        username = os.getenv("INVENTARIO_USER", "")
+        password = os.getenv("INVENTARIO_PASS", "")
+        if username and password:
+            self._api.login(username, password)
+            print("Sesión iniciada correctamente.")
+        else:
+            print("Sin credenciales (INVENTARIO_USER / INVENTARIO_PASS). Solicitudes sin auth.")
 
-    username = os.getenv("INVENTARIO_USER", "")
-    password = os.getenv("INVENTARIO_PASS", "")
-    if username and password:
-        auth_service.login(username, password)
-        print("Sesión iniciada correctamente.")
-    else:
-        print("Sin credenciales (INVENTARIO_USER / INVENTARIO_PASS). Solicitudes sin auth.")
+    def _run_server(self) -> None:
+        from src.api.server_api import ApiServer
+        port = int(os.getenv("PORT", "5000"))
+        print(f"Servidor Flask escuchando en :{port}")
+        ApiServer(self._chat, self._api).app.run(host="0.0.0.0", port=port)
 
-    agent = build_agent(
-        article_service, category_service, note_service,
-        search_service, image_service, ollama_url, ollama_model,
-    )
-    return agent, image_service
+    def _run_telegram(self) -> None:
+        bot = (
+            TelegramBotBuilder()
+            .with_token(os.environ["TELEGRAM_TOKEN"])
+            .with_handlers(BotHandlers(self._chat, self._api))
+            .build()
+        )
+        print("Bot de Telegram iniciado.")
+        bot.run_polling()
 
-
-def run_server() -> None:
-    from src.api.server import create_app
-    agent, image_service = _wire()
-    app = create_app(agent, image_service)
-    port = int(os.getenv("PORT", "5000"))
-    print(f"Servidor Flask escuchando en :{port}")
-    app.run(host="0.0.0.0", port=port)
-
-
-def run_cli() -> None:
-    agent, _ = _wire()
-    print("Agente de inventario listo. Escribe 'salir' para terminar.\n")
-    while True:
-        try:
-            user_input = input("Tú: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            break
-        if not user_input or user_input.lower() in ("salir", "exit", "quit"):
-            break
-        result = agent.invoke({"messages": [{"role": "user", "content": user_input}]})
-        print(f"Agente: {result['messages'][-1].content}\n")
+    def _run_cli(self) -> None:
+        print("Agente de inventario listo. Escribe 'salir' para terminar.\n")
+        while True:
+            try:
+                user_input = input("Tú: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                break
+            if not user_input or user_input.lower() in ("salir", "exit", "quit"):
+                break
+            reply, images = self._chat.ask(user_input)
+            print(f"Agente: {reply or f'[{len(images)} imagen(es) generada(s)]'}\n")
 
 
 if __name__ == "__main__":
-    mode = os.getenv("MODE", "cli")
-    if "server" in sys.argv or mode == "server":
-        run_server()
-    else:
-        run_cli()
+    InventoryAgentApp().run()
