@@ -56,12 +56,11 @@ services:
   agente:
     build: ./agente
     container_name: inventario-agente
-    # BACKEND_URL/PUBLIC_URL/OPENROUTER_MODEL son de red interna del compose: se definen acá (no en
+    # BACKEND_URL/OPENROUTER_MODEL son de red interna del compose: se definen acá (no en
     # agente/.env, que NO puede sobreescribir claves ya listadas en `environment:`). Para
     # cambiarlas usá un .env junto a este compose (ver variables ${...} abajo).
     environment:
       BACKEND_URL: http://inventario-backend:4000
-      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:4000}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-4o-mini}
       # telegram = bot de Telegram | server = API HTTP en :5000 | cli = terminal
       MODE: ${AGENTE_MODE:-telegram}

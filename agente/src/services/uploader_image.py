@@ -10,5 +10,5 @@ class ImageUploader:
 
     def upload_from_url(self, image_url: str) -> str:
         """URL pública final de la imagen subida."""
-        data = Red.download(Red.fix_url(image_url))
+        data = Red.download(image_url)
         return self._inventory.upload_image(data, image_url.split("/")[-1] or "image.jpg")

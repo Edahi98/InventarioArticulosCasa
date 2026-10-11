@@ -106,7 +106,7 @@ class CardImageRenderer:
 
     @staticmethod
     def _add_photo(builder: GridImageBuilder, image_url: str) -> None:
-        photo = Red.fetch_image(Red.fix_url(image_url))
+        photo = Red.fetch_image(image_url)
         builder.add_image(ROW_PHOTO, 1, photo, fit='cover', padding=8)
 
     @staticmethod
