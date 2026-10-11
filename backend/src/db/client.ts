@@ -6,4 +6,4 @@ export const queryClient = postgres(process.env.DATABASE_URL ?? "", { prepare: f
 
 export const db = drizzle(queryClient, { schema });
 
-export const { articles, categories, notes, users } = schema;
+export const { articles, categories, notes, users, sessions } = schema;
