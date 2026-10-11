@@ -9,6 +9,11 @@ const tokenIssuer = new TokenIssuer();
 
 export const authRoutes = Router();
 
+/**
+ * POST /auth/login — valida las credenciales y devuelve un token.
+ *
+ * @throws AppError 400 si faltan campos, 401 si son incorrectas.
+ */
 authRoutes.post(
   "/login",
   asyncHandler(async (req: Request, res: Response) => {

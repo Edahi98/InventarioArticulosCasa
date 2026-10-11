@@ -18,6 +18,12 @@ declare global {
   }
 }
 
+/**
+ * Lee el secreto con el que se firman los tokens.
+ *
+ * @returns El valor de `JWT_SECRET`.
+ * @throws AppError 500 si no está configurado.
+ */
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -26,6 +32,13 @@ export function getJwtSecret(): string {
   return secret;
 }
 
+/**
+ * Exige un token `Bearer` válido de un usuario existente y deja el payload en `req.auth`.
+ *
+ * @param req - Petición con el encabezado `Authorization`.
+ * @param _res - Respuesta (no se usa).
+ * @param next - Continúa la cadena; recibe un AppError 401 si el token falta, es inválido o el usuario ya no existe.
+ */
 export async function authMiddleware(
   req: Request,
   _res: Response,

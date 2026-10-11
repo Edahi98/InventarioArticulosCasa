@@ -3,6 +3,14 @@ import { db, articles, categories } from "../db/client.js";
 import { AppError } from "../middleware/errorHandler.js";
 
 export class ValidationService {
+  /**
+   * Exige un texto no vacío.
+   *
+   * @param value - Valor recibido.
+   * @param fieldName - Nombre del campo, usado en el mensaje de error.
+   * @returns El texto sin espacios en los extremos.
+   * @throws AppError 400 si no es un string con contenido.
+   */
   requireNonEmptyString(value: unknown, fieldName: string): string {
     if (typeof value !== "string" || !value.trim()) {
       throw new AppError(`El campo "${fieldName}" es obligatorio.`, 400);
@@ -10,6 +18,14 @@ export class ValidationService {
     return value.trim();
   }
 
+  /**
+   * Exige un identificador entero positivo.
+   *
+   * @param value - Valor recibido.
+   * @param fieldName - Nombre del campo, usado en el mensaje de error.
+   * @returns El valor convertido a número.
+   * @throws AppError 400 si no es un entero mayor que cero.
+   */
   requirePositiveInteger(value: unknown, fieldName: string): number {
     const numericValue = Number(value);
     if (!Number.isInteger(numericValue) || numericValue <= 0) {
@@ -18,6 +34,12 @@ export class ValidationService {
     return numericValue;
   }
 
+  /**
+   * Verifica que exista una categoría.
+   *
+   * @param categoryId - Identificador de la categoría.
+   * @throws AppError 404 si no existe.
+   */
   async ensureCategoryExists(categoryId: number): Promise<void> {
     const [category] = await db.select().from(categories).where(eq(categories.id, categoryId));
     if (!category) {
@@ -25,6 +47,12 @@ export class ValidationService {
     }
   }
 
+  /**
+   * Verifica que exista un artículo.
+   *
+   * @param articleId - Identificador del artículo.
+   * @throws AppError 404 si no existe.
+   */
   async ensureArticleExists(articleId: number): Promise<void> {
     const [article] = await db.select().from(articles).where(eq(articles.id, articleId));
     if (!article) {
@@ -32,6 +60,13 @@ export class ValidationService {
     }
   }
 
+  /**
+   * Verifica que ninguna otra categoría tenga el mismo nombre.
+   *
+   * @param name - Nombre a comprobar.
+   * @param excludeId - Categoría que se ignora (la que se está editando).
+   * @throws AppError 409 si el nombre ya existe.
+   */
   async ensureCategoryNameIsUnique(name: string, excludeId?: number): Promise<void> {
     const [existing] = await db.select().from(categories).where(eq(categories.name, name));
     if (existing && existing.id !== excludeId) {
@@ -39,6 +74,13 @@ export class ValidationService {
     }
   }
 
+  /**
+   * Verifica que la categoría no tenga ya un artículo con ese nombre (sin distinguir mayúsculas).
+   *
+   * @param name - Nombre del artículo.
+   * @param categoryId - Categoría donde se comprueba.
+   * @throws AppError 409 si ya existe.
+   */
   async ensureArticleNameIsUniqueInCategory(name: string, categoryId: number): Promise<void> {
     const matches = await db.select().from(articles).where(eq(articles.categoryId, categoryId));
     const duplicate = matches.some((article) => article.name.toLowerCase() === name.toLowerCase());
@@ -47,6 +89,12 @@ export class ValidationService {
     }
   }
 
+  /**
+   * Verifica que una categoría no tenga artículos asociados antes de borrarla.
+   *
+   * @param categoryId - Identificador de la categoría.
+   * @throws AppError 409 si tiene artículos.
+   */
   async ensureCategoryHasNoArticles(categoryId: number): Promise<void> {
     const linkedArticles = await db.select().from(articles).where(eq(articles.categoryId, categoryId));
     if (linkedArticles.length > 0) {

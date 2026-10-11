@@ -12,6 +12,12 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 *
 
 export const articleRoutes = Router();
 
+/**
+ * POST /articles/upload — sube una imagen (campo `image`, máx. 4MB) a Cloudinary.
+ *
+ * @returns `{ id, url }` de la imagen subida.
+ * @throws AppError 400 si no se envía imagen.
+ */
 articleRoutes.post(
   "/upload",
   upload.single("image"),
@@ -24,6 +30,9 @@ articleRoutes.post(
   }),
 );
 
+/**
+ * GET /articles?categoryId= — lista artículos, opcionalmente de una categoría.
+ */
 articleRoutes.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
@@ -33,6 +42,11 @@ articleRoutes.get(
   }),
 );
 
+/**
+ * GET /articles/:id — devuelve un artículo.
+ *
+ * @throws AppError 404 si no existe.
+ */
 articleRoutes.get(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
@@ -45,6 +59,12 @@ articleRoutes.get(
   }),
 );
 
+/**
+ * POST /articles — crea un artículo.
+ *
+ * Responde 201 con el artículo creado.
+ * @throws AppError 400 si los datos no son válidos, 404 si la categoría no existe, 409 si el nombre ya existe en la categoría.
+ */
 articleRoutes.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
@@ -68,6 +88,11 @@ articleRoutes.post(
   }),
 );
 
+/**
+ * PUT /articles/:id — reemplaza los datos de un artículo.
+ *
+ * @throws AppError 400 si los datos no son válidos, 404 si el artículo o la categoría no existen.
+ */
 articleRoutes.put(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {

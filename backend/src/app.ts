@@ -25,6 +25,9 @@ app.use("/users", authMiddleware, userManagementRoutes);
 app.get("/reports/inventory", authMiddleware, downloadInventoryReport);
 app.use("/search", authMiddleware, searchRoutes);
 
+/**
+ * GET / — comprobación de salud del servicio.
+ */
 app.get("/", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });

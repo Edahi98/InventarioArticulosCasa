@@ -5,6 +5,12 @@ import { AppError, asyncHandler } from "../middleware/errorHandler.js";
 import { searchService } from "../services/searchService.js";
 
 class ArticleDeleteService {
+  /**
+   * Elimina un artículo si existe e invalida el índice de búsqueda.
+   *
+   * @param id - Identificador del artículo.
+   * @returns `true` si se eliminó, `false` si no existía.
+   */
   async remove(id: number): Promise<boolean> {
     const [existing] = await db.select().from(articles).where(eq(articles.id, id));
     if (!existing) {
@@ -18,6 +24,12 @@ class ArticleDeleteService {
 
 const articleDeleteService = new ArticleDeleteService();
 
+/**
+ * DELETE /articles/:id — elimina un artículo.
+ *
+ * Responde 204 al eliminar.
+ * @throws AppError 400 si el id no es válido, 404 si el artículo no existe.
+ */
 export const deleteArticle = asyncHandler(async (req: Request, res: Response) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {

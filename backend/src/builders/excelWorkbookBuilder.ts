@@ -3,6 +3,12 @@ import ExcelJS from "exceljs";
 export default class ExcelWorkbookBuilder {
   private readonly workbook = new ExcelJS.Workbook();
 
+  /**
+   * Agrega la hoja «Categorías».
+   *
+   * @param rows - Categorías a listar.
+   * @returns El mismo builder.
+   */
   addCategoriesSheet(rows: { id: number; name: string; description: string; imageUrl: string; createdAt: string }[]): this {
     const sheet = this.workbook.addWorksheet("Categorías");
     sheet.columns = [
@@ -17,6 +23,12 @@ export default class ExcelWorkbookBuilder {
     return this;
   }
 
+  /**
+   * Agrega la hoja «Artículos».
+   *
+   * @param rows - Artículos a listar.
+   * @returns El mismo builder.
+   */
   addArticlesSheet(rows: { id: number; name: string; description: string; imageUrl: string; categoryId: number; createdAt: string }[]): this {
     const sheet = this.workbook.addWorksheet("Artículos");
     sheet.columns = [
@@ -32,6 +44,11 @@ export default class ExcelWorkbookBuilder {
     return this;
   }
 
+  /**
+   * Serializa el libro.
+   *
+   * @returns El archivo `.xlsx` como buffer.
+   */
   async build(): Promise<Buffer> {
     const buffer = await this.workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);

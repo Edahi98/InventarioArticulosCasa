@@ -4,6 +4,9 @@ import { searchService } from "../services/searchService.js";
 
 export const searchRoutes = Router();
 
+/**
+ * GET /search?q= — busca artículos por nombre o descripción; sin `q` devuelve una lista vacía.
+ */
 searchRoutes.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {

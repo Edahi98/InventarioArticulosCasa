@@ -1,6 +1,9 @@
 import "dotenv/config";
 import { db, queryClient, categories, articles } from "../db/client.js";
 
+/**
+ * Inserta, lee y borra una categoría y un artículo para comprobar la conexión con Supabase.
+ */
 async function run() {
   const [cat] = await db
     .insert(categories)
