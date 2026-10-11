@@ -8,3 +8,5 @@ coverage/
 .vscode/
 *.log
 CLAUDE.md
+
+.turbo

@@ -14,7 +14,8 @@
     "db:push": "drizzle-kit push",
     "user:create": "tsx src/scripts/createUser.ts",
     "data:download": "tsx src/scripts/downloadData.ts",
-    "data:upload": "tsx src/scripts/uploadData.ts"
+    "data:upload": "tsx src/scripts/uploadData.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
