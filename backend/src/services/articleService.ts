@@ -1,19 +1,30 @@
 import ArticleBuilder from "../builders/articleBuilder.js";
-import { db, articles } from "../db/client.js";
+import { db, articles, categories } from "../db/client.js";
 import { type Article } from "../db/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, getTableColumns } from "drizzle-orm";
 import { searchService } from "./searchService.js";
 
+export type ArticleWithCategory = Article & { categoryName: string | null };
+
 export default class ArticleService {
-  async list(categoryId?: number): Promise<Article[]> {
+  async list(categoryId?: number): Promise<ArticleWithCategory[]> {
+    const query = db
+      .select({ ...getTableColumns(articles), categoryName: categories.name })
+      .from(articles)
+      .leftJoin(categories, eq(articles.categoryId, categories.id));
+
     if (categoryId) {
-      return db.select().from(articles).where(eq(articles.categoryId, categoryId));
+      return query.where(eq(articles.categoryId, categoryId));
     }
-    return db.select().from(articles);
+    return query;
   }
 
-  async getById(id: number): Promise<Article | undefined> {
-    const [result] = await db.select().from(articles).where(eq(articles.id, id));
+  async getById(id: number): Promise<ArticleWithCategory | undefined> {
+    const [result] = await db
+      .select({ ...getTableColumns(articles), categoryName: categories.name })
+      .from(articles)
+      .leftJoin(categories, eq(articles.categoryId, categories.id))
+      .where(eq(articles.id, id));
     return result;
   }
 

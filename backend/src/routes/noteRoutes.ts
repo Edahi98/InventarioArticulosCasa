@@ -11,6 +11,11 @@ export const noteRoutes = Router();
 noteRoutes.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
+    if (req.query.articleId === undefined) {
+      const items = await noteService.listAll();
+      res.status(200).json(items);
+      return;
+    }
     const articleId = validationService.requirePositiveInteger(req.query.articleId, "articleId");
     const items = await noteService.listByArticle(articleId);
     res.status(200).json(items);

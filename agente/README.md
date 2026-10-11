@@ -1,35 +1,37 @@
 # agente
 
-Agente conversacional (Flask + LangChain/LangGraph + Ollama) que actúa de intermediario
-entre un cliente (CLI o `bot/`) y el backend de `InventarioArticulosCasa`, consumiendo su
+Agente conversacional (Flask + LangChain/LangGraph + OpenRouter) que actúa de intermediario
+entre un cliente (CLI, API HTTP o bot de Telegram) y el backend de `InventarioArticulosCasa`, consumiendo su
 API HTTP para consultar/editar artículos, categorías, notas e imágenes.
 
 ## Requisitos
 
 - Python >= 3.11
 - [uv](https://docs.astral.sh/uv/)
-- Un servidor Ollama accesible (local o remoto) con el modelo configurado en `OLLAMA_MODEL`
+- Una API key de [OpenRouter](https://openrouter.ai) y un modelo con tool calling en `OPENROUTER_MODEL`
 
 ## Configuración
 
 Copiar `.env.example` a `.env` y completar:
 
 - `BACKEND_URL` — URL del backend de InventarioArticulosCasa (requerida)
-- `OLLAMA_URL` / `OLLAMA_MODEL` — endpoint y modelo de Ollama
+- `OPENROUTER_API_KEY` — API key de OpenRouter (requerida)
+- `OPENROUTER_MODEL` — modelo a usar (por defecto `openai/gpt-4o-mini`)
 - `INVENTARIO_USER` / `INVENTARIO_PASS` — credenciales de login contra el backend (opcional; sin ellas, las requests van sin autenticar)
-- `MODE` — `server` (expone API HTTP) o `cli` (modo interactivo por terminal)
+- `MODE` — `telegram` (bot de Telegram), `server` (expone API HTTP) o `cli` (modo interactivo por terminal)
+- `TELEGRAM_TOKEN` — token de BotFather (requerido con `MODE=telegram`)
 - `PORT` — puerto del servidor Flask cuando `MODE=server`
 
 ## Uso
 
 ```bash
 uv sync
-uv run python main.py          # modo CLI
-uv run python main.py server   # modo servidor (API HTTP), respeta MODE=server también
+uv run python main.py            # modo según MODE (por defecto CLI)
+uv run python main.py telegram   # bot de Telegram
+uv run python main.py server     # API HTTP
 ```
 
-En modo servidor expone `GET /health` para chequeos de salud (usado por el `healthcheck`
-del servicio `agente` en el `docker-compose.yaml` de la raíz del monorepo).
+En modo servidor expone `GET /health`, `POST /chat` y `POST /upload`.
 
 ## Docker
 

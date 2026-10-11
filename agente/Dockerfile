@@ -9,4 +9,4 @@ RUN pip install uv && uv sync --frozen --no-dev
 COPY main.py .
 COPY src/ ./src/
 
-CMD ["uv", "run", "python", "main.py", "server"]
+CMD ["uv", "run", "python", "main.py"]
