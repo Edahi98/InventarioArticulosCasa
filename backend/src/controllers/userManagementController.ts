@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/client.js";
 import { users, type User } from "../db/schema/users.js";
 import { validationService } from "../services/validationService.js";
+import { sessionService } from "../services/sessionService.js";
 import { AppError, asyncHandler } from "../middleware/errorHandler.js";
 
 const PASSWORD_SALT_ROUNDS = 12;
@@ -64,6 +65,7 @@ export const createUser = asyncHandler(async (req: Request, res: Response) => {
 
 /**
  * PUT /users/:id — actualiza el nombre y, si se envía, la contraseña de un usuario.
+ * Cambiar la contraseña cierra todas las sesiones del usuario.
  *
  * @throws AppError 400 si falta el nombre, 404 si no existe, 409 si el nombre ya existe.
  */
@@ -88,6 +90,9 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const [updated] = await db.update(users).set(updateValues).where(eq(users.id, id)).returning();
+  if (updateValues.passwordHash) {
+    await sessionService.revokeAllForUser(id);
+  }
   res.status(200).json(toSafeUser(updated));
 });
 
