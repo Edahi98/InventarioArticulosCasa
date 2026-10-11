@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
-import { storage } from "../storage/client.js";
+import { cloudinaryService } from "../services/cloudinaryService.js";
 import { validationService } from "../services/validationService.js";
 import { articleValidationService } from "../services/articleValidationService.js";
 import { AppError, asyncHandler } from "../middleware/errorHandler.js";
@@ -8,7 +8,6 @@ import { deleteArticle } from "../controllers/articleDeleteController.js";
 import ArticleService from "../services/articleService.js";
 
 const articleService = new ArticleService();
-// 4MB, por debajo del límite de payload de las funciones serverless de Vercel (~4.5MB)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 * 1024 * 1024 } });
 
 export const articleRoutes = Router();
@@ -20,7 +19,7 @@ articleRoutes.post(
     if (!req.file) {
       throw new AppError("No se recibió ninguna imagen.", 400);
     }
-    const uploaded = await storage.upload(req.file.buffer, req.file.originalname);
+    const uploaded = await cloudinaryService.uploadFromBuffer(req.file.buffer);
     res.status(200).json(uploaded);
   }),
 );

@@ -1,6 +1,5 @@
 import express from "express";
 import cors from "cors";
-import path from "node:path";
 import { categoryRoutes } from "./routes/categoryRoutes.js";
 import { articleRoutes } from "./routes/articleRoutes.js";
 import { noteRoutes, articleNoteRoutes } from "./routes/noteRoutes.js";
@@ -15,12 +14,6 @@ export const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-// Sirve archivos subidos via FTP cuando STORAGE=ftp
-if (process.env.STORAGE === "ftp") {
-  const ftpFilesPath = process.env.FTP_LOCAL_PATH ?? path.join(process.cwd(), "ftpfiles");
-  app.use("/files", express.static(ftpFilesPath));
-}
 
 app.use("/auth", authRoutes);
 
