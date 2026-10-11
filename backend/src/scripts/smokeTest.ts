@@ -1,15 +1,7 @@
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
-import * as schema from "../db/schema.pg.js";
-import { categories, articles } from "../db/schema.pg.js";
-
-const url = process.env.DATABASE_URL ?? "";
-const client = postgres(url, { max: 1 });
-const db = drizzle(client, { schema });
+import "dotenv/config";
+import { db, queryClient, categories, articles } from "../db/client.js";
 
 async function run() {
-  console.log("ENGINE:", process.env.ENGINE ?? "local");
-
   const [cat] = await db
     .insert(categories)
     .values({ name: "Electrodomesticos", description: "Test", imageUrl: "http://x.com/img.jpg" })
@@ -33,4 +25,4 @@ async function run() {
 
 run()
   .catch((e) => { console.error("FAILED:", e.message); process.exitCode = 1; })
-  .finally(() => client.end());
+  .finally(() => queryClient.end());
