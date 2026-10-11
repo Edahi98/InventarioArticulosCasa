@@ -61,6 +61,17 @@ El proyecto incluye un `docker-compose.yaml` orquestado para levantar todo el st
    docker compose up -d --build
    ```
 
+## 🧰 Desarrollo con Turborepo
+
+El monorepo usa npm workspaces (`frontend`, `backend`, `agente`) orquestados con Turborepo. Desde la raíz:
+
+```bash
+npm install            # instala todos los workspaces
+npm run dev            # levanta frontend, backend y agente en paralelo
+npm run build          # compila frontend y backend (con caché)
+npm run typecheck      # revisa tipos de frontend y backend y sintaxis del agente
+```
+
 ## 📦 Estructura del Repositorio
 
 *   `/backend`: API RESTful que administra la lógica de negocio y persistencia.
