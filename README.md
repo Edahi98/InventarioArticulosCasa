@@ -4,25 +4,24 @@ Sistema integral para la gestión y seguimiento del inventario de artículos del
 
 ## 🌟 Características Principales
 - **Dashboard Web**: Interfaz construida con Vue y Tailwind CSS para administrar artículos, categorías, notas y stock.
-- **Asistente de IA (Agente)**: Un agente inteligente (Python) que permite hacer consultas semánticas y operaciones con lenguaje natural.
+- **Asistente de IA (Agente)**: Un agente inteligente (Python) que permite hacer consultas por coincidencia aproximada y operaciones con lenguaje natural.
 - **Bot de Telegram**: Interfaz conversacional accesible desde cualquier lugar para registrar o consultar el inventario rápidamente.
 - **Almacenamiento Adaptable**: Soporte para bases de datos locales (PostgreSQL/Supabase) y Edge (Turso/libSQL), con soporte para imágenes (Cloudinary o FTP interno).
 - **Gestión de Reportes**: Descarga y exportación de reportes de inventario a Excel.
 
 ## 🏗 Arquitectura del Sistema
 
-El sistema sigue una arquitectura distribuida basada en contenedores, separando claramente las responsabilidades (Frontend, Backend, Agente IA y Bot):
+El sistema sigue una arquitectura distribuida basada en contenedores, separando claramente las responsabilidades (Frontend, Backend y Agente IA con su bot de Telegram):
 
 ```mermaid
 graph TD
     %% Nodos de Interfaz de Usuario
     UserWeb(["Usuario Web"]) -->|HTTP/REST| Frontend
-    UserBot(["Usuario Telegram"]) -->|Telegram API| Bot
+    UserBot(["Usuario Telegram"]) -->|Telegram API| Agente
 
     %% Componentes Principales
     subgraph "Capa de Presentación & IA"
         Frontend["Frontend Web<br/>(Vue, Vite, Tailwind)"]
-        Bot["Bot de Telegram<br/>(Python)"]
         Agente["Agente de IA<br/>(FastAPI, LLM)"]
     end
 
@@ -39,19 +38,17 @@ graph TD
 
     %% Conexiones
     Frontend -->|API REST| Backend
-    Bot -->|API Interna| Agente
     Agente -->|Llamado a Herramientas| Backend
     Backend -->|ORM Drizzle| DB
     Backend -->|Uploads| Storage
-    Agente -.->|Inferencia NLP| Ollama[("Motor LLM")]
+    Agente -.->|Inferencia NLP| LLM[("OpenRouter")]
 ```
 
 ## 🛠 Stack Tecnológico
 
 *   **Frontend**: Vue 3, Vite, Tailwind CSS, TypeScript.
 *   **Backend**: Node.js, Express, Drizzle ORM, TypeScript.
-*   **Inteligencia Artificial**: Python, FastAPI, Ollama.
-*   **Bot**: Python, Telegram API.
+*   **Inteligencia Artificial**: Python, LangChain/LangGraph, OpenRouter.
 *   **Infraestructura**: Docker, Docker Compose, Nginx.
 
 ## 🚀 Despliegue Local
@@ -68,7 +65,6 @@ El proyecto incluye un `docker-compose.yaml` orquestado para levantar todo el st
 
 *   `/backend`: API RESTful que administra la lógica de negocio y persistencia.
 *   `/frontend`: Cliente web (SPA) para la gestión visual.
-*   `/agente`: Servicio de inteligencia artificial que procesa intenciones y coordina respuestas.
-*   `/bot`: Cliente conversacional de Telegram.
+*   `/agente`: Servicio de inteligencia artificial que procesa intenciones y coordina respuestas; incluye el bot de Telegram.
 *   `/docs`: Guías y documentación técnica del proyecto.
 *   `/supabase`: Scripts SQL de inicialización para el entorno de base de datos local.

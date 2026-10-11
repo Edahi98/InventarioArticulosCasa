@@ -34,15 +34,10 @@ Configuración de base de datos, almacenamiento y servidor del backend.
 Configuración de la IA y conexión del agente inteligente.
 
 * **`BACKEND_URL`**: URL de acceso al backend (ej. `http://inventario-backend:4000`).
-* **`OLLAMA_URL`**: URL de acceso al servicio de Ollama (ej. `http://host.docker.internal:11434`).
-* **`OLLAMA_MODEL`**: Modelo a utilizar por Ollama (ej. `llama3.2`).
+* **`OPENROUTER_API_KEY`**: API key de OpenRouter.
+* **`OPENROUTER_MODEL`**: Modelo a utilizar, con soporte de tool calling (ej. `openai/gpt-4o-mini`).
 * **`INVENTARIO_USER`**: Usuario administrador para el acceso del agente.
 * **`INVENTARIO_PASS`**: Contraseña del administrador.
-* **`MODE`**: Modo de ejecución del agente (ej. `server`).
-* **`PORT`**: Puerto en el que expone la API el agente (ej. `5000`).
-
-## Bot (`/bot/.env`)
-Configuración del bot de Telegram.
-
-* **`TELEGRAM_TOKEN`**: Token proporcionado por BotFather en Telegram.
-* **`AGENT_URL`**: URL para comunicarse con el agente (ej. `http://inventario-agente:5000`).
+* **`MODE`**: Modo de ejecución: `telegram` (bot de Telegram), `server` (API HTTP) o `cli` (terminal).
+* **`PORT`**: Puerto de la API cuando `MODE=server` (ej. `5000`).
+* **`TELEGRAM_TOKEN`**: Token proporcionado por BotFather (requerido cuando `MODE=telegram`).
