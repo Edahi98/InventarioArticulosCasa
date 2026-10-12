@@ -17,6 +17,7 @@ Copiar `.env.example` a `.env` y completar:
 - `BACKEND_URL` — URL del backend de InventarioArticulosCasa (requerida)
 - `OPENROUTER_API_KEY` — API key de OpenRouter (requerida)
 - `OPENROUTER_MODEL` — modelo a usar (por defecto `openai/gpt-4o-mini`)
+- `DECISIONS_MODEL` — modelo de la API de decisions de OpenRouter que filtra los mensajes (por defecto `typesafe/jev-1.13`). Si un mensaje no es para gestionar el inventario, no llega al agente y la persona espera 2 minutos
 - `WEB_URL` — URL de la página web; el bot la menciona al pedir que vinculen la cuenta. El agente **no inicia sesión**: las personas vinculan su cuenta con un código que generan en la web (menú «Telegram») y envían al bot con `/vincular CÓDIGO`
 - `INVENTARIO_TOKEN` — solo modo CLI: token obtenido al iniciar sesión en la web
 - `MODE` — `telegram` (bot de Telegram), `server` (expone API HTTP) o `cli` (modo interactivo por terminal)

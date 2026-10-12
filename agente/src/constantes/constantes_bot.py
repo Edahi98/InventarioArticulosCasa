@@ -1,4 +1,5 @@
 MAX_ALBUM = 10
+CAPTION_LIMIT = 1024
 
 PROCESSING = "⏳ Procesando..."
 UPLOADING = "⏳ Subiendo imagen..."

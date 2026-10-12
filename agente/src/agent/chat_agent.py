@@ -1,9 +1,13 @@
+import logging
+
 from langchain_core.messages import ToolMessage
 from langgraph.pregel import Pregel as CompiledGraph
 
 from src.services.images.renderer_image import CardImageRenderer
-from src.utilerias.util_chat import Chat
 from src.utilerias.util_codec import Codec
+
+
+logger = logging.getLogger(__name__)
 
 
 class AgentChat:
@@ -14,10 +18,11 @@ class AgentChat:
         self._renderer = CardImageRenderer()
 
     def ask(self, message: str) -> tuple[str, list[bytes]]:
-        """Respuesta del agente: (texto, imágenes PNG). Si hay imágenes, el texto va vacío."""
+        """Respuesta del agente: (texto del modelo, imágenes PNG de las fichas). Una sola petición al modelo."""
         result = self._agent.invoke({"messages": [{"role": "user", "content": message}]})
         messages = result["messages"]
-        results = [Codec.parse(m.content) for m in messages if isinstance(m, ToolMessage)]
+        tools = [m for m in messages if isinstance(m, ToolMessage)]
+        logger.info("tools usadas: %s", [m.name for m in tools] or "ninguna")
+        results = [Codec.parse(m.content) for m in tools]
         images = [img for data in results for img in self._renderer.render(data)]
-        text = " ".join(filter(None, map(Chat.as_text, results))) or messages[-1].content
-        return ("" if images else text), images
+        return messages[-1].content, images

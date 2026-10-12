@@ -16,6 +16,7 @@
     "db:push": "npm run db:push -w inventario-backend",
     "user:create": "npm run user:create -w inventario-backend --",
     "keys:generate": "npm run keys:generate -w inventario-backend",
+    "telegram": "npm run telegram -w agente",
     "docker:up": "node scripts/docker.mjs up",
     "docker:down": "node scripts/docker.mjs down",
     "docker:clean": "node scripts/docker.mjs clean",
