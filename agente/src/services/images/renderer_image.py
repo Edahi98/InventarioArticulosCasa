@@ -1,6 +1,7 @@
 from __future__ import annotations
 import io
 from zlib import crc32
+import requests
 from PIL import Image
 from src.utilerias.util_red import Red
 from src.services.images.asset_loader import AssetLoader
@@ -106,7 +107,12 @@ class CardImageRenderer:
 
     @staticmethod
     def _add_photo(builder: GridImageBuilder, image_url: str) -> None:
-        photo = Red.fetch_image(image_url)
+        """Foto desde su URL; si no se puede descargar o no es una imagen válida, deja el recuadro vacío."""
+        try:
+            photo = Red.fetch_image(image_url)
+        except (requests.RequestException, OSError):
+            CardImageRenderer._add_empty_frame(builder, image_url)
+            return
         builder.add_image(ROW_PHOTO, 1, photo, fit='cover', padding=8)
 
     @staticmethod
