@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { categoryRoutes } from "./routes/categoryRoutes.js";
 import { articleRoutes } from "./routes/articleRoutes.js";
 import { noteRoutes, articleNoteRoutes } from "./routes/noteRoutes.js";
@@ -12,6 +13,7 @@ import { searchRoutes } from "./routes/searchRoutes.js";
 
 export const app = express();
 
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
