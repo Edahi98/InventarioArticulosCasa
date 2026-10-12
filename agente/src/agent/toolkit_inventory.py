@@ -1,3 +1,16 @@
+from src.decorators.decorator_dto_validator import DtoValidator
+from src.dtos.dto_article_create import ArticleCreateDto
+from src.dtos.dto_article_ref import ArticleRefDto
+from src.dtos.dto_article_update import ArticleUpdateDto
+from src.dtos.dto_category_create import CategoryCreateDto
+from src.dtos.dto_category_filter import CategoryFilterDto
+from src.dtos.dto_category_ref import CategoryRefDto
+from src.dtos.dto_category_update import CategoryUpdateDto
+from src.dtos.dto_no_input import NoInputDto
+from src.dtos.dto_note_create import NoteCreateDto
+from src.dtos.dto_note_ref import NoteRefDto
+from src.dtos.dto_note_update import NoteUpdateDto
+from src.dtos.dto_repair_flag import RepairFlagDto
 from src.decorators.decorator_name_lookup import NameLookup
 from src.decorators.decorator_tool_registry import ToolRegistry
 from src.constantes.constantes_agente import ARTICLES, CATEGORIES, NOTES
@@ -14,16 +27,19 @@ class AgentToolkit:
         self._inventory = inventory
         self._resolver = NameResolver(inventory, search)
 
+    @DtoValidator.tool(CategoryFilterDto)
     @NameLookup.category(optional=True)
     def listar_articulos(self, category_id: int | None = None) -> list[dict] | str:
         """Lista artículos. Si se da category_name, filtra por esa categoría."""
         return self._inventory.list(ARTICLES, categoryId=category_id)
 
+    @DtoValidator.tool(ArticleRefDto)
     @NameLookup.article()
     def obtener_articulo(self, article_id: int) -> dict | str:
         """Obtiene un artículo por nombre aproximado."""
         return self._inventory.get(ARTICLES, article_id)
 
+    @DtoValidator.tool(ArticleCreateDto)
     @NameLookup.category()
     def crear_articulo(
         self,
@@ -38,6 +54,7 @@ class AgentToolkit:
         return self._inventory.create(ARTICLES, name=name, categoryId=category_id, stock=stock,
                                       description=description, imageUrl=image_url, needsRepair=needs_repair)
 
+    @DtoValidator.tool(ArticleUpdateDto)
     @NameLookup.article()
     @NameLookup.category(optional=True)
     def actualizar_articulo(
@@ -53,29 +70,35 @@ class AgentToolkit:
         return self._inventory.update(ARTICLES, article_id, name=name, categoryId=category_id,
                                       stock=stock, description=description, imageUrl=image_url)
 
+    @DtoValidator.tool(RepairFlagDto)
     @NameLookup.article()
     def marcar_reparacion(self, article_id: int, needs_repair: bool) -> dict | str:
         """Marca o desmarca un artículo como 'necesita reparación'."""
         return self._inventory.update(ARTICLES, article_id, needsRepair=needs_repair)
 
+    @DtoValidator.tool(ArticleRefDto)
     @NameLookup.article()
     def eliminar_articulo(self, article_id: int) -> str:
         """Elimina un artículo por nombre aproximado."""
         return f"Artículo '{self._inventory.delete(ARTICLES, article_id)['name']}' eliminado."
 
+    @DtoValidator.tool(NoInputDto)
     def listar_categorias(self) -> list[dict] | str:
         """Lista todas las categorías del inventario."""
         return self._inventory.list(CATEGORIES)
 
+    @DtoValidator.tool(CategoryRefDto)
     @NameLookup.category()
     def obtener_categoria(self, category_id: int) -> dict | str:
         """Obtiene una categoría por nombre aproximado."""
         return self._inventory.get(CATEGORIES, category_id)
 
+    @DtoValidator.tool(CategoryCreateDto)
     def crear_categoria(self, name: str, description: str = "", image_url: str = "") -> dict | str:
         """Crea una nueva categoría."""
         return self._inventory.create(CATEGORIES, name=name, description=description, imageUrl=image_url)
 
+    @DtoValidator.tool(CategoryUpdateDto)
     @NameLookup.category()
     def actualizar_categoria(
         self,
@@ -87,21 +110,25 @@ class AgentToolkit:
         """Actualiza solo los campos indicados de una categoría. Los campos omitidos conservan su valor actual."""
         return self._inventory.update(CATEGORIES, category_id, name=name, description=description, imageUrl=image_url)
 
+    @DtoValidator.tool(CategoryRefDto)
     @NameLookup.category()
     def eliminar_categoria(self, category_id: int) -> str:
         """Elimina una categoría por nombre aproximado."""
         return f"Categoría '{self._inventory.delete(CATEGORIES, category_id)['name']}' eliminada."
 
+    @DtoValidator.tool(ArticleRefDto)
     @NameLookup.article()
     def listar_notas(self, article_id: int) -> list[dict] | str:
         """Lista todas las notas de un artículo."""
         return self._inventory.list(NOTES, articleId=article_id)
 
+    @DtoValidator.tool(NoteCreateDto)
     @NameLookup.article()
     def crear_nota(self, article_id: int, title: str, description: str = "") -> dict | str:
         """Crea una nota asociada a un artículo."""
         return self._inventory.create(NOTES, articleId=article_id, title=title, description=description)
 
+    @DtoValidator.tool(NoteUpdateDto)
     @NameLookup.article()
     @NameLookup.note()
     def actualizar_nota(
@@ -114,6 +141,7 @@ class AgentToolkit:
         """Actualiza solo los campos indicados de una nota. Los campos omitidos conservan su valor actual."""
         return self._inventory.update(NOTES, note_id, title=title, description=description)
 
+    @DtoValidator.tool(NoteRefDto)
     @NameLookup.article()
     @NameLookup.note()
     def eliminar_nota(self, article_id: int, note_id: int) -> str:

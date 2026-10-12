@@ -2,12 +2,16 @@ import asyncio
 import io
 import logging
 
+from pydantic import ValidationError
 from telegram import InputMediaPhoto, Update
 from telegram.ext import ContextTypes
 
 from src.agent.chat_agent import AgentChat
 from src.backend import Backend
 from src.constantes.constantes_bot import MAX_ALBUM, PHOTO_WITHOUT_CAPTION, PHOTO_WITH_CAPTION, PROCESSING, UPLOADING
+from src.decorators.decorator_dto_validator import DtoValidator
+from src.dtos.dto_chat import ChatDto
+from src.dtos.dto_upload import UploadDto
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +25,10 @@ class BotHandlers:
 
     async def text(self, update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         thinking = await update.message.reply_text(PROCESSING)
-        await self._answer(update, thinking, update.message.text.strip())
+        chat = await self._valid(thinking, ChatDto, message=update.message.text or "")
+        if chat is None:
+            return
+        await self._answer(update, thinking, chat.message)
 
     async def photo(self, update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         thinking = await update.message.reply_text(UPLOADING)
@@ -29,7 +36,11 @@ class BotHandlers:
             photo = update.message.photo[-1]
             tg_file = await ctx.bot.get_file(photo.file_id)
             data = bytes(await tg_file.download_as_bytearray())
-            url = await asyncio.to_thread(self._api.upload_image, data, f"{photo.file_id}.jpg")
+            upload = await self._valid(thinking, UploadDto, filename=f"{photo.file_id}.jpg",
+                                       content_type="image/jpeg", data=data)
+            if upload is None:
+                return
+            url = await asyncio.to_thread(self._api.upload_image, upload.data, upload.filename)
         except Exception as e:
             logger.exception("Error subiendo la foto")
             await thinking.edit_text(f"Error al procesar la imagen: {e}")
@@ -37,8 +48,19 @@ class BotHandlers:
 
         await thinking.edit_text(PROCESSING)
         caption = (update.message.caption or "").strip()
+        if caption and await self._valid(thinking, ChatDto, message=caption) is None:
+            return
         template = {True: PHOTO_WITH_CAPTION, False: PHOTO_WITHOUT_CAPTION}[bool(caption)]
         await self._answer(update, thinking, template.format(caption=caption, url=url))
+
+    @staticmethod
+    async def _valid(thinking, dto, **data):
+        """Valida la entrada con el DTO; si no es válida avisa en el mismo mensaje y devuelve None."""
+        try:
+            return dto.model_validate(data)
+        except ValidationError as error:
+            await thinking.edit_text(DtoValidator.describe(error))
+            return None
 
     async def _answer(self, update: Update, thinking, message: str) -> None:
         try:
