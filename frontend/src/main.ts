@@ -25,6 +25,7 @@ import {
   faCheck,
   faMoon,
   faSun,
+  faPaperPlane,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -43,6 +44,7 @@ library.add(
   faCheck,
   faMoon,
   faSun,
+  faPaperPlane,
 );
 
 useTheme();
