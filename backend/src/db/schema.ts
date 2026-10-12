@@ -65,3 +65,16 @@ export const sessions = pgTable("sessions", {
 
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
+
+export const linkCodes = pgTable("link_codes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  codeHash: text("code_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: text("created_at").notNull().default(utcNow),
+});
+
+export type LinkCode = typeof linkCodes.$inferSelect;
+export type NewLinkCode = typeof linkCodes.$inferInsert;

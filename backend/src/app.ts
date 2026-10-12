@@ -11,6 +11,7 @@ import { downloadInventoryReport } from "./controllers/reportController.js";
 import { userManagementRoutes } from "./routes/userManagementRoutes.js";
 import { searchRoutes } from "./routes/searchRoutes.js";
 import { jwksRoutes } from "./routes/jwksRoutes.js";
+import { telegramLinkRoutes } from "./routes/telegramLinkRoutes.js";
 import { generalLimiter } from "./middleware/rateLimiters.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 
@@ -26,6 +27,7 @@ app.use(generalLimiter);
 app.use(express.json());
 
 app.use("/.well-known", jwksRoutes);
+app.use("/auth/telegram", telegramLinkRoutes);
 app.use("/auth", authRoutes);
 
 app.use("/categories", authMiddleware, categoryRoutes);

@@ -33,6 +33,12 @@ export const loginLimiter = createLimiter(
   { skipSuccessfulRequests: true },
 );
 
+export const claimLimiter = createLimiter(
+  10,
+  "Demasiados intentos con códigos inválidos. Espera 15 minutos e inténtalo de nuevo.",
+  { skipSuccessfulRequests: true },
+);
+
 export const uploadLimiter = createLimiter(
   30,
   "Demasiadas imágenes subidas. Espera unos minutos e inténtalo de nuevo.",
