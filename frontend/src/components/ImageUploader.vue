@@ -1,42 +1,41 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { uploadArticleImageUseCase } from "../core/usecases/uploadArticleImage.js";
 
 const props = defineProps<{ initialImageUrl?: string }>();
-const emit = defineEmits<{ uploaded: [url: string]; uploading: [isUploading: boolean] }>();
+const emit = defineEmits<{ selected: [file: File, previewUrl: string] }>();
 
 const previewUrl = ref(props.initialImageUrl ?? "");
-const isUploading = ref(false);
 const errorMessage = ref("");
 
 watch(
   () => props.initialImageUrl,
   (value) => {
-    if (value) {
+    if (value && !previewUrl.value.startsWith("data:")) {
       previewUrl.value = value;
     }
   },
 );
+
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("No se pudo leer la foto."));
+    reader.readAsDataURL(file);
+  });
+}
 
 async function handleFileChange(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
 
-  previewUrl.value = URL.createObjectURL(file);
   errorMessage.value = "";
-  isUploading.value = true;
-  emit("uploading", true);
-
   try {
-    const uploaded = await uploadArticleImageUseCase.execute(file);
-    emit("uploaded", uploaded.url);
+    previewUrl.value = await readAsDataUrl(file);
+    emit("selected", file, previewUrl.value);
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Error al subir la imagen.";
-  } finally {
-    isUploading.value = false;
-    emit("uploading", false);
+    errorMessage.value = error instanceof Error ? error.message : "No se pudo leer la foto.";
   }
 }
 </script>
@@ -56,7 +55,7 @@ async function handleFileChange(event: Event): Promise<void> {
         class="h-32 w-32 rounded-xl border-4 border-[#fffaf2] object-cover"
       />
       <span class="text-sm font-semibold">
-        {{ isUploading ? "Subiendo la foto..." : previewUrl ? "Cambiar la foto" : "Toca para elegir una foto" }}
+        {{ previewUrl ? "Cambiar la foto" : "Toca para elegir una foto" }}
       </span>
       <input type="file" accept="image/*" class="sr-only" @change="handleFileChange" />
     </label>

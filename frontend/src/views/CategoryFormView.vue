@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { createCategoryUseCase } from "../core/usecases/createCategory.js";
 import { updateCategoryUseCase } from "../core/usecases/updateCategory.js";
 import { getCategoryByIdUseCase } from "../core/usecases/getCategoryById.js";
+import { uploadArticleImageUseCase } from "../core/usecases/uploadArticleImage.js";
 import CategoryCard from "../components/CategoryCard.vue";
 import ImageUploader from "../components/ImageUploader.vue";
 import FormField from "../components/ui/FormField.vue";
@@ -21,16 +22,19 @@ const form = reactive({
   imageUrl: "",
 });
 
+const pendingFile = ref<File | null>(null);
+const pendingPreview = ref("");
+
 const isLoading = ref(isEditMode.value);
 const isSubmitting = ref(false);
-const isImageUploading = ref(false);
+const isUploading = ref(false);
 const errorMessage = ref("");
 
 const preview = computed(() => ({
   id: categoryId ?? 0,
   name: form.name || "El nombre del cuarto",
   description: form.description || "Aquí irá su descripción.",
-  imageUrl: form.imageUrl,
+  imageUrl: pendingPreview.value || form.imageUrl,
 }));
 
 onMounted(async () => {
@@ -48,12 +52,20 @@ onMounted(async () => {
   }
 });
 
-function handleImageUploaded(url: string): void {
-  form.imageUrl = url;
+function handleImageSelected(file: File, previewUrl: string): void {
+  pendingFile.value = file;
+  pendingPreview.value = previewUrl;
 }
 
-function handleImageUploadingChange(uploading: boolean): void {
-  isImageUploading.value = uploading;
+async function resolveImageUrl(): Promise<string> {
+  if (!pendingFile.value) return form.imageUrl;
+  isUploading.value = true;
+  try {
+    const uploaded = await uploadArticleImageUseCase.execute(pendingFile.value);
+    return uploaded.url;
+  } finally {
+    isUploading.value = false;
+  }
 }
 
 async function handleSubmit(): Promise<void> {
@@ -64,13 +76,8 @@ async function handleSubmit(): Promise<void> {
     return;
   }
 
-  if (isImageUploading.value) {
-    errorMessage.value = "Espera a que la foto termine de subir.";
-    return;
-  }
-
-  if (!form.imageUrl) {
-    errorMessage.value = "Sube una foto del cuarto antes de guardarlo.";
+  if (!form.imageUrl && !pendingFile.value) {
+    errorMessage.value = "Elige una foto del cuarto antes de guardarlo.";
     return;
   }
 
@@ -79,7 +86,7 @@ async function handleSubmit(): Promise<void> {
     const input = {
       name: form.name,
       description: form.description,
-      imageUrl: form.imageUrl,
+      imageUrl: await resolveImageUrl(),
     };
 
     if (categoryId) {
@@ -122,17 +129,13 @@ async function handleSubmit(): Promise<void> {
           <textarea id="description" v-model="form.description" rows="3" class="ui-input" placeholder="¿Qué se guarda aquí?" />
         </FormField>
 
-        <ImageUploader
-          :initial-image-url="form.imageUrl"
-          @uploaded="handleImageUploaded"
-          @uploading="handleImageUploadingChange"
-        />
+        <ImageUploader :initial-image-url="form.imageUrl" @selected="handleImageSelected" />
 
         <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
 
-        <button type="submit" :disabled="isSubmitting || isImageUploading" class="ui-btn ui-btn-primary">
+        <button type="submit" :disabled="isSubmitting" class="ui-btn ui-btn-primary">
           {{
-            isImageUploading
+            isUploading
               ? "Subiendo la foto..."
               : isSubmitting
                 ? "Guardando..."

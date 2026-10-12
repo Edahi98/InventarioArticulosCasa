@@ -2,6 +2,7 @@
 import { reactive, ref, watch } from "vue";
 import type { Category } from "../../core/domain/category.js";
 import { updateCategoryUseCase } from "../../core/usecases/updateCategory.js";
+import { uploadArticleImageUseCase } from "../../core/usecases/uploadArticleImage.js";
 import ImageUploader from "../ImageUploader.vue";
 import FormField from "../ui/FormField.vue";
 import ModalShell from "../ui/ModalShell.vue";
@@ -15,8 +16,9 @@ const form = reactive({
   imageUrl: props.category.imageUrl,
 });
 
+const pendingFile = ref<File | null>(null);
 const isSubmitting = ref(false);
-const isImageUploading = ref(false);
+const isUploading = ref(false);
 const errorMessage = ref("");
 
 watch(
@@ -25,15 +27,23 @@ watch(
     form.name = category.name;
     form.description = category.description;
     form.imageUrl = category.imageUrl;
+    pendingFile.value = null;
   },
 );
 
-function handleImageUploaded(url: string): void {
-  form.imageUrl = url;
+function handleImageSelected(file: File): void {
+  pendingFile.value = file;
 }
 
-function handleImageUploadingChange(uploading: boolean): void {
-  isImageUploading.value = uploading;
+async function resolveImageUrl(): Promise<string> {
+  if (!pendingFile.value) return form.imageUrl;
+  isUploading.value = true;
+  try {
+    const uploaded = await uploadArticleImageUseCase.execute(pendingFile.value);
+    return uploaded.url;
+  } finally {
+    isUploading.value = false;
+  }
 }
 
 async function handleSubmit(): Promise<void> {
@@ -43,17 +53,13 @@ async function handleSubmit(): Promise<void> {
     errorMessage.value = "El cuarto necesita un nombre.";
     return;
   }
-  if (isImageUploading.value) {
-    errorMessage.value = "Espera a que la foto termine de subir.";
-    return;
-  }
 
   isSubmitting.value = true;
   try {
     const updated = await updateCategoryUseCase.execute(props.category.id, {
       name: form.name,
       description: form.description,
-      imageUrl: form.imageUrl,
+      imageUrl: await resolveImageUrl(),
     });
     emit("saved", updated);
   } catch (error) {
@@ -74,11 +80,7 @@ async function handleSubmit(): Promise<void> {
       <FormField label="Descripción" for-id="category-description">
         <textarea id="category-description" v-model="form.description" rows="3" class="ui-input" />
       </FormField>
-      <ImageUploader
-        :initial-image-url="form.imageUrl"
-        @uploaded="handleImageUploaded"
-        @uploading="handleImageUploadingChange"
-      />
+      <ImageUploader :initial-image-url="form.imageUrl" @selected="handleImageSelected" />
       <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
     </div>
 
@@ -86,13 +88,8 @@ async function handleSubmit(): Promise<void> {
       <button type="button" class="ui-btn ui-btn-ghost" :disabled="isSubmitting" @click="emit('close')">
         Cancelar
       </button>
-      <button
-        type="button"
-        class="ui-btn ui-btn-primary"
-        :disabled="isSubmitting || isImageUploading"
-        @click="handleSubmit"
-      >
-        {{ isSubmitting ? "Guardando..." : "Guardar cambios" }}
+      <button type="button" class="ui-btn ui-btn-primary" :disabled="isSubmitting" @click="handleSubmit">
+        {{ isUploading ? "Subiendo la foto..." : isSubmitting ? "Guardando..." : "Guardar cambios" }}
       </button>
     </template>
   </ModalShell>
