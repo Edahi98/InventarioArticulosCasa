@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { categoryRoutes } from "./routes/categoryRoutes.js";
 import { articleRoutes } from "./routes/articleRoutes.js";
 import { noteRoutes, articleNoteRoutes } from "./routes/noteRoutes.js";
@@ -9,12 +10,24 @@ import { authMiddleware } from "./middleware/authMiddleware.js";
 import { downloadInventoryReport } from "./controllers/reportController.js";
 import { userManagementRoutes } from "./routes/userManagementRoutes.js";
 import { searchRoutes } from "./routes/searchRoutes.js";
+import { jwksRoutes } from "./routes/jwksRoutes.js";
+import { telegramLinkRoutes } from "./routes/telegramLinkRoutes.js";
+import { generalLimiter } from "./middleware/rateLimiters.js";
+import { requestLogger } from "./middleware/requestLogger.js";
 
 export const app = express();
 
+const TRUSTED_PROXY_HOPS = Number(process.env.TRUST_PROXY ?? (process.env.VERCEL ? 1 : 0));
+
+app.set("trust proxy", TRUSTED_PROXY_HOPS);
+app.use(helmet());
+app.use(requestLogger);
 app.use(cors());
+app.use(generalLimiter);
 app.use(express.json());
 
+app.use("/.well-known", jwksRoutes);
+app.use("/auth/telegram", telegramLinkRoutes);
 app.use("/auth", authRoutes);
 
 app.use("/categories", authMiddleware, categoryRoutes);

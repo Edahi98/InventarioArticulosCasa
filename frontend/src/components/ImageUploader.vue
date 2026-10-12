@@ -1,65 +1,73 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { uploadArticleImageUseCase } from "../core/usecases/uploadArticleImage.js";
+import { validateImageFile } from "../validators/imageValidators.js";
 
 const props = defineProps<{ initialImageUrl?: string }>();
-const emit = defineEmits<{ uploaded: [url: string]; uploading: [isUploading: boolean] }>();
+const emit = defineEmits<{ selected: [file: File, previewUrl: string] }>();
 
 const previewUrl = ref(props.initialImageUrl ?? "");
-const isUploading = ref(false);
 const errorMessage = ref("");
 
 watch(
   () => props.initialImageUrl,
   (value) => {
-    if (value) {
+    if (value && !previewUrl.value.startsWith("data:")) {
       previewUrl.value = value;
     }
   },
 );
+
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("No se pudo leer la foto."));
+    reader.readAsDataURL(file);
+  });
+}
 
 async function handleFileChange(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
 
-  previewUrl.value = URL.createObjectURL(file);
   errorMessage.value = "";
-  isUploading.value = true;
-  emit("uploading", true);
+  const problem = await validateImageFile(file);
+  if (problem) {
+    errorMessage.value = problem;
+    input.value = "";
+    return;
+  }
 
   try {
-    const uploaded = await uploadArticleImageUseCase.execute(file);
-    emit("uploaded", uploaded.url);
+    previewUrl.value = await readAsDataUrl(file);
+    emit("selected", file, previewUrl.value);
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Error al subir la imagen.";
-  } finally {
-    isUploading.value = false;
-    emit("uploading", false);
+    errorMessage.value = error instanceof Error ? error.message : "No se pudo leer la foto.";
   }
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
-    <label class="text-sm font-medium text-gray-700">Imagen</label>
+    <span class="ui-label">Foto</span>
 
-    <img
-      v-if="previewUrl"
-      :src="previewUrl"
-      alt="Vista previa"
-      class="h-40 w-40 rounded-md object-cover"
-    />
+    <label
+      class="ui-dashed-add cursor-pointer !min-h-[10rem] focus-within:border-[var(--l-accent)]"
+      :class="{ '!border-solid': previewUrl }"
+    >
+      <img
+        v-if="previewUrl"
+        :src="previewUrl"
+        alt="Vista previa"
+        class="h-32 w-32 rounded-xl border-4 border-[#fffaf2] object-cover"
+      />
+      <span class="text-sm font-semibold">
+        {{ previewUrl ? "Cambiar la foto" : "Toca para elegir una foto" }}
+      </span>
+      <input type="file" accept="image/*" class="sr-only" @change="handleFileChange" />
+    </label>
 
-    <input
-      type="file"
-      accept="image/*"
-      class="block w-full text-sm text-gray-600"
-      @change="handleFileChange"
-    />
-
-    <p v-if="isUploading" class="text-sm text-gray-500">Subiendo imagen...</p>
-    <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
+    <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
   </div>
 </template>

@@ -16,6 +16,14 @@ docker exec inventario-backend node dist/src/scripts/createUser.js admin MiPassw
 
 ## En desarrollo local
 
+Desde la raíz del repositorio:
+
+```bash
+npm run user:create -- <username> <password>
+```
+
+O desde `backend/`:
+
 ```bash
 cd backend
 npm run user:create -- <username> <password>
@@ -37,9 +45,7 @@ Respaldan y restauran la base de datos (Supabase) junto con sus imágenes (Cloud
 
 ```env
 DATABASE_URL=postgresql://...      # Supabase
-CLOUDINARY_CLOUD_NAME=...          # solo para subir
-CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
+CLOUDINARY_URL=cloudinary://...    # solo para subir
 ```
 
 ## Bajar datos

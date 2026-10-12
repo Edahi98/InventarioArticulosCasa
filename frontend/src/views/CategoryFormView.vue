@@ -4,7 +4,13 @@ import { useRoute, useRouter } from "vue-router";
 import { createCategoryUseCase } from "../core/usecases/createCategory.js";
 import { updateCategoryUseCase } from "../core/usecases/updateCategory.js";
 import { getCategoryByIdUseCase } from "../core/usecases/getCategoryById.js";
+import { uploadArticleImageUseCase } from "../core/usecases/uploadArticleImage.js";
+import { categoryForm } from "../validators/categoryValidators.js";
+import { validateInput } from "../validators/validateInput.js";
+import CategoryCard from "../components/CategoryCard.vue";
 import ImageUploader from "../components/ImageUploader.vue";
+import FormField from "../components/ui/FormField.vue";
+import PageHeader from "../components/ui/PageHeader.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -18,10 +24,21 @@ const form = reactive({
   imageUrl: "",
 });
 
+const pendingFile = ref<File | null>(null);
+const pendingPreview = ref("");
+
 const isLoading = ref(isEditMode.value);
 const isSubmitting = ref(false);
-const isImageUploading = ref(false);
+const isUploading = ref(false);
 const errorMessage = ref("");
+const fieldErrors = ref<Record<string, string>>({});
+
+const preview = computed(() => ({
+  id: categoryId ?? 0,
+  name: form.name || "El nombre del cuarto",
+  description: form.description || "Aquí irá su descripción.",
+  imageUrl: pendingPreview.value || form.imageUrl,
+}));
 
 onMounted(async () => {
   if (!categoryId) return;
@@ -38,39 +55,41 @@ onMounted(async () => {
   }
 });
 
-function handleImageUploaded(url: string): void {
-  form.imageUrl = url;
+function handleImageSelected(file: File, previewUrl: string): void {
+  pendingFile.value = file;
+  pendingPreview.value = previewUrl;
 }
 
-function handleImageUploadingChange(uploading: boolean): void {
-  isImageUploading.value = uploading;
+async function resolveImageUrl(): Promise<string> {
+  if (!pendingFile.value) return form.imageUrl;
+  isUploading.value = true;
+  try {
+    const uploaded = await uploadArticleImageUseCase.execute(pendingFile.value);
+    return uploaded.url;
+  } finally {
+    isUploading.value = false;
+  }
 }
 
 async function handleSubmit(): Promise<void> {
   errorMessage.value = "";
+  fieldErrors.value = {};
 
-  if (!form.name.trim()) {
-    errorMessage.value = "El nombre de la categoría es obligatorio.";
+  const checked = validateInput(categoryForm, { name: form.name, description: form.description });
+  if (!checked.ok) {
+    fieldErrors.value = checked.failure.fields;
+    errorMessage.value = checked.failure.message;
     return;
   }
 
-  if (isImageUploading.value) {
-    errorMessage.value = "Espera a que la imagen termine de subir.";
-    return;
-  }
-
-  if (!form.imageUrl) {
-    errorMessage.value = "Debes subir una imagen antes de guardar la categoría.";
+  if (!form.imageUrl && !pendingFile.value) {
+    errorMessage.value = "Elige una foto del cuarto antes de guardarlo.";
     return;
   }
 
   isSubmitting.value = true;
   try {
-    const input = {
-      name: form.name,
-      description: form.description,
-      imageUrl: form.imageUrl,
-    };
+    const input = { ...checked.data, imageUrl: await resolveImageUrl() };
 
     if (categoryId) {
       await updateCategoryUseCase.execute(categoryId, input);
@@ -89,58 +108,52 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-  <section class="mx-auto max-w-2xl px-4 py-8">
-    <h1 class="mb-6 text-2xl font-extrabold text-slate-900">
-      {{ isEditMode ? "Editar categoría" : "Nueva categoría" }}
-    </h1>
+  <section class="mx-auto max-w-5xl px-4 py-12 md:px-8">
+    <PageHeader
+      :title="isEditMode ? 'Arreglar el cuarto' : 'Construir un cuarto nuevo'"
+      subtitle="Dale nombre, una foto y unas palabras. Mira a la derecha cómo va quedando."
+      back-to="/categories"
+      back-label="Todos los cuartos"
+    />
 
-    <p v-if="isLoading" class="text-slate-500">Cargando categoría...</p>
+    <p v-if="isLoading" class="text-[var(--l-muted)]">Abriendo el cuarto...</p>
 
-    <form v-else class="flex flex-col gap-4" @submit.prevent="handleSubmit">
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-bold text-slate-800" for="name">Nombre</label>
-        <input
-          id="name"
-          v-model="form.name"
-          type="text"
-          required
-          class="cartoon-input"
-        />
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-bold text-slate-800" for="description">Descripción</label>
-        <textarea
-          id="description"
-          v-model="form.description"
-          rows="3"
-          class="cartoon-input"
-        />
-      </div>
-
-      <ImageUploader
-        :initial-image-url="form.imageUrl"
-        @uploaded="handleImageUploaded"
-        @uploading="handleImageUploadingChange"
-      />
-
-      <p v-if="errorMessage" class="text-sm font-semibold text-rose-600">{{ errorMessage }}</p>
-
-      <button
-        type="submit"
-        :disabled="isSubmitting || isImageUploading"
-        class="cartoon-btn-primary disabled:opacity-50"
+    <div v-else class="grid grid-cols-1 gap-10 lg:grid-cols-12">
+      <form
+        class="ui-notebook flex flex-col gap-6 py-8 pr-6 sm:pr-8 lg:col-span-7"
+        @submit.prevent="handleSubmit"
       >
-        {{
-          isImageUploading
-            ? "Subiendo imagen..."
-            : isSubmitting
-              ? "Guardando..."
-              : isEditMode
-                ? "Guardar cambios"
-                : "Guardar categoría"
-        }}
-      </button>
-    </form>
+        <FormField label="Nombre" for-id="name" :error="fieldErrors.name">
+          <input id="name" v-model="form.name" type="text" required class="ui-input" placeholder="La cocina, el taller..." />
+        </FormField>
+
+        <FormField label="Descripción" for-id="description" :error="fieldErrors.description">
+          <textarea id="description" v-model="form.description" rows="3" class="ui-input" placeholder="¿Qué se guarda aquí?" />
+        </FormField>
+
+        <ImageUploader :initial-image-url="form.imageUrl" @selected="handleImageSelected" />
+
+        <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
+
+        <button type="submit" :disabled="isSubmitting" class="ui-btn ui-btn-primary">
+          {{
+            isUploading
+              ? "Subiendo la foto..."
+              : isSubmitting
+                ? "Guardando..."
+                : isEditMode
+                  ? "Guardar cambios"
+                  : "Abrir el cuarto"
+          }}
+        </button>
+      </form>
+
+      <aside class="lg:col-span-5">
+        <p class="mb-4 text-sm font-semibold text-[var(--l-muted)]">Así se verá en la casa</p>
+        <div class="mx-auto max-w-xs rotate-2 lg:sticky lg:top-24">
+          <CategoryCard :category="preview" />
+        </div>
+      </aside>
+    </div>
   </section>
 </template>

@@ -3,6 +3,10 @@ import { reactive, ref } from "vue";
 import type { SystemUser } from "../../core/domain/user.js";
 import { createUserUseCase } from "../../core/usecases/createUser.js";
 import { updateUserUseCase } from "../../core/usecases/updateUser.js";
+import { userCreateForm, userUpdateForm } from "../../validators/userValidators.js";
+import { validateInput } from "../../validators/validateInput.js";
+import FormField from "../ui/FormField.vue";
+import ModalShell from "../ui/ModalShell.vue";
 
 const props = defineProps<{ user: SystemUser | null }>();
 const emit = defineEmits<{ close: []; saved: [user: SystemUser] }>();
@@ -16,32 +20,30 @@ const form = reactive({
 
 const isSubmitting = ref(false);
 const errorMessage = ref("");
+const fieldErrors = ref<Record<string, string>>({});
 
 async function handleSubmit(): Promise<void> {
   errorMessage.value = "";
+  fieldErrors.value = {};
 
-  if (!form.username.trim()) {
-    errorMessage.value = "El nombre de usuario es obligatorio.";
+  const checked = validateInput(isEditMode ? userUpdateForm : userCreateForm, {
+    username: form.username,
+    password: form.password,
+  });
+  if (!checked.ok) {
+    fieldErrors.value = checked.failure.fields;
+    errorMessage.value = checked.failure.message;
     return;
   }
-  if (!isEditMode && !form.password.trim()) {
-    errorMessage.value = "La contraseña es obligatoria para un usuario nuevo.";
-    return;
-  }
+  const { username, password } = checked.data as { username: string; password?: string };
 
   isSubmitting.value = true;
   try {
     let saved: SystemUser;
     if (isEditMode && props.user) {
-      saved = await updateUserUseCase.execute(props.user.id, {
-        username: form.username,
-        password: form.password.trim() ? form.password : undefined,
-      });
+      saved = await updateUserUseCase.execute(props.user.id, { username, password });
     } else {
-      saved = await createUserUseCase.execute({
-        username: form.username,
-        password: form.password,
-      });
+      saved = await createUserUseCase.execute({ username, password: password ?? "" });
     }
     emit("saved", saved);
   } catch (error) {
@@ -54,43 +56,29 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-    <div class="cartoon-panel w-full max-w-md p-6">
-      <h2 class="mb-4 text-xl font-extrabold text-slate-900">
-        <font-awesome-icon :icon="isEditMode ? 'pen' : 'plus'" class="mr-1" />
-        {{ isEditMode ? "Editar usuario" : "Nuevo usuario" }}
-      </h2>
-
-      <div class="flex flex-col gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-bold text-slate-800" for="username">Usuario</label>
-          <input id="username" v-model="form.username" type="text" class="cartoon-input" />
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-bold text-slate-800" for="password">
-            {{ isEditMode ? "Nueva contraseña (opcional)" : "Contraseña" }}
-          </label>
-          <input
-            id="password"
-            v-model="form.password"
-            type="password"
-            class="cartoon-input"
-            :placeholder="isEditMode ? 'Déjalo en blanco para no cambiarla' : ''"
-          />
-        </div>
-
-        <p v-if="errorMessage" class="text-sm font-semibold text-rose-600">{{ errorMessage }}</p>
-
-        <div class="mt-2 flex justify-end gap-2">
-          <button class="cartoon-btn-secondary" :disabled="isSubmitting" @click="emit('close')">
-            Cancelar
-          </button>
-          <button class="cartoon-btn-primary" :disabled="isSubmitting" @click="handleSubmit">
-            {{ isSubmitting ? "Guardando..." : "Guardar" }}
-          </button>
-        </div>
-      </div>
+  <ModalShell :title="isEditMode ? 'Cambiar datos del habitante' : 'Un habitante nuevo'" @close="emit('close')">
+    <div class="flex flex-col gap-4">
+      <FormField label="Usuario" for-id="username" :error="fieldErrors.username">
+        <input id="username" v-model="form.username" type="text" autocomplete="off" class="ui-input" />
+      </FormField>
+      <FormField
+        :label="isEditMode ? 'Nueva contraseña' : 'Contraseña'"
+        for-id="password"
+        :error="fieldErrors.password"
+        :hint="isEditMode ? 'Déjala en blanco para conservar la actual.' : undefined"
+      >
+        <input id="password" v-model="form.password" type="password" autocomplete="new-password" class="ui-input" />
+      </FormField>
+      <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
     </div>
-  </div>
+
+    <template #actions>
+      <button type="button" class="ui-btn ui-btn-ghost" :disabled="isSubmitting" @click="emit('close')">
+        Cancelar
+      </button>
+      <button type="button" class="ui-btn ui-btn-primary" :disabled="isSubmitting" @click="handleSubmit">
+        {{ isSubmitting ? "Guardando..." : "Guardar" }}
+      </button>
+    </template>
+  </ModalShell>
 </template>

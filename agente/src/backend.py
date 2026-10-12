@@ -1,22 +1,29 @@
 import requests
 
-from src.constantes.constantes_red import LOGIN_PATH
+from src.constantes.constantes_red import CLAIM_PATH, LOGOUT_PATH
 from src.errors.error_backend import BackendError
+from src.services.context_auth import AuthContext
+
+SESSION_EXPIRED = "Tu sesión no es válida o expiró. Vuelve a vincular tu cuenta desde la página web."
 
 
 class Backend:
-    """Cliente HTTP del backend de inventario: sesión compartida, JWT con reinicio de sesión y subida de imágenes."""
+    """
+    Cliente HTTP del backend de inventario. No inicia sesión: cada petición lleva el token del usuario
+    actual (AuthContext), que siempre se obtuvo en la página web.
+    """
 
     def __init__(self, base_url: str) -> None:
         self._base_url = base_url.rstrip("/")
         self._session = requests.Session()
-        self._credentials: tuple[str, str] | None = None
 
-    def login(self, username: str, password: str) -> None:
-        """Inicia sesión y guarda las credenciales para renovarla sola cuando el token expire."""
-        self._credentials = (username, password)
-        token = self.post(LOGIN_PATH, {"username": username, "password": password})["token"]
-        self._session.headers["Authorization"] = f"Bearer {token}"
+    def claim_link_code(self, code: str) -> dict:
+        """Canjea un código de vinculación generado en la web por un token del usuario que lo generó."""
+        return self._request("POST", CLAIM_PATH, auth=False, json={"code": code})
+
+    def logout(self, token: str) -> None:
+        """Cierra en el backend la sesión del token indicado."""
+        self._request("POST", LOGOUT_PATH, auth=False, headers={"Authorization": f"Bearer {token}"})
 
     def get(self, path: str, params: dict | None = None):
         return self._request("GET", path, params=params)
@@ -34,21 +41,14 @@ class Backend:
         """Sube la imagen y retorna su URL pública."""
         return self._request("POST", "/articles/upload", files={"image": (filename, data)})["url"]
 
-    def _request(self, method: str, path: str, **kwargs):
-        res = self._send(method, path, **kwargs)
-        if self._session_expired(res, path):
-            self.login(*self._credentials)
-            res = self._send(method, path, **kwargs)
+    def _request(self, method: str, path: str, auth: bool = True, headers: dict | None = None, **kwargs):
+        merged = {**(AuthContext.headers() if auth else {}), **(headers or {})}
+        res = self._session.request(method, f"{self._base_url}{path}", headers=merged, **kwargs)
         if res.ok:
             return self._json(res)
+        if auth and res.status_code == 401:
+            raise BackendError(SESSION_EXPIRED)
         raise BackendError(f"{res.status_code}: {self._message(res)}")
-
-    def _send(self, method: str, path: str, **kwargs) -> requests.Response:
-        return self._session.request(method, f"{self._base_url}{path}", **kwargs)
-
-    def _session_expired(self, res: requests.Response, path: str) -> bool:
-        """Un 401 fuera del login, habiendo iniciado sesión antes, indica que el token expiró o se cerró."""
-        return res.status_code == 401 and self._credentials is not None and path != LOGIN_PATH
 
     @staticmethod
     def _json(res: requests.Response):

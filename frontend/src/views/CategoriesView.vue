@@ -6,6 +6,7 @@ import CategoryCard from "../components/CategoryCard.vue";
 import ExportButton from "../components/reports/ExportButton.vue";
 import CategoryEditModal from "../components/categories/CategoryEditModal.vue";
 import CategoryDeleteDialog from "../components/categories/CategoryDeleteDialog.vue";
+import PageHeader from "../components/ui/PageHeader.vue";
 
 const categories = ref<Category[]>([]);
 const isLoading = ref(true);
@@ -43,47 +44,48 @@ onMounted(loadCategories);
 </script>
 
 <template>
-  <section class="mx-auto max-w-5xl px-4 py-8">
-    <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-gray-900">Categorías</h1>
-      <div class="flex gap-2">
-        <ExportButton />
-        <router-link to="/articles/new" class="cartoon-btn-secondary px-4 py-2 text-sm">
-          + Artículo
-        </router-link>
-        <router-link to="/categories/new" class="cartoon-btn-primary px-4 py-2 text-sm">
-          + Categoría
-        </router-link>
-      </div>
-    </div>
+  <section class="mx-auto max-w-6xl px-4 py-12 md:px-8">
+    <PageHeader
+      title="Los cuartos de tu casa"
+      subtitle="Cada cuarto tiene su guardián. Entra a uno para ver todo lo que guarda."
+    >
+      <ExportButton />
+      <router-link to="/articles/new" class="ui-btn ui-btn-primary">Guardar algo nuevo</router-link>
+    </PageHeader>
 
-    <p v-if="isLoading" class="text-gray-500">Cargando categorías...</p>
-    <p v-else-if="errorMessage" class="text-red-600">{{ errorMessage }}</p>
-    <p v-else-if="categories.length === 0" class="text-gray-500">
-      No hay categorías registradas todavía.
-    </p>
+    <p v-if="isLoading" class="text-[var(--l-muted)]">Los guardianes están abriendo las puertas...</p>
+    <p v-else-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
 
-    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-      <div v-for="category in categories" :key="category.id" class="relative">
-        <router-link :to="`/categories/${category.id}/articles`" class="block">
+    <div v-else class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        v-for="(category, index) in categories"
+        :key="category.id"
+        class="flex flex-col gap-3"
+        :class="index % 3 === 1 ? 'lg:mt-10' : ''"
+      >
+        <router-link
+          :to="`/categories/${category.id}/articles`"
+          class="block rounded-[var(--l-radius)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--l-accent)]"
+        >
           <CategoryCard :category="category" />
         </router-link>
-
-        <div class="absolute right-2 top-2 flex gap-1">
-          <button
-            class="rounded-md border border-slate-900 bg-white px-2 py-1 text-xs font-semibold text-slate-900 shadow-sm hover:bg-gray-50"
-            @click.stop.prevent="editingCategory = category"
-          >
-            Editar
+        <div class="flex gap-2">
+          <button type="button" class="ui-btn ui-btn-sm ui-btn-ghost" @click="editingCategory = category">
+            Arreglar
           </button>
-          <button
-            class="rounded-md border border-rose-400 bg-white px-2 py-1 text-xs font-semibold text-rose-600 shadow-sm hover:bg-rose-50"
-            @click.stop.prevent="deletingCategory = category"
-          >
-            Eliminar
+          <button type="button" class="ui-btn ui-btn-sm ui-btn-danger" @click="deletingCategory = category">
+            Demoler
           </button>
         </div>
       </div>
+
+      <router-link to="/categories/new" class="ui-dashed-add" :class="categories.length % 3 === 1 ? 'lg:mt-10' : ''">
+        <span class="text-3xl font-semibold" aria-hidden="true">+</span>
+        <span class="font-semibold text-[var(--l-ink)]">Construir un cuarto nuevo</span>
+        <span class="text-sm">
+          {{ categories.length === 0 ? "Tu casa todavía no tiene cuartos." : "Con su propio guardián." }}
+        </span>
+      </router-link>
     </div>
 
     <CategoryEditModal
