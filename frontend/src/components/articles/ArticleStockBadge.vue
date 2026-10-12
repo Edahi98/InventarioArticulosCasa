@@ -4,31 +4,18 @@ import { computed } from "vue";
 const props = defineProps<{ stock: number }>();
 
 const label = computed(() => {
-  if (props.stock === 1) {
-    return "Artículo único";
-  }
-  if (props.stock <= 0) {
-    return "Agotado";
-  }
+  if (props.stock === 1) return "Artículo único";
+  if (props.stock <= 0) return "Agotado";
   return `${props.stock} unidades`;
 });
 
-const badgeClass = computed(() => {
-  if (props.stock === 1) {
-    return "border-2 border-black bg-purple-200 text-purple-900";
-  }
-  if (props.stock <= 0) {
-    return "border-2 border-black bg-rose-200 text-rose-900";
-  }
-  return "border-2 border-black bg-amber-200 text-amber-900";
+const tone = computed(() => {
+  if (props.stock === 1) return "ui-chip-lilac";
+  if (props.stock <= 0) return "ui-chip-rose";
+  return "ui-chip-mint";
 });
 </script>
 
 <template>
-  <span
-    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-    :class="badgeClass"
-  >
-    {{ label }}
-  </span>
+  <span class="ui-chip" :class="tone">{{ label }}</span>
 </template>

@@ -43,23 +43,24 @@ async function handleFileChange(event: Event): Promise<void> {
 
 <template>
   <div class="flex flex-col gap-2">
-    <label class="text-sm font-medium text-gray-700">Imagen</label>
+    <span class="ui-label">Foto</span>
 
-    <img
-      v-if="previewUrl"
-      :src="previewUrl"
-      alt="Vista previa"
-      class="h-40 w-40 rounded-md object-cover"
-    />
+    <label
+      class="ui-dashed-add cursor-pointer !min-h-[10rem] focus-within:border-[var(--l-accent)]"
+      :class="{ '!border-solid': previewUrl }"
+    >
+      <img
+        v-if="previewUrl"
+        :src="previewUrl"
+        alt="Vista previa"
+        class="h-32 w-32 rounded-xl border-4 border-[#fffaf2] object-cover"
+      />
+      <span class="text-sm font-semibold">
+        {{ isUploading ? "Subiendo la foto..." : previewUrl ? "Cambiar la foto" : "Toca para elegir una foto" }}
+      </span>
+      <input type="file" accept="image/*" class="sr-only" @change="handleFileChange" />
+    </label>
 
-    <input
-      type="file"
-      accept="image/*"
-      class="block w-full text-sm text-gray-600"
-      @change="handleFileChange"
-    />
-
-    <p v-if="isUploading" class="text-sm text-gray-500">Subiendo imagen...</p>
-    <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
+    <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
   </div>
 </template>

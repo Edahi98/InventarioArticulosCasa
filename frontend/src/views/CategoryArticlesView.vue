@@ -7,6 +7,7 @@ import { getCategoryByIdUseCase } from "../core/usecases/getCategoryById.js";
 import { listArticlesByCategoryUseCase } from "../core/usecases/listArticlesByCategory.js";
 import ArticleRow from "../components/articles/ArticleRow.vue";
 import ArticleActions from "../components/articles/ArticleActions.vue";
+import PageHeader from "../components/ui/PageHeader.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -39,36 +40,48 @@ function handleArticleDeleted(id: number): void {
 </script>
 
 <template>
-  <section class="mx-auto max-w-5xl px-4 py-8">
-    <p v-if="isLoading" class="text-gray-500">Cargando artículos...</p>
-    <p v-else-if="errorMessage" class="text-red-600">{{ errorMessage }}</p>
+  <section class="mx-auto max-w-6xl px-4 py-12 md:px-8">
+    <p v-if="isLoading" class="text-[var(--l-muted)]">El guardián está abriendo la puerta...</p>
+    <p v-else-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
 
     <template v-else>
-      <div class="mb-6 flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-gray-900">
-          Artículos en "{{ category?.name }}"
-        </h1>
-        <div class="flex gap-2">
-          <router-link :to="`/categories/${categoryId}/edit`" class="cartoon-btn-secondary px-4 py-2 text-sm">
-            Editar categoría
-          </router-link>
-          <router-link :to="{ path: '/articles/new', query: { categoryId } }" class="cartoon-btn-primary px-4 py-2 text-sm">
-            + Artículo
-          </router-link>
-        </div>
-      </div>
+      <PageHeader
+        :title="category?.name ?? 'Cuarto'"
+        :subtitle="category?.description || 'Un cuarto sin descripción, por ahora.'"
+        back-to="/categories"
+        back-label="Todos los cuartos"
+      >
+        <router-link :to="`/categories/${categoryId}/edit`" class="ui-btn ui-btn-ghost">Arreglar el cuarto</router-link>
+        <router-link :to="{ path: '/articles/new', query: { categoryId } }" class="ui-btn ui-btn-primary">
+          Guardar algo aquí
+        </router-link>
+      </PageHeader>
 
-      <p v-if="articles.length === 0" class="text-gray-500">
-        Esta categoría todavía no tiene artículos.
+      <p v-if="articles.length === 0" class="mb-8 max-w-[52ch] leading-relaxed text-[var(--l-muted)]">
+        Este cuarto está vacío. Su guardián espera el primer artículo.
       </p>
 
-      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-        <div v-for="article in articles" :key="article.id" class="flex flex-col gap-2">
-          <button class="text-left" @click="router.push(`/articles/${article.id}`)">
+      <div class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          v-for="(article, index) in articles"
+          :key="article.id"
+          class="flex flex-col gap-3"
+          :class="index % 3 === 1 ? 'lg:mt-8' : ''"
+        >
+          <button
+            type="button"
+            class="block rounded-[var(--l-radius)] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--l-accent)]"
+            @click="router.push(`/articles/${article.id}`)"
+          >
             <ArticleRow :article="article" />
           </button>
           <ArticleActions :article="article" @deleted="handleArticleDeleted" />
         </div>
+
+        <router-link :to="{ path: '/articles/new', query: { categoryId } }" class="ui-dashed-add">
+          <span class="text-3xl font-semibold" aria-hidden="true">+</span>
+          <span class="font-semibold text-[var(--l-ink)]">Guardar algo nuevo aquí</span>
+        </router-link>
       </div>
     </template>
   </section>

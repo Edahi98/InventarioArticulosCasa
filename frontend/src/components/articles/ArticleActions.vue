@@ -3,7 +3,7 @@ import { ref } from "vue";
 import type { Article } from "../../core/domain/article.js";
 import ArticleDeleteModal from "./ArticleDeleteModal.vue";
 
-const props = defineProps<{ article: Article }>();
+defineProps<{ article: Article }>();
 const emit = defineEmits<{ deleted: [id: number] }>();
 
 const isDeleteModalOpen = ref(false);
@@ -16,18 +16,11 @@ function handleDeleted(id: number): void {
 
 <template>
   <div class="flex gap-2">
-    <router-link
-      :to="`/articles/${article.id}/edit`"
-      class="cartoon-btn-secondary px-3 py-1.5 text-sm"
-      @click.stop
-    >
-      Editar
+    <router-link :to="`/articles/${article.id}/edit`" class="ui-btn ui-btn-sm ui-btn-ghost" @click.stop>
+      <font-awesome-icon icon="pen" /> Editar
     </router-link>
-    <button
-      class="cartoon-btn-danger px-3 py-1.5 text-sm"
-      @click.stop="isDeleteModalOpen = true"
-    >
-      Eliminar
+    <button type="button" class="ui-btn ui-btn-sm ui-btn-danger" @click.stop="isDeleteModalOpen = true">
+      <font-awesome-icon icon="trash" /> Eliminar
     </button>
 
     <ArticleDeleteModal

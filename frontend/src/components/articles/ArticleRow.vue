@@ -1,39 +1,36 @@
 <script setup lang="ts">
 import type { Article } from "../../core/domain/article.js";
+import { FALLBACK_IMAGE, handleImageError } from "../../utils/fallbackImage.js";
 import ArticleStockBadge from "./ArticleStockBadge.vue";
 
-const FALLBACK_IMAGE =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Crect width='300' height='300' fill='%23e2e8f0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='18' fill='%2394a3b8'%3ESin imagen%3C/text%3E%3C/svg%3E";
-
-defineProps<{ article: Article }>();
-
-function handleImageError(event: Event): void {
-  const img = event.target as HTMLImageElement;
-  img.src = FALLBACK_IMAGE;
-}
+defineProps<{
+  article: Pick<Article, "name" | "description" | "imageUrl" | "stock" | "needsRepair">;
+}>();
 </script>
 
 <template>
-  <article class="cartoon-card flex flex-col overflow-hidden text-left">
-    <img
-      :src="article.imageUrl || FALLBACK_IMAGE"
-      :alt="article.name"
-      class="h-40 w-full border-b-4 border-slate-900 object-cover"
-      @error="handleImageError"
-    />
-    <div class="flex flex-1 flex-col gap-2 p-4">
-      <div class="flex items-start justify-between gap-2">
-        <h3 class="text-lg font-extrabold text-slate-900">{{ article.name }}</h3>
+  <article
+    class="ui-toy flex h-full flex-col overflow-hidden bg-[var(--l-surface)] text-left transition-transform duration-200 hover:-translate-y-1 hover:rotate-[0.6deg]"
+  >
+    <div class="aspect-[4/3] overflow-hidden bg-[var(--l-surface-2)]">
+      <img
+        :src="article.imageUrl || FALLBACK_IMAGE"
+        :alt="article.name"
+        class="h-full w-full object-cover"
+        @error="handleImageError"
+      />
+    </div>
+    <div class="flex flex-1 flex-col gap-3 p-5">
+      <h3 class="text-lg font-semibold leading-snug tracking-tight">{{ article.name }}</h3>
+      <p class="line-clamp-2 text-sm leading-relaxed text-[var(--l-muted)]">
+        {{ article.description || "Sin descripción" }}
+      </p>
+      <div class="mt-auto flex flex-wrap gap-2">
         <ArticleStockBadge :stock="article.stock" />
+        <span v-if="article.needsRepair" class="ui-chip ui-chip-sun">
+          <font-awesome-icon icon="wrench" /> Para reparar
+        </span>
       </div>
-      <p class="text-sm text-slate-600">{{ article.description }}</p>
-      <span
-        v-if="article.needsRepair"
-        class="mt-1 inline-flex items-center rounded-full border-2 border-black bg-orange-200 px-2 py-0.5 text-xs font-bold text-orange-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-      >
-        <font-awesome-icon icon="wrench" class="mr-1" />
-        Reparación
-      </span>
     </div>
   </article>
 </template>
