@@ -8,36 +8,66 @@ export default class ArticleBuilder {
   private stock = 0;
   private needsRepair = false;
 
+  /**
+   * @param name - Nombre del artículo; se recortan los espacios.
+   * @returns El mismo builder.
+   */
   setName(name: string): this {
     this.name = name?.trim() ?? "";
     return this;
   }
 
+  /**
+   * @param description - Descripción; se recortan los espacios.
+   * @returns El mismo builder.
+   */
   setDescription(description: string): this {
     this.description = description?.trim() ?? "";
     return this;
   }
 
+  /**
+   * @param imageUrl - URL de la imagen; se recortan los espacios.
+   * @returns El mismo builder.
+   */
   setImageUrl(imageUrl: string): this {
     this.imageUrl = imageUrl?.trim() ?? "";
     return this;
   }
 
+  /**
+   * @param categoryId - Identificador de la categoría.
+   * @returns El mismo builder.
+   */
   setCategoryId(categoryId: number): this {
     this.categoryId = categoryId;
     return this;
   }
 
+  /**
+   * @param stock - Cantidad en inventario.
+   * @returns El mismo builder.
+   */
   setStock(stock: number): this {
     this.stock = stock;
     return this;
   }
 
+  /**
+   * @param needsRepair - Si el artículo necesita reparación.
+   * @returns El mismo builder.
+   */
   setNeedsRepair(needsRepair: boolean): this {
     this.needsRepair = needsRepair;
     return this;
   }
 
+  /**
+   * Valida los datos y construye el artículo.
+   *
+   * @returns El artículo listo para insertar.
+   * @throws Error si falta el nombre, la categoría o la imagen, o si el stock no es un entero no negativo.
+   */
   build(): NewArticle {
     if (!this.name) {
       throw new Error("El nombre del artículo es obligatorio.");

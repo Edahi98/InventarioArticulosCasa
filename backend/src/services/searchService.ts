@@ -19,6 +19,12 @@ class SearchService {
   private lastIndexed = 0;
   private readonly TTL_MS = 30_000;
 
+  /**
+   * Crea un índice MiniSearch con los documentos dados.
+   *
+   * @param docs - Artículos con el nombre de su categoría.
+   * @returns El índice listo para buscar (prefijo y coincidencia aproximada).
+   */
   private buildIndex(docs: SearchDocument[]): MiniSearch<SearchDocument> {
     const ms = new MiniSearch<SearchDocument>({
       fields: ["name", "description"],
@@ -29,6 +35,11 @@ class SearchService {
     return ms;
   }
 
+  /**
+   * Devuelve el índice vigente; lo reconstruye desde la base de datos si venció o fue invalidado.
+   *
+   * @returns El índice de búsqueda.
+   */
   private async getIndex(): Promise<MiniSearch<SearchDocument>> {
     const now = Date.now();
     if (this.index && now - this.lastIndexed < this.TTL_MS) {
@@ -67,6 +78,12 @@ class SearchService {
     return this.index;
   }
 
+  /**
+   * Busca artículos por nombre o descripción.
+   *
+   * @param query - Texto a buscar; si está vacío no se consulta nada.
+   * @returns Los artículos que coinciden, del más al menos relevante.
+   */
   async search(query: string): Promise<SearchDocument[]> {
     if (!query.trim()) return [];
     const ms = await this.getIndex();
@@ -74,6 +91,10 @@ class SearchService {
     return results as unknown as SearchDocument[];
   }
 
+  /**
+   * Descarta el índice para que se reconstruya en la siguiente búsqueda.
+   * Debe llamarse tras crear, editar o borrar artículos y categorías.
+   */
   invalidate(): void {
     this.index = null;
     this.lastIndexed = 0;

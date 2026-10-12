@@ -1,14 +1,21 @@
 import { Router, type Request, type Response } from "express";
 import { validationService } from "../services/validationService.js";
+import { sessionService } from "../services/sessionService.js";
 import { asyncHandler } from "../middleware/errorHandler.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 import UserCredentialsVerifier from "../verefiers/userCredentialsVerifier.js";
-import TokenIssuer from "../../src/token/tokenIsUser.js"
+import TokenIssuer from "../token/tokenIsUser.js";
 
 const userCredentialsVerifier = new UserCredentialsVerifier();
 const tokenIssuer = new TokenIssuer();
 
 export const authRoutes = Router();
 
+/**
+ * POST /auth/login — valida las credenciales, registra la sesión en la base de datos y devuelve un token.
+ *
+ * @throws AppError 400 si faltan campos, 401 si son incorrectas.
+ */
 authRoutes.post(
   "/login",
   asyncHandler(async (req: Request, res: Response) => {
@@ -17,7 +24,23 @@ authRoutes.post(
     const validatedPassword = validationService.requireNonEmptyString(password, "password");
 
     const user = await userCredentialsVerifier.verify(validatedUsername, validatedPassword);
-    const token = tokenIssuer.issue(user.id, user.username);
+    const { token, expiresAt } = tokenIssuer.issue(user.id, user.username);
+    await sessionService.create(user.id, token, expiresAt);
     res.status(200).json({ token });
+  }),
+);
+
+/**
+ * POST /auth/logout — cierra la sesión del token recibido; el token deja de ser válido de inmediato.
+ *
+ * Responde 204.
+ * @throws AppError 401 si el token falta, es inválido o su sesión ya no existe.
+ */
+authRoutes.post(
+  "/logout",
+  authMiddleware,
+  asyncHandler(async (req: Request, res: Response) => {
+    await sessionService.revoke(req.token ?? "");
+    res.status(204).send();
   }),
 );

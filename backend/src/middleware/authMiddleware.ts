@@ -1,9 +1,7 @@
 import jwt from "jsonwebtoken";
-import { eq } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "./errorHandler.js";
-import { db } from "../db/client.js";
-import { users } from "../db/schema/users.js";
+import { sessionService } from "../services/sessionService.js";
 
 export interface AuthTokenPayload {
   sub: string;
@@ -14,10 +12,17 @@ declare global {
   namespace Express {
     interface Request {
       auth?: AuthTokenPayload;
+      token?: string;
     }
   }
 }
 
+/**
+ * Lee el secreto con el que se firman los tokens.
+ *
+ * @returns El valor de `JWT_SECRET`.
+ * @throws AppError 500 si no está configurado.
+ */
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -26,6 +31,15 @@ export function getJwtSecret(): string {
   return secret;
 }
 
+/**
+ * Exige un token `Bearer` con firma válida y una sesión vigente en la base de datos.
+ * Se ejecuta en cada petición, de modo que cerrar una sesión o borrar al usuario invalida el token al instante.
+ * Deja el payload en `req.auth` y el token en `req.token`.
+ *
+ * @param req - Petición con el encabezado `Authorization`.
+ * @param _res - Respuesta (no se usa).
+ * @param next - Continúa la cadena; recibe un AppError 401 si el token falta, es inválido, expiró o su sesión fue cerrada.
+ */
 export async function authMiddleware(
   req: Request,
   _res: Response,
@@ -39,18 +53,25 @@ export async function authMiddleware(
 
   const token = header.slice("Bearer ".length).trim();
 
+  let payload: AuthTokenPayload;
   try {
-    const payload = jwt.verify(token, getJwtSecret()) as AuthTokenPayload;
-
-    const [user] = await db.select().from(users).where(eq(users.id, Number(payload.sub)));
-    if (!user) {
-      next(new AppError("La sesión ya no es válida: el usuario fue eliminado.", 401));
-      return;
-    }
-
-    req.auth = payload;
-    next();
+    payload = jwt.verify(token, getJwtSecret()) as AuthTokenPayload;
   } catch {
     next(new AppError("Token de autenticación inválido o expirado.", 401));
+    return;
   }
+
+  try {
+    if (!(await sessionService.isActive(Number(payload.sub), token))) {
+      next(new AppError("La sesión no es válida o fue cerrada.", 401));
+      return;
+    }
+  } catch (error) {
+    next(error);
+    return;
+  }
+
+  req.auth = payload;
+  req.token = token;
+  next();
 }

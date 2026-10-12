@@ -71,8 +71,14 @@ export class AuthenticatedHttpClient {
     this.storage.setToken(token);
   }
 
-  logout(): void {
-    this.storage.clearToken();
+  async logout(): Promise<void> {
+    try {
+      await this.request<void>("/auth/logout", { method: "POST" });
+    } catch {
+      return;
+    } finally {
+      this.storage.clearToken();
+    }
   }
 
   isAuthenticated(): boolean {

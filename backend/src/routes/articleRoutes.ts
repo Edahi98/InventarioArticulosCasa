@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
-import { storage } from "../storage/client.js";
+import { cloudinaryService } from "../services/cloudinaryService.js";
 import { validationService } from "../services/validationService.js";
 import { articleValidationService } from "../services/articleValidationService.js";
 import { AppError, asyncHandler } from "../middleware/errorHandler.js";
@@ -8,11 +8,16 @@ import { deleteArticle } from "../controllers/articleDeleteController.js";
 import ArticleService from "../services/articleService.js";
 
 const articleService = new ArticleService();
-// 4MB, por debajo del límite de payload de las funciones serverless de Vercel (~4.5MB)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 * 1024 * 1024 } });
 
 export const articleRoutes = Router();
 
+/**
+ * POST /articles/upload — sube una imagen (campo `image`, máx. 4MB) a Cloudinary.
+ *
+ * @returns `{ id, url }` de la imagen subida.
+ * @throws AppError 400 si no se envía imagen.
+ */
 articleRoutes.post(
   "/upload",
   upload.single("image"),
@@ -20,11 +25,14 @@ articleRoutes.post(
     if (!req.file) {
       throw new AppError("No se recibió ninguna imagen.", 400);
     }
-    const uploaded = await storage.upload(req.file.buffer, req.file.originalname);
+    const uploaded = await cloudinaryService.uploadFromBuffer(req.file.buffer);
     res.status(200).json(uploaded);
   }),
 );
 
+/**
+ * GET /articles?categoryId= — lista artículos, opcionalmente de una categoría.
+ */
 articleRoutes.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
@@ -34,6 +42,11 @@ articleRoutes.get(
   }),
 );
 
+/**
+ * GET /articles/:id — devuelve un artículo.
+ *
+ * @throws AppError 404 si no existe.
+ */
 articleRoutes.get(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
@@ -46,6 +59,12 @@ articleRoutes.get(
   }),
 );
 
+/**
+ * POST /articles — crea un artículo.
+ *
+ * Responde 201 con el artículo creado.
+ * @throws AppError 400 si los datos no son válidos, 404 si la categoría no existe, 409 si el nombre ya existe en la categoría.
+ */
 articleRoutes.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
@@ -69,6 +88,11 @@ articleRoutes.post(
   }),
 );
 
+/**
+ * PUT /articles/:id — reemplaza los datos de un artículo.
+ *
+ * @throws AppError 400 si los datos no son válidos, 404 si el artículo o la categoría no existen.
+ */
 articleRoutes.put(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {

@@ -1,6 +1,11 @@
 import bcrypt from "bcryptjs";
 import { db, users } from "../db/client.js";
 
+/**
+ * Crea un usuario con la contraseña cifrada.
+ *
+ * Uso: `tsx src/scripts/createUser.ts <username> <password>`.
+ */
 async function main(): Promise<void> {
   const [username, password] = process.argv.slice(2);
   if (!username || !password) {

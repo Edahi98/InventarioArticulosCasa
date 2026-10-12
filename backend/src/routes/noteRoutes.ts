@@ -8,6 +8,11 @@ const noteService = new NoteService();
 
 export const noteRoutes = Router();
 
+/**
+ * GET /notes?articleId= — lista las notas de un artículo; sin `articleId` lista todas.
+ *
+ * @throws AppError 400 si `articleId` no es un identificador válido.
+ */
 noteRoutes.get(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
@@ -22,6 +27,11 @@ noteRoutes.get(
   }),
 );
 
+/**
+ * GET /notes/:id — devuelve una nota.
+ *
+ * @throws AppError 404 si no existe.
+ */
 noteRoutes.get(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
@@ -34,6 +44,12 @@ noteRoutes.get(
   }),
 );
 
+/**
+ * POST /notes — crea una nota en un artículo existente.
+ *
+ * Responde 201 con la nota creada.
+ * @throws AppError 400 si faltan campos, 404 si el artículo no existe.
+ */
 noteRoutes.post(
   "/",
   asyncHandler(async (req: Request, res: Response) => {
@@ -52,6 +68,11 @@ noteRoutes.post(
   }),
 );
 
+/**
+ * PUT /notes/:id — actualiza título y descripción.
+ *
+ * @throws AppError 400 si falta el título, 404 si no existe.
+ */
 noteRoutes.put(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
@@ -67,6 +88,11 @@ noteRoutes.put(
   }),
 );
 
+/**
+ * DELETE /notes/:id — elimina una nota.
+ *
+ * Responde 204.
+ */
 noteRoutes.delete(
   "/:id",
   asyncHandler(async (req: Request, res: Response) => {
@@ -78,6 +104,11 @@ noteRoutes.delete(
 
 export const articleNoteRoutes = Router();
 
+/**
+ * GET /articles/:articleId/notes — lista las notas de un artículo existente.
+ *
+ * @throws AppError 404 si el artículo no existe.
+ */
 articleNoteRoutes.get(
   "/:articleId/notes",
   asyncHandler(async (req: Request, res: Response) => {

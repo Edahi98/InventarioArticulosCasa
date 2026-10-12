@@ -5,10 +5,21 @@ import CategoryBuilder from "../builders/categoryBuilder.js";
 import { searchService } from "./searchService.js";
 
 export class CategoryService {
+  /**
+   * Lista todas las categorías.
+   *
+   * @returns Las categorías.
+   */
   async list(): Promise<Category[]> {
     return db.select().from(categories);
   }
 
+  /**
+   * Busca una categoría por id.
+   *
+   * @param id - Identificador de la categoría.
+   * @returns La categoría, o `undefined` si no existe.
+   */
   async getById(id: number): Promise<Category | undefined> {
     const [result] = await db
       .select()
@@ -17,6 +28,13 @@ export class CategoryService {
     return result;
   }
 
+  /**
+   * Crea una categoría e invalida el índice de búsqueda.
+   *
+   * @param input - Nombre (obligatorio), descripción e imagen opcionales.
+   * @returns La categoría creada.
+   * @throws Error si el nombre está vacío.
+   */
   async create(input: {
     name: string;
     description?: string;
@@ -36,6 +54,14 @@ export class CategoryService {
     return created;
   }
 
+  /**
+   * Reemplaza los datos de una categoría e invalida el índice de búsqueda.
+   *
+   * @param id - Identificador de la categoría.
+   * @param input - Nuevos datos de la categoría.
+   * @returns La categoría actualizada, o `undefined` si no existe.
+   * @throws Error si el nombre está vacío.
+   */
   async update(
     id: number,
     input: { name: string; description?: string; imageUrl?: string },
@@ -55,6 +81,11 @@ export class CategoryService {
     return updated;
   }
 
+  /**
+   * Elimina una categoría e invalida el índice de búsqueda.
+   *
+   * @param id - Identificador de la categoría.
+   */
   async remove(id: number): Promise<void> {
     await db.delete(categories).where(eq(categories.id, id));
     searchService.invalidate();

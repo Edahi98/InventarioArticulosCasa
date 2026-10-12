@@ -4,8 +4,8 @@ import { authenticatedHttpClient } from "./services/http/AuthenticatedHttpClient
 
 const router = useRouter();
 
-function handleLogout(): void {
-  authenticatedHttpClient.logout();
+async function handleLogout(): Promise<void> {
+  await authenticatedHttpClient.logout();
   router.push("/login");
 }
 </script>
