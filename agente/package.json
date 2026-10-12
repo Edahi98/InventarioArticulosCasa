@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "uv run python main.py",
+    "telegram": "uv run python main.py telegram",
     "typecheck": "uv run python -m compileall -q src main.py"
   }
 }
