@@ -11,6 +11,7 @@
     "build": "npx rimraf dist && tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
     "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "user:create": "tsx src/scripts/createUser.ts",
     "data:download": "tsx src/scripts/downloadData.ts",
