@@ -10,6 +10,7 @@ from telegram.ext import ContextTypes
 from src.agent.chat_agent import AgentChat
 from src.backend import Backend
 from src.constantes.constantes_bot import (
+    BEAR_FILE,
     CAPTION_LIMIT,
     LINK_REQUIRED,
     LINKED,
@@ -23,6 +24,7 @@ from src.constantes.constantes_bot import (
     UPLOADING,
     WELCOME,
 )
+from src.constantes.constantes_imagenes import ASSETS_DIR
 from src.decorators.decorator_dto_validator import DtoValidator
 from src.dtos.dto_bot_session import BotSessionDto
 from src.dtos.dto_chat import ChatDto
@@ -51,6 +53,7 @@ class BotHandlers:
         self._api = api
         self._sessions = sessions
         self._web_url = web_url
+        self._bear = (ASSETS_DIR / BEAR_FILE).read_bytes()
 
     async def start(self, update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         if ctx.args:
@@ -175,11 +178,12 @@ class BotHandlers:
             return
 
         logger.info("reply=%r  images=%d", reply[:80], len(images))
-        captioned = bool(images) and 0 < len(reply) <= CAPTION_LIMIT
+        pictures = images or ([self._bear] if reply else [])
+        captioned = bool(pictures) and 0 < len(reply) <= CAPTION_LIMIT
         await (thinking.delete() if captioned or not reply else thinking.edit_text(reply))
-        for i in range(0, len(images), MAX_ALBUM):
+        for i in range(0, len(pictures), MAX_ALBUM):
             caption = reply if captioned and i == 0 else None
-            await self._send_album(update, images[i:i + MAX_ALBUM], caption)
+            await self._send_album(update, pictures[i:i + MAX_ALBUM], caption)
 
     @staticmethod
     async def _send_album(update: Update, images: list[bytes], caption: str | None = None) -> None:

@@ -1,5 +1,6 @@
 MAX_ALBUM = 10
 CAPTION_LIMIT = 1024
+BEAR_FILE = "oso_guardian.png"
 
 PROCESSING = "⏳ Procesando..."
 UPLOADING = "⏳ Subiendo imagen..."
