@@ -2,6 +2,8 @@ import jwt from "jsonwebtoken";
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "./errorHandler.js";
 import { sessionService } from "../services/sessionService.js";
+import { BACKEND_AUDIENCE, JWT_ALGORITHM, JWT_ISSUER } from "../token/jwtConfig.js";
+import { jwtKeys } from "../token/jwtKeys.js";
 
 export interface AuthTokenPayload {
   sub: string;
@@ -18,21 +20,7 @@ declare global {
 }
 
 /**
- * Lee el secreto con el que se firman los tokens.
- *
- * @returns El valor de `JWT_SECRET`.
- * @throws AppError 500 si no está configurado.
- */
-export function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    throw new AppError("JWT_SECRET no está configurado en el servidor.", 500);
-  }
-  return secret;
-}
-
-/**
- * Exige un token `Bearer` con firma válida y una sesión vigente en la base de datos.
+ * Exige un token `Bearer` RS256 con firma, emisor y destinatario válidos, y una sesión vigente en la base de datos.
  * Se ejecuta en cada petición, de modo que cerrar una sesión o borrar al usuario invalida el token al instante.
  * Deja el payload en `req.auth` y el token en `req.token`.
  *
@@ -55,7 +43,11 @@ export async function authMiddleware(
 
   let payload: AuthTokenPayload;
   try {
-    payload = jwt.verify(token, getJwtSecret()) as AuthTokenPayload;
+    payload = jwt.verify(token, jwtKeys.publicKey(), {
+      algorithms: [JWT_ALGORITHM],
+      issuer: JWT_ISSUER,
+      audience: BACKEND_AUDIENCE,
+    }) as AuthTokenPayload;
   } catch {
     next(new AppError("Token de autenticación inválido o expirado.", 401));
     return;

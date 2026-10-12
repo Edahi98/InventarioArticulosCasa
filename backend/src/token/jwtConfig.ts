@@ -1,0 +1,9 @@
+export const JWT_ALGORITHM = "RS256";
+export const JWT_ISSUER = process.env.JWT_ISSUER ?? "inventario-backend";
+export const BACKEND_AUDIENCE = "inventario-backend";
+export const AGENT_AUDIENCE = "inventario-agente";
+export const TOKEN_AUDIENCES = [BACKEND_AUDIENCE, AGENT_AUDIENCE];
+export const TOKEN_TTL_SECONDS = 60 * 60;
+export const BOT_TOKEN_TTL_SECONDS = 12 * 60 * 60;
+export const LINK_CODE_TTL_SECONDS = 5 * 60;
+export const JWKS_CACHE_SECONDS = 300;
