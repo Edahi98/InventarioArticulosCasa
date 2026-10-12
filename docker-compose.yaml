@@ -20,7 +20,9 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: inventario-backend
     ports:
       - "4000:4000"
@@ -42,7 +44,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         # Sobreescribir con la URL pública real del backend en despliegues fuera de localhost
         # (ej. VITE_API_URL=https://mi-servidor.com:4000 en un .env junto a este compose)
