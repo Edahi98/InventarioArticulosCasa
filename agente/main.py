@@ -68,7 +68,8 @@ class InventoryAgentApp:
         from src.api.server_api import ApiServer
         port = int(os.getenv("PORT", "5000"))
         print(f"Servidor Flask escuchando en :{port}")
-        ApiServer(self._chat, self._api).app.run(host="0.0.0.0", port=port)
+        force_https = os.getenv("FORCE_HTTPS", "false").lower() == "true"
+        ApiServer(self._chat, self._api, force_https).app.run(host="0.0.0.0", port=port)
 
     def _run_telegram(self) -> None:
         bot = (

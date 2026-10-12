@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
 
 from src.agent.chat_agent import AgentChat
 from src.backend import Backend
@@ -11,6 +12,13 @@ from src.constantes.constantes_limites import (
     TOO_MANY_REQUESTS,
     UPLOAD_LIMIT,
 )
+from src.constantes.constantes_seguridad import (
+    CONTENT_SECURITY_POLICY,
+    FRAME_OPTIONS,
+    HSTS_MAX_AGE,
+    PERMISSIONS_POLICY,
+    REFERRER_POLICY,
+)
 from src.constantes.constantes_validacion import MAX_UPLOAD_BYTES
 from src.decorators.decorator_dto_validator import DtoValidator
 from src.dtos.dto_chat import ChatDto
@@ -19,13 +27,22 @@ from src.utilerias.util_codec import Codec
 
 
 class ApiServer:
-    """Aplicación Flask con DTO y límite de peticiones por IP: /health, /chat (agente + fichas) y /upload."""
+    """Flask con cabeceras de seguridad, DTO y límite por IP: /health, /chat (agente + fichas) y /upload."""
 
-    def __init__(self, chat: AgentChat, api: Backend) -> None:
+    def __init__(self, chat: AgentChat, api: Backend, force_https: bool = False) -> None:
         self._chat = chat
         self._api = api
         self.app = Flask(__name__)
         self.app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES + 1024
+        self._talisman = Talisman(
+            self.app,
+            force_https=force_https,
+            frame_options=FRAME_OPTIONS,
+            content_security_policy=CONTENT_SECURITY_POLICY,
+            referrer_policy=REFERRER_POLICY,
+            permissions_policy=PERMISSIONS_POLICY,
+            strict_transport_security_max_age=HSTS_MAX_AGE,
+        )
         self._limiter = Limiter(
             get_remote_address,
             app=self.app,
@@ -35,7 +52,8 @@ class ApiServer:
         )
         self.app.register_error_handler(429, self.too_many_requests)
         self.app.register_error_handler(413, self.too_large)
-        self.app.add_url_rule("/health", view_func=self._limiter.exempt(self.health), methods=["GET"])
+        health = self._limiter.exempt(self._talisman(force_https=False)(self.health))
+        self.app.add_url_rule("/health", view_func=health, methods=["GET"])
         self.app.add_url_rule("/chat", view_func=self._limiter.limit(CHAT_LIMIT)(self.chat), methods=["POST"])
         self.app.add_url_rule("/upload", view_func=self._limiter.limit(UPLOAD_LIMIT)(self.upload), methods=["POST"])
 
