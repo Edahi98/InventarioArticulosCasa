@@ -2,8 +2,10 @@
 import { onMounted, ref } from "vue";
 import type { SystemUser } from "../core/domain/user.js";
 import { listUsersUseCase } from "../core/usecases/listUsers.js";
+import { roomTone } from "../utils/roomTone.js";
 import UserFormModal from "../components/users/UserFormModal.vue";
 import UserDeleteDialog from "../components/users/UserDeleteDialog.vue";
+import PageHeader from "../components/ui/PageHeader.vue";
 
 const usersList = ref<SystemUser[]>([]);
 const isLoading = ref(true);
@@ -44,54 +46,67 @@ onMounted(loadUsers);
 </script>
 
 <template>
-  <section class="mx-auto max-w-3xl px-4 py-8">
-    <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-slate-900">
-        <font-awesome-icon icon="user" class="mr-1" /> Gestión de usuarios
-      </h1>
-      <button class="cartoon-btn-primary" @click="isCreating = true">+ Usuario</button>
-    </div>
+  <section class="mx-auto max-w-5xl px-4 py-12 md:px-8">
+    <PageHeader
+      title="Quién vive en la casa"
+      subtitle="Los habitantes que tienen llave para entrar al inventario."
+    />
 
-    <p v-if="isLoading" class="text-slate-500">Cargando usuarios...</p>
-    <p v-else-if="errorMessage" class="text-rose-600">{{ errorMessage }}</p>
-    <p v-else-if="usersList.length === 0" class="text-slate-500">
-      No hay usuarios registrados todavía.
-    </p>
+    <p v-if="isLoading" class="text-[var(--l-muted)]">Los guardianes están contando a los habitantes...</p>
+    <p v-else-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
 
-    <ul v-else class="flex flex-col gap-3">
+    <ul v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       <li
         v-for="user in usersList"
         :key="user.id"
-        class="cartoon-card flex items-center justify-between p-4"
+        class="flex flex-col gap-5 rounded-[var(--l-radius)] p-6 text-[var(--l-tag-ink)]"
+        :style="{ background: roomTone(user.id).wall }"
       >
-        <div>
-          <p class="font-bold text-slate-900">{{ user.username }}</p>
-          <p class="text-xs text-slate-500">Creado: {{ user.createdAt }}</p>
+        <div class="flex items-center gap-4">
+          <span
+            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-2xl font-semibold uppercase"
+            :style="{ background: roomTone(user.id).rug }"
+            aria-hidden="true"
+          >
+            {{ user.username.charAt(0) }}
+          </span>
+          <div class="min-w-0">
+            <p class="truncate text-lg font-semibold">{{ user.username }}</p>
+            <p class="text-xs opacity-70">Vive aquí desde {{ user.createdAt }}</p>
+          </div>
         </div>
         <div class="flex gap-2">
-          <button class="cartoon-btn-secondary px-3 py-1 text-sm" @click="editingUser = user">
+          <button
+            type="button"
+            class="rounded-full bg-[#fffaf2]/75 px-4 py-1.5 text-sm font-semibold hover:bg-[#fffaf2]"
+            @click="editingUser = user"
+          >
             Editar
           </button>
-          <button class="cartoon-btn-danger px-3 py-1 text-sm" @click="deletingUser = user">
-            Eliminar
+          <button
+            type="button"
+            class="rounded-full bg-[#fffaf2]/75 px-4 py-1.5 text-sm font-semibold hover:bg-[#fffaf2]"
+            @click="deletingUser = user"
+          >
+            Quitar la llave
           </button>
         </div>
       </li>
+
+      <li>
+        <button type="button" class="ui-dashed-add h-full w-full" @click="isCreating = true">
+          <span class="text-3xl font-semibold" aria-hidden="true">+</span>
+          <span class="font-semibold text-[var(--l-ink)]">Invitar a alguien</span>
+          <span class="text-sm">
+            {{ usersList.length === 0 ? "Aún no vive nadie aquí." : "Le damos una llave nueva." }}
+          </span>
+        </button>
+      </li>
     </ul>
 
-    <UserFormModal
-      v-if="isCreating"
-      :user="null"
-      @close="isCreating = false"
-      @saved="handleSaved"
-    />
+    <UserFormModal v-if="isCreating" :user="null" @close="isCreating = false" @saved="handleSaved" />
 
-    <UserFormModal
-      v-if="editingUser"
-      :user="editingUser"
-      @close="editingUser = null"
-      @saved="handleSaved"
-    />
+    <UserFormModal v-if="editingUser" :user="editingUser" @close="editingUser = null" @saved="handleSaved" />
 
     <UserDeleteDialog
       v-if="deletingUser"
