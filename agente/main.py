@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import requests
 from dotenv import load_dotenv
 
 from src.agent.chat_agent import AgentChat
@@ -50,10 +51,18 @@ class InventoryAgentApp:
         username = os.getenv("INVENTARIO_USER", "")
         password = os.getenv("INVENTARIO_PASS", "")
         if username and password:
-            self._api.login(username, password)
-            print("Sesión iniciada correctamente.")
+            self._connect(username, password)
         else:
             print("Sin credenciales (INVENTARIO_USER / INVENTARIO_PASS). Solicitudes sin auth.")
+
+    def _connect(self, username: str, password: str) -> None:
+        """Inicia sesión; si el backend aún no responde, sigue y la sesión se abre en la primera petición."""
+        try:
+            self._api.login(username, password)
+        except requests.ConnectionError:
+            print("Backend sin respuesta todavía; la sesión se iniciará en la primera petición.")
+            return
+        print("Sesión iniciada correctamente.")
 
     def _run_server(self) -> None:
         from src.api.server_api import ApiServer
