@@ -1,7 +1,6 @@
 import logging
 import os
 import sys
-import requests
 from dotenv import load_dotenv
 
 from src.agent.chat_agent import AgentChat
@@ -13,8 +12,12 @@ from src.bot.handlers_bot import BotHandlers
 from src.builders.builder_agent import AgentBuilder
 from src.builders.builder_telegram_bot import TelegramBotBuilder
 from src.constantes.constantes_agente import DEFAULT_OPENROUTER_MODEL
+from src.constantes.constantes_auth import DEFAULT_JWT_ISSUER, JWKS_PATH
+from src.services.context_auth import AuthContext
 from src.services.search_fuzzy import FuzzySearch
+from src.services.session_bot import BotSessions
 from src.services.uploader_image import ImageUploader
+from src.services.verifier_jwt import TokenVerifier
 from src.services.client_inventory import InventoryClient
 from src.services.search_inventory import InventorySearch
 
@@ -23,11 +26,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(na
 
 
 class InventoryAgentApp:
-    """Cablea el backend, las tools y el agente, y lo expone por CLI, API Flask o bot de Telegram."""
+    """
+    Cablea el backend, las tools y el agente, y lo expone por CLI, API Flask o bot de Telegram.
+    El agente no inicia sesión: siempre actúa con el token que el usuario obtuvo en la página web.
+    """
 
     def __init__(self) -> None:
         self._api = Backend(os.environ["BACKEND_URL"])
-        self._login()
         inventory, search = InventoryClient(self._api), FuzzySearch()
         tools = [
             *AgentToolkit(inventory, search).tools(),
@@ -47,51 +52,38 @@ class InventoryAgentApp:
         mode = next((arg for arg in sys.argv[1:] if arg in modes), os.getenv("MODE", "cli"))
         modes[mode]()
 
-    def _login(self) -> None:
-        username = os.getenv("INVENTARIO_USER", "")
-        password = os.getenv("INVENTARIO_PASS", "")
-        if username and password:
-            self._connect(username, password)
-        else:
-            print("Sin credenciales (INVENTARIO_USER / INVENTARIO_PASS). Solicitudes sin auth.")
-
-    def _connect(self, username: str, password: str) -> None:
-        """Inicia sesión; si el backend aún no responde, sigue y la sesión se abre en la primera petición."""
-        try:
-            self._api.login(username, password)
-        except requests.ConnectionError:
-            print("Backend sin respuesta todavía; la sesión se iniciará en la primera petición.")
-            return
-        print("Sesión iniciada correctamente.")
-
     def _run_server(self) -> None:
         from src.api.server_api import ApiServer
         port = int(os.getenv("PORT", "5000"))
         print(f"Servidor Flask escuchando en :{port}")
         force_https = os.getenv("FORCE_HTTPS", "false").lower() == "true"
-        ApiServer(self._chat, self._api, force_https).app.run(host="0.0.0.0", port=port)
+        jwks_url = os.environ["BACKEND_URL"].rstrip("/") + JWKS_PATH
+        verifier = TokenVerifier(jwks_url, os.getenv("JWT_ISSUER", DEFAULT_JWT_ISSUER))
+        ApiServer(self._chat, self._api, verifier, force_https).app.run(host="0.0.0.0", port=port)
 
     def _run_telegram(self) -> None:
-        bot = (
-            TelegramBotBuilder()
-            .with_token(os.environ["TELEGRAM_TOKEN"])
-            .with_handlers(BotHandlers(self._chat, self._api))
-            .build()
-        )
+        handlers = BotHandlers(self._chat, self._api, BotSessions(), os.getenv("WEB_URL", "la página web"))
+        bot = TelegramBotBuilder().with_token(os.environ["TELEGRAM_TOKEN"]).with_handlers(handlers).build()
         print("Bot de Telegram iniciado.")
         bot.run_polling()
 
     def _run_cli(self) -> None:
+        token = os.getenv("INVENTARIO_TOKEN", "")
+        if not token:
+            print("El modo CLI necesita un token: inicia sesión en la web y define INVENTARIO_TOKEN.")
+            return
+
         print("Agente de inventario listo. Escribe 'salir' para terminar.\n")
-        while True:
-            try:
-                user_input = input("Tú: ").strip()
-            except (EOFError, KeyboardInterrupt):
-                break
-            if not user_input or user_input.lower() in ("salir", "exit", "quit"):
-                break
-            reply, images = self._chat.ask(user_input)
-            print(f"Agente: {reply or f'[{len(images)} imagen(es) generada(s)]'}\n")
+        with AuthContext.as_user(token):
+            while True:
+                try:
+                    user_input = input("Tú: ").strip()
+                except (EOFError, KeyboardInterrupt):
+                    break
+                if not user_input or user_input.lower() in ("salir", "exit", "quit"):
+                    break
+                reply, images = self._chat.ask(user_input)
+                print(f"Agente: {reply or f'[{len(images)} imagen(es) generada(s)]'}\n")
 
 
 if __name__ == "__main__":

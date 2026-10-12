@@ -21,17 +21,23 @@ from src.constantes.constantes_seguridad import (
 )
 from src.constantes.constantes_validacion import MAX_UPLOAD_BYTES
 from src.decorators.decorator_dto_validator import DtoValidator
+from src.decorators.decorator_jwt_required import JwtRequired
 from src.dtos.dto_chat import ChatDto
 from src.dtos.dto_upload import UploadDto
+from src.services.verifier_jwt import TokenVerifier
 from src.utilerias.util_codec import Codec
 
 
 class ApiServer:
-    """Flask con cabeceras de seguridad, DTO y límite por IP: /health, /chat (agente + fichas) y /upload."""
+    """
+    Flask con JWT del backend, cabeceras de seguridad, DTO y límite por IP:
+    /health (público), /chat (agente + fichas) y /upload (ambos exigen el token).
+    """
 
-    def __init__(self, chat: AgentChat, api: Backend, force_https: bool = False) -> None:
+    def __init__(self, chat: AgentChat, api: Backend, verifier: TokenVerifier, force_https: bool = False) -> None:
         self._chat = chat
         self._api = api
+        self._verifier = verifier
         self.app = Flask(__name__)
         self.app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES + 1024
         self._talisman = Talisman(
@@ -61,11 +67,13 @@ class ApiServer:
     def health():
         return jsonify({"status": "ok"})
 
+    @JwtRequired.endpoint
     @DtoValidator.json(ChatDto)
     def chat(self, dto: ChatDto):
         reply, images = self._chat.ask(dto.message)
         return jsonify({"reply": reply, "images": [Codec.to_base64(img) for img in images]})
 
+    @JwtRequired.endpoint
     @DtoValidator.upload(UploadDto)
     def upload(self, dto: UploadDto):
         return jsonify({"url": self._api.upload_image(dto.data, dto.filename)})

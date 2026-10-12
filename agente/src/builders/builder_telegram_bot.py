@@ -1,10 +1,10 @@
-from telegram.ext import Application, ApplicationBuilder, MessageHandler, filters
+from telegram.ext import Application, ApplicationBuilder, CommandHandler, MessageHandler, filters
 
 from src.bot.handlers_bot import BotHandlers
 
 
 class TelegramBotBuilder:
-    """Builder fluent de la aplicación de Telegram: token y handlers."""
+    """Builder fluent de la aplicación de Telegram: token, comandos de vinculación y handlers de mensajes."""
 
     def __init__(self) -> None:
         self._token = ""
@@ -20,6 +20,9 @@ class TelegramBotBuilder:
 
     def build(self) -> Application:
         app = ApplicationBuilder().token(self._token).build()
+        app.add_handler(CommandHandler("start", self._handlers.start))
+        app.add_handler(CommandHandler(["vincular", "link"], self._handlers.link))
+        app.add_handler(CommandHandler(["salir", "logout"], self._handlers.logout))
         app.add_handler(MessageHandler(filters.PHOTO, self._handlers.photo))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handlers.text))
         return app
