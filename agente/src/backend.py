@@ -1,3 +1,5 @@
+import mimetypes
+
 import requests
 
 from src.constantes.constantes_red import CLAIM_PATH, LOGOUT_PATH
@@ -38,8 +40,9 @@ class Backend:
         self._request("DELETE", path)
 
     def upload_image(self, data: bytes, filename: str) -> str:
-        """Sube la imagen y retorna su URL pública."""
-        return self._request("POST", "/articles/upload", files={"image": (filename, data)})["url"]
+        """Sube la imagen y retorna su URL pública; el tipo se deduce de la extensión (JPEG por defecto)."""
+        content_type = mimetypes.guess_type(filename)[0] or "image/jpeg"
+        return self._request("POST", "/articles/upload", files={"image": (filename, data, content_type)})["url"]
 
     def _request(self, method: str, path: str, auth: bool = True, headers: dict | None = None, **kwargs):
         merged = {**(AuthContext.headers() if auth else {}), **(headers or {})}
