@@ -71,6 +71,17 @@ npm run build          # compila frontend y backend (con caché)
 npm run typecheck      # revisa tipos de frontend y backend y sintaxis del agente
 ```
 
+### Docker desde la raíz
+
+```bash
+npm run docker:up        # construye y levanta todo el stack (docker compose up -d --build)
+npm run docker:down      # detiene y elimina los contenedores del compose
+npm run docker:clean     # elimina contenedores e imágenes del sistema (conserva los volúmenes)
+npm run docker:rebuild   # docker:clean y luego docker:up
+```
+
+`docker:clean` y `docker:rebuild` también eliminan los contenedores `inventario-*` y las imágenes `inventarioarticuloscasa-*` y `*/inventario-*` que ya no pertenecen al compose (por ejemplo `inventario-bot` o `inventario-ftp`). Los volúmenes, incluida la base de datos local, se conservan salvo que añadas `-- --volumes`. Con `-- --dry-run` solo muestra lo que borraría.
+
 Las imágenes de `backend` y `frontend` se construyen desde la raíz del repositorio: cada `Dockerfile` usa `turbo prune <paquete> --docker` para copiar solo los paquetes que necesita y reutilizar la caché de dependencias.
 
 ## 📦 Estructura del Repositorio

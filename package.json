@@ -10,7 +10,11 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "docker:up": "node scripts/docker.mjs up",
+    "docker:down": "node scripts/docker.mjs down",
+    "docker:clean": "node scripts/docker.mjs clean",
+    "docker:rebuild": "node scripts/docker.mjs rebuild"
   },
   "devDependencies": {
     "turbo": "^2.5.0"
