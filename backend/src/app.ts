@@ -11,6 +11,7 @@ import { downloadInventoryReport } from "./controllers/reportController.js";
 import { userManagementRoutes } from "./routes/userManagementRoutes.js";
 import { searchRoutes } from "./routes/searchRoutes.js";
 import { generalLimiter } from "./middleware/rateLimiters.js";
+import { requestLogger } from "./middleware/requestLogger.js";
 
 export const app = express();
 
@@ -18,6 +19,7 @@ const TRUSTED_PROXY_HOPS = Number(process.env.TRUST_PROXY ?? (process.env.VERCEL
 
 app.set("trust proxy", TRUSTED_PROXY_HOPS);
 app.use(helmet());
+app.use(requestLogger);
 app.use(cors());
 app.use(generalLimiter);
 app.use(express.json());
