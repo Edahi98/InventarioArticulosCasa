@@ -3,6 +3,8 @@ import { reactive, ref, watch } from "vue";
 import type { Category } from "../../core/domain/category.js";
 import { updateCategoryUseCase } from "../../core/usecases/updateCategory.js";
 import ImageUploader from "../ImageUploader.vue";
+import FormField from "../ui/FormField.vue";
+import ModalShell from "../ui/ModalShell.vue";
 
 const props = defineProps<{ category: Category }>();
 const emit = defineEmits<{ close: []; saved: [category: Category] }>();
@@ -38,11 +40,11 @@ async function handleSubmit(): Promise<void> {
   errorMessage.value = "";
 
   if (!form.name.trim()) {
-    errorMessage.value = "El nombre de la categoría es obligatorio.";
+    errorMessage.value = "El cuarto necesita un nombre.";
     return;
   }
   if (isImageUploading.value) {
-    errorMessage.value = "Espera a que la imagen termine de subir.";
+    errorMessage.value = "Espera a que la foto termine de subir.";
     return;
   }
 
@@ -64,51 +66,34 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-    <div class="cartoon-panel w-full max-w-md p-6">
-      <h2 class="mb-4 text-xl font-extrabold text-slate-900">
-        <font-awesome-icon icon="pen" class="mr-1" /> Editar categoría
-      </h2>
-
-      <div class="flex flex-col gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-bold text-slate-800" for="category-name">Nombre</label>
-          <input id="category-name" v-model="form.name" type="text" class="cartoon-input" />
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-bold text-slate-800" for="category-description">
-            Descripción
-          </label>
-          <textarea
-            id="category-description"
-            v-model="form.description"
-            rows="3"
-            class="cartoon-input"
-          />
-        </div>
-
-        <ImageUploader
-          :initial-image-url="form.imageUrl"
-          @uploaded="handleImageUploaded"
-          @uploading="handleImageUploadingChange"
-        />
-
-        <p v-if="errorMessage" class="text-sm font-semibold text-rose-600">{{ errorMessage }}</p>
-
-        <div class="mt-2 flex justify-end gap-2">
-          <button class="cartoon-btn-secondary" :disabled="isSubmitting" @click="emit('close')">
-            Cancelar
-          </button>
-          <button
-            class="cartoon-btn-primary"
-            :disabled="isSubmitting || isImageUploading"
-            @click="handleSubmit"
-          >
-            {{ isSubmitting ? "Guardando..." : "Guardar cambios" }}
-          </button>
-        </div>
-      </div>
+  <ModalShell title="Arreglar el cuarto" @close="emit('close')">
+    <div class="flex flex-col gap-4">
+      <FormField label="Nombre" for-id="category-name">
+        <input id="category-name" v-model="form.name" type="text" class="ui-input" />
+      </FormField>
+      <FormField label="Descripción" for-id="category-description">
+        <textarea id="category-description" v-model="form.description" rows="3" class="ui-input" />
+      </FormField>
+      <ImageUploader
+        :initial-image-url="form.imageUrl"
+        @uploaded="handleImageUploaded"
+        @uploading="handleImageUploadingChange"
+      />
+      <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
     </div>
-  </div>
+
+    <template #actions>
+      <button type="button" class="ui-btn ui-btn-ghost" :disabled="isSubmitting" @click="emit('close')">
+        Cancelar
+      </button>
+      <button
+        type="button"
+        class="ui-btn ui-btn-primary"
+        :disabled="isSubmitting || isImageUploading"
+        @click="handleSubmit"
+      >
+        {{ isSubmitting ? "Guardando..." : "Guardar cambios" }}
+      </button>
+    </template>
+  </ModalShell>
 </template>
