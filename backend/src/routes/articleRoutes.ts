@@ -4,6 +4,7 @@ import { cloudinaryService } from "../services/cloudinaryService.js";
 import { validationService } from "../services/validationService.js";
 import { AppError, asyncHandler } from "../middleware/errorHandler.js";
 import { validateRequest } from "../middleware/validateRequest.js";
+import { uploadLimiter } from "../middleware/rateLimiters.js";
 import { deleteArticle } from "../controllers/articleDeleteController.js";
 import ArticleService from "../services/articleService.js";
 import {
@@ -26,10 +27,11 @@ export const articleRoutes = Router();
  * POST /articles/upload — sube una imagen (campo `image`, máx. 4MB) a Cloudinary.
  *
  * @returns `{ id, url }` de la imagen subida.
- * @throws AppError 400 si no se envía imagen o no es JPEG, PNG, WEBP o GIF.
+ * @throws AppError 400 si no se envía imagen o no es JPEG, PNG, WEBP o GIF, 429 si se suben demasiadas.
  */
 articleRoutes.post(
   "/upload",
+  uploadLimiter,
   upload.single("image"),
   validateRequest({ file: imageFile }),
   asyncHandler(async (req: Request, res: Response) => {

@@ -10,11 +10,16 @@ import { authMiddleware } from "./middleware/authMiddleware.js";
 import { downloadInventoryReport } from "./controllers/reportController.js";
 import { userManagementRoutes } from "./routes/userManagementRoutes.js";
 import { searchRoutes } from "./routes/searchRoutes.js";
+import { generalLimiter } from "./middleware/rateLimiters.js";
 
 export const app = express();
 
+const TRUSTED_PROXY_HOPS = Number(process.env.TRUST_PROXY ?? (process.env.VERCEL ? 1 : 0));
+
+app.set("trust proxy", TRUSTED_PROXY_HOPS);
 app.use(helmet());
 app.use(cors());
+app.use(generalLimiter);
 app.use(express.json());
 
 app.use("/auth", authRoutes);

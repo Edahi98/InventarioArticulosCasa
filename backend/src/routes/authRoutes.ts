@@ -3,6 +3,7 @@ import { sessionService } from "../services/sessionService.js";
 import { asyncHandler } from "../middleware/errorHandler.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { validateRequest } from "../middleware/validateRequest.js";
+import { loginLimiter } from "../middleware/rateLimiters.js";
 import UserCredentialsVerifier from "../verefiers/userCredentialsVerifier.js";
 import TokenIssuer from "../token/tokenIsUser.js";
 import { loginBody, type LoginBody } from "../validators/userValidators.js";
@@ -15,10 +16,11 @@ export const authRoutes = Router();
 /**
  * POST /auth/login — valida las credenciales, registra la sesión en la base de datos y devuelve un token.
  *
- * @throws AppError 400 si faltan campos o no son válidos, 401 si son incorrectas.
+ * @throws AppError 400 si faltan campos o no son válidos, 401 si son incorrectas, 429 tras 10 intentos fallidos en 15 minutos.
  */
 authRoutes.post(
   "/login",
+  loginLimiter,
   validateRequest({ body: loginBody }),
   asyncHandler(async (req: Request, res: Response) => {
     const { username, password } = req.body as LoginBody;
