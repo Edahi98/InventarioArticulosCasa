@@ -3,6 +3,8 @@ import { reactive, ref, watch } from "vue";
 import type { Note } from "../../core/domain/note.js";
 import { updateNoteUseCase } from "../../core/usecases/updateNote.js";
 import { deleteNoteUseCase } from "../../core/usecases/deleteNote.js";
+import { noteForm } from "../../validators/noteValidators.js";
+import { validateInput } from "../../validators/validateInput.js";
 import FormField from "../ui/FormField.vue";
 import ModalShell from "../ui/ModalShell.vue";
 
@@ -20,6 +22,7 @@ const form = reactive({
 
 const isSubmitting = ref(false);
 const errorMessage = ref("");
+const fieldErrors = ref<Record<string, string>>({});
 
 watch(
   () => props.note,
@@ -31,17 +34,18 @@ watch(
 
 async function handleConfirmEdit(): Promise<void> {
   errorMessage.value = "";
-  if (!form.title.trim()) {
-    errorMessage.value = "Ponle un título a la nota.";
+  fieldErrors.value = {};
+
+  const checked = validateInput(noteForm, { title: form.title, description: form.description });
+  if (!checked.ok) {
+    fieldErrors.value = checked.failure.fields;
+    errorMessage.value = checked.failure.message;
     return;
   }
 
   isSubmitting.value = true;
   try {
-    const updated = await updateNoteUseCase.execute(props.note.id, {
-      title: form.title,
-      description: form.description,
-    });
+    const updated = await updateNoteUseCase.execute(props.note.id, checked.data);
     emit("saved", updated);
   } catch (error) {
     errorMessage.value =
@@ -69,10 +73,10 @@ async function handleConfirmDelete(): Promise<void> {
 <template>
   <ModalShell v-if="mode === 'edit'" title="Reescribir la nota" @close="emit('close')">
     <div class="flex flex-col gap-4">
-      <FormField label="Título" for-id="note-title">
+      <FormField label="Título" for-id="note-title" :error="fieldErrors.title">
         <input id="note-title" v-model="form.title" type="text" class="ui-input" />
       </FormField>
-      <FormField label="Detalles" for-id="note-description">
+      <FormField label="Detalles" for-id="note-description" :error="fieldErrors.description">
         <textarea id="note-description" v-model="form.description" rows="3" class="ui-input" />
       </FormField>
       <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>

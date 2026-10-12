@@ -2,6 +2,8 @@
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { searchArticles, type SearchResult } from "../infrastructure/httpSearchRepository.js";
+import { searchForm } from "../validators/searchValidators.js";
+import { validateInput } from "../validators/validateInput.js";
 import { listPeekBears } from "../core/usecases/listHomeBears.js";
 import type { LoginMood } from "../infrastructure/three/LoginStage.js";
 import ArticleRow from "../components/articles/ArticleRow.vue";
@@ -14,6 +16,7 @@ const query = ref("");
 const results = ref<SearchResult[]>([]);
 const isLoading = ref(false);
 const searched = ref(false);
+const queryError = ref("");
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -26,12 +29,21 @@ const mood = computed<LoginMood>(() => {
 
 watch(query, (val) => {
   if (debounceTimer) clearTimeout(debounceTimer);
+  queryError.value = "";
   if (!val.trim()) {
     results.value = [];
     searched.value = false;
     return;
   }
-  debounceTimer = setTimeout(() => runSearch(val), 300);
+
+  const checked = validateInput(searchForm, { q: val });
+  if (!checked.ok) {
+    queryError.value = `La búsqueda ${checked.failure.fields.q ?? "no es válida"}.`;
+    results.value = [];
+    searched.value = false;
+    return;
+  }
+  debounceTimer = setTimeout(() => runSearch(checked.data.q), 300);
 });
 
 async function runSearch(q: string): Promise<void> {
@@ -85,7 +97,9 @@ function goToArticle(id: number): void {
     </div>
 
     <div class="mt-12">
-      <p v-if="isLoading" class="text-center text-[var(--l-muted)]">Los guardianes están revisando los cuartos...</p>
+      <p v-if="queryError" role="alert" class="ui-error text-center">{{ queryError }}</p>
+
+      <p v-else-if="isLoading" class="text-center text-[var(--l-muted)]">Los guardianes están revisando los cuartos...</p>
 
       <p v-else-if="!searched" class="text-center text-[var(--l-muted)]">
         Empieza a escribir y aparecerán por aquí.

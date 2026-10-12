@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { validateImageFile } from "../validators/imageValidators.js";
 
 const props = defineProps<{ initialImageUrl?: string }>();
 const emit = defineEmits<{ selected: [file: File, previewUrl: string] }>();
@@ -31,6 +32,13 @@ async function handleFileChange(event: Event): Promise<void> {
   if (!file) return;
 
   errorMessage.value = "";
+  const problem = await validateImageFile(file);
+  if (problem) {
+    errorMessage.value = problem;
+    input.value = "";
+    return;
+  }
+
   try {
     previewUrl.value = await readAsDataUrl(file);
     emit("selected", file, previewUrl.value);

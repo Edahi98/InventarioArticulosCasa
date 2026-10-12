@@ -5,6 +5,8 @@ import { createCategoryUseCase } from "../core/usecases/createCategory.js";
 import { updateCategoryUseCase } from "../core/usecases/updateCategory.js";
 import { getCategoryByIdUseCase } from "../core/usecases/getCategoryById.js";
 import { uploadArticleImageUseCase } from "../core/usecases/uploadArticleImage.js";
+import { categoryForm } from "../validators/categoryValidators.js";
+import { validateInput } from "../validators/validateInput.js";
 import CategoryCard from "../components/CategoryCard.vue";
 import ImageUploader from "../components/ImageUploader.vue";
 import FormField from "../components/ui/FormField.vue";
@@ -29,6 +31,7 @@ const isLoading = ref(isEditMode.value);
 const isSubmitting = ref(false);
 const isUploading = ref(false);
 const errorMessage = ref("");
+const fieldErrors = ref<Record<string, string>>({});
 
 const preview = computed(() => ({
   id: categoryId ?? 0,
@@ -70,9 +73,12 @@ async function resolveImageUrl(): Promise<string> {
 
 async function handleSubmit(): Promise<void> {
   errorMessage.value = "";
+  fieldErrors.value = {};
 
-  if (!form.name.trim()) {
-    errorMessage.value = "El cuarto necesita un nombre.";
+  const checked = validateInput(categoryForm, { name: form.name, description: form.description });
+  if (!checked.ok) {
+    fieldErrors.value = checked.failure.fields;
+    errorMessage.value = checked.failure.message;
     return;
   }
 
@@ -83,11 +89,7 @@ async function handleSubmit(): Promise<void> {
 
   isSubmitting.value = true;
   try {
-    const input = {
-      name: form.name,
-      description: form.description,
-      imageUrl: await resolveImageUrl(),
-    };
+    const input = { ...checked.data, imageUrl: await resolveImageUrl() };
 
     if (categoryId) {
       await updateCategoryUseCase.execute(categoryId, input);
@@ -121,11 +123,11 @@ async function handleSubmit(): Promise<void> {
         class="ui-notebook flex flex-col gap-6 py-8 pr-6 sm:pr-8 lg:col-span-7"
         @submit.prevent="handleSubmit"
       >
-        <FormField label="Nombre" for-id="name">
+        <FormField label="Nombre" for-id="name" :error="fieldErrors.name">
           <input id="name" v-model="form.name" type="text" required class="ui-input" placeholder="La cocina, el taller..." />
         </FormField>
 
-        <FormField label="Descripción" for-id="description">
+        <FormField label="Descripción" for-id="description" :error="fieldErrors.description">
           <textarea id="description" v-model="form.description" rows="3" class="ui-input" placeholder="¿Qué se guarda aquí?" />
         </FormField>
 

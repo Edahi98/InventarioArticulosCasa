@@ -7,6 +7,8 @@ import { createArticleUseCase } from "../core/usecases/createArticle.js";
 import { updateArticleUseCase } from "../core/usecases/updateArticle.js";
 import { getArticleByIdUseCase } from "../core/usecases/getArticleById.js";
 import { uploadArticleImageUseCase } from "../core/usecases/uploadArticleImage.js";
+import { articleForm } from "../validators/articleValidators.js";
+import { validateInput } from "../validators/validateInput.js";
 import ArticleRow from "../components/articles/ArticleRow.vue";
 import ImageUploader from "../components/ImageUploader.vue";
 import FormField from "../components/ui/FormField.vue";
@@ -35,6 +37,7 @@ const isLoading = ref(isEditMode.value);
 const isSubmitting = ref(false);
 const isUploading = ref(false);
 const errorMessage = ref("");
+const fieldErrors = ref<Record<string, string>>({});
 
 const preview = computed(() => ({
   name: form.name || "El nombre del artículo",
@@ -82,30 +85,28 @@ async function resolveImageUrl(): Promise<string> {
 
 async function handleSubmit(): Promise<void> {
   errorMessage.value = "";
+  fieldErrors.value = {};
 
+  const checked = validateInput(articleForm, {
+    name: form.name,
+    description: form.description,
+    categoryId: form.categoryId,
+    stock: form.stock,
+    needsRepair: form.needsRepair,
+  });
+  if (!checked.ok) {
+    fieldErrors.value = checked.failure.fields;
+    errorMessage.value = checked.failure.message;
+    return;
+  }
   if (!form.imageUrl && !pendingFile.value) {
     errorMessage.value = "Elige una foto del artículo antes de guardarlo.";
-    return;
-  }
-  if (!form.categoryId) {
-    errorMessage.value = "Elige en qué cuarto se guarda.";
-    return;
-  }
-  if (!Number.isInteger(form.stock) || form.stock < 0) {
-    errorMessage.value = "La cantidad debe ser un número entero, de cero para arriba.";
     return;
   }
 
   isSubmitting.value = true;
   try {
-    const input = {
-      name: form.name,
-      description: form.description,
-      imageUrl: await resolveImageUrl(),
-      categoryId: form.categoryId,
-      stock: form.stock,
-      needsRepair: form.needsRepair,
-    };
+    const input = { ...checked.data, imageUrl: await resolveImageUrl() };
 
     if (articleId) {
       await updateArticleUseCase.execute(articleId, input);
@@ -139,16 +140,16 @@ async function handleSubmit(): Promise<void> {
         class="ui-notebook flex flex-col gap-6 py-8 pr-6 sm:pr-8 lg:col-span-7"
         @submit.prevent="handleSubmit"
       >
-        <FormField label="Nombre" for-id="name">
+        <FormField label="Nombre" for-id="name" :error="fieldErrors.name">
           <input id="name" v-model="form.name" type="text" required class="ui-input" placeholder="Taladro, licuadora..." />
         </FormField>
 
-        <FormField label="Descripción" for-id="description">
+        <FormField label="Descripción" for-id="description" :error="fieldErrors.description">
           <textarea id="description" v-model="form.description" rows="3" class="ui-input" placeholder="Marca, color, dónde lo compraste..." />
         </FormField>
 
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <FormField label="Cuarto" for-id="categoryId">
+          <FormField label="Cuarto" for-id="categoryId" :error="fieldErrors.categoryId">
             <select id="categoryId" v-model.number="form.categoryId" required class="ui-input">
               <option value="0" disabled>Elige un cuarto</option>
               <option v-for="category in categories" :key="category.id" :value="category.id">
@@ -157,7 +158,7 @@ async function handleSubmit(): Promise<void> {
             </select>
           </FormField>
 
-          <FormField label="Cuántos hay" for-id="stock">
+          <FormField label="Cuántos hay" for-id="stock" :error="fieldErrors.stock">
             <input id="stock" v-model.number="form.stock" type="number" min="0" step="1" class="ui-input" />
           </FormField>
         </div>

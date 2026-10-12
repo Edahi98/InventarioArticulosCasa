@@ -5,6 +5,8 @@ import { listPeekBears } from "../core/usecases/listHomeBears.js";
 import { authenticatedHttpClient } from "../services/http/AuthenticatedHttpClient.js";
 import type { LoginMood } from "../infrastructure/three/LoginStage.js";
 import BearPeekScene from "../components/BearPeekScene.vue";
+import { loginForm } from "../validators/userValidators.js";
+import { validateInput } from "../validators/validateInput.js";
 
 const SAD_MILLISECONDS = 2600;
 const HAPPY_MILLISECONDS = 900;
@@ -21,6 +23,7 @@ const form = reactive({
 
 const isSubmitting = ref(false);
 const errorMessage = ref("");
+const fieldErrors = ref<Record<string, string>>({});
 const usernameFocused = ref(false);
 const passwordFocused = ref(false);
 const showPassword = ref(false);
@@ -43,9 +46,19 @@ function setMood(next: LoginMood, after: () => void = () => undefined, delay = 0
 
 async function handleSubmit(): Promise<void> {
   errorMessage.value = "";
+  fieldErrors.value = {};
+
+  const checked = validateInput(loginForm, { username: form.username, password: form.password });
+  if (!checked.ok) {
+    fieldErrors.value = checked.failure.fields;
+    errorMessage.value = checked.failure.message;
+    setMood("sad", () => setMood("idle"), SAD_MILLISECONDS);
+    return;
+  }
+
   isSubmitting.value = true;
   try {
-    await authenticatedHttpClient.login(form.username, form.password);
+    await authenticatedHttpClient.login(checked.data.username, checked.data.password);
     const redirectTo = (route.query.redirect as string) || "/categories";
     setMood("happy", () => router.push(redirectTo), HAPPY_MILLISECONDS);
   } catch (error) {
@@ -89,6 +102,7 @@ onBeforeUnmount(() => clearTimeout(moodTimer));
               @focus="usernameFocused = true"
               @blur="usernameFocused = false"
             />
+            <p v-if="fieldErrors.username" role="alert" class="ui-error">El usuario {{ fieldErrors.username }}.</p>
           </div>
 
           <div class="flex flex-col gap-2">
@@ -114,6 +128,7 @@ onBeforeUnmount(() => clearTimeout(moodTimer));
               @focus="passwordFocused = true"
               @blur="passwordFocused = false"
             />
+            <p v-if="fieldErrors.password" role="alert" class="ui-error">La contraseña {{ fieldErrors.password }}.</p>
           </div>
 
           <p v-if="errorMessage" role="alert" class="text-sm font-semibold text-[var(--l-accent)]">

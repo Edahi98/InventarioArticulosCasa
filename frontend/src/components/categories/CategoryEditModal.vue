@@ -3,6 +3,8 @@ import { reactive, ref, watch } from "vue";
 import type { Category } from "../../core/domain/category.js";
 import { updateCategoryUseCase } from "../../core/usecases/updateCategory.js";
 import { uploadArticleImageUseCase } from "../../core/usecases/uploadArticleImage.js";
+import { categoryForm } from "../../validators/categoryValidators.js";
+import { validateInput } from "../../validators/validateInput.js";
 import ImageUploader from "../ImageUploader.vue";
 import FormField from "../ui/FormField.vue";
 import ModalShell from "../ui/ModalShell.vue";
@@ -20,6 +22,7 @@ const pendingFile = ref<File | null>(null);
 const isSubmitting = ref(false);
 const isUploading = ref(false);
 const errorMessage = ref("");
+const fieldErrors = ref<Record<string, string>>({});
 
 watch(
   () => props.category,
@@ -48,17 +51,19 @@ async function resolveImageUrl(): Promise<string> {
 
 async function handleSubmit(): Promise<void> {
   errorMessage.value = "";
+  fieldErrors.value = {};
 
-  if (!form.name.trim()) {
-    errorMessage.value = "El cuarto necesita un nombre.";
+  const checked = validateInput(categoryForm, { name: form.name, description: form.description });
+  if (!checked.ok) {
+    fieldErrors.value = checked.failure.fields;
+    errorMessage.value = checked.failure.message;
     return;
   }
 
   isSubmitting.value = true;
   try {
     const updated = await updateCategoryUseCase.execute(props.category.id, {
-      name: form.name,
-      description: form.description,
+      ...checked.data,
       imageUrl: await resolveImageUrl(),
     });
     emit("saved", updated);
@@ -74,10 +79,10 @@ async function handleSubmit(): Promise<void> {
 <template>
   <ModalShell title="Arreglar el cuarto" @close="emit('close')">
     <div class="flex flex-col gap-4">
-      <FormField label="Nombre" for-id="category-name">
+      <FormField label="Nombre" for-id="category-name" :error="fieldErrors.name">
         <input id="category-name" v-model="form.name" type="text" class="ui-input" />
       </FormField>
-      <FormField label="Descripción" for-id="category-description">
+      <FormField label="Descripción" for-id="category-description" :error="fieldErrors.description">
         <textarea id="category-description" v-model="form.description" rows="3" class="ui-input" />
       </FormField>
       <ImageUploader :initial-image-url="form.imageUrl" @selected="handleImageSelected" />

@@ -3,6 +3,8 @@ import { onMounted, reactive, ref } from "vue";
 import type { Note } from "../core/domain/note.js";
 import { listNotesByArticleUseCase } from "../core/usecases/listNotesByArticle.js";
 import { createNoteUseCase } from "../core/usecases/createNote.js";
+import { noteForm } from "../validators/noteValidators.js";
+import { validateInput } from "../validators/validateInput.js";
 import NoteActionModal from "./notes/NoteActionModal.vue";
 
 const props = defineProps<{ articleId: number }>();
@@ -13,6 +15,7 @@ const POSTIT_TILTS = [-1.6, 1.2, -0.6, 1.8];
 const notes = ref<Note[]>([]);
 const isLoading = ref(true);
 const errorMessage = ref("");
+const fieldErrors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
 
 const activeNote = ref<Note | null>(null);
@@ -35,19 +38,19 @@ async function loadNotes(): Promise<void> {
 }
 
 async function handleSubmit(): Promise<void> {
-  if (!form.title.trim()) {
-    errorMessage.value = "Ponle un título a la nota.";
+  errorMessage.value = "";
+  fieldErrors.value = {};
+
+  const checked = validateInput(noteForm, { title: form.title, description: form.description });
+  if (!checked.ok) {
+    fieldErrors.value = checked.failure.fields;
+    errorMessage.value = checked.failure.message;
     return;
   }
 
   isSubmitting.value = true;
-  errorMessage.value = "";
   try {
-    await createNoteUseCase.execute({
-      title: form.title,
-      description: form.description,
-      articleId: props.articleId,
-    });
+    await createNoteUseCase.execute({ ...checked.data, articleId: props.articleId });
     form.title = "";
     form.description = "";
     await loadNotes();
@@ -97,8 +100,10 @@ onMounted(loadNotes);
       @submit.prevent="handleSubmit"
     >
       <p class="font-semibold">Pega una nota nueva</p>
-      <input v-model="form.title" type="text" placeholder="¿Qué quieres recordar?" class="ui-input" />
-      <textarea v-model="form.description" rows="2" placeholder="Los detalles, si hay" class="ui-input" />
+      <input v-model="form.title" type="text" placeholder="¿Qué quieres recordar?" class="ui-input" aria-label="Título de la nota" />
+      <p v-if="fieldErrors.title" role="alert" class="ui-error">{{ fieldErrors.title }}</p>
+      <textarea v-model="form.description" rows="2" placeholder="Los detalles, si hay" class="ui-input" aria-label="Detalles de la nota" />
+      <p v-if="fieldErrors.description" role="alert" class="ui-error">{{ fieldErrors.description }}</p>
       <div class="flex flex-wrap items-center gap-3">
         <button type="submit" :disabled="isSubmitting" class="ui-btn ui-btn-primary">
           {{ isSubmitting ? "Pegando..." : "Pegar nota" }}
