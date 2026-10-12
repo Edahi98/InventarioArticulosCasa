@@ -69,6 +69,10 @@ npm install            # instala todos los workspaces
 npm run dev            # levanta frontend, backend y agente en paralelo
 npm run build          # compila frontend y backend (con caché)
 npm run typecheck      # revisa tipos de frontend y backend y sintaxis del agente
+npm run db:push        # crea o actualiza las tablas en la base de datos (DATABASE_URL de backend/.env)
+npm run db:generate    # genera migraciones SQL desde el esquema (backend/drizzle)
+npm run db:migrate     # aplica las migraciones generadas
+npm run user:create -- <usuario> <contraseña>   # crea un usuario para iniciar sesión
 ```
 
 ### Docker desde la raíz
