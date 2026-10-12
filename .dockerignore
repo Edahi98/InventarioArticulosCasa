@@ -1,0 +1,16 @@
+.git
+.turbo
+out
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+agente
+docs
+supabase
+videos
+portfolio-videos
+.agents
+.claude

@@ -1,27 +1,33 @@
-FROM node:22-alpine AS deps
+FROM node:22-alpine AS base
 WORKDIR /app
-COPY package*.json ./
+
+FROM base AS pruner
+RUN npm install -g turbo@^2
+COPY . .
+RUN turbo prune inventario-backend --docker
+
+FROM base AS deps
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/package-lock.json ./package-lock.json
 RUN npm ci
 
-FROM node:22-alpine AS build
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+FROM deps AS build
+COPY --from=pruner /app/out/full/ .
+WORKDIR /app/backend
 RUN npx tsc -p tsconfig.json
 
-FROM node:22-alpine AS prod-deps
-WORKDIR /app
-COPY package*.json ./
+FROM base AS prod-deps
+COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/out/package-lock.json ./package-lock.json
 RUN npm ci --omit=dev && npm install drizzle-kit
 
-FROM node:22-alpine
-WORKDIR /app
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-# Schema source + drizzle config needed for drizzle-kit push at startup
-COPY src/db/schema.ts ./src/db/schema.ts
-COPY drizzle.config.ts ./drizzle.config.ts
-COPY entrypoint.sh ./entrypoint.sh
+FROM base AS runtime
+COPY --from=prod-deps /app/ ./
+WORKDIR /app/backend
+COPY --from=build /app/backend/dist ./dist
+COPY --from=build /app/backend/src/db/schema.ts ./src/db/schema.ts
+COPY --from=build /app/backend/drizzle.config.ts ./drizzle.config.ts
+COPY --from=build /app/backend/entrypoint.sh ./entrypoint.sh
 RUN chmod +x entrypoint.sh
 EXPOSE 3000
 CMD ["sh", "entrypoint.sh"]

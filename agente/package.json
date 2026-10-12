@@ -1,0 +1,9 @@
+{
+  "name": "agente",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "uv run python main.py",
+    "typecheck": "uv run python -m compileall -q src main.py"
+  }
+}
