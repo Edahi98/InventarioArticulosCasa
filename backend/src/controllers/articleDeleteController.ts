@@ -31,10 +31,7 @@ const articleDeleteService = new ArticleDeleteService();
  * @throws AppError 400 si el id no es válido, 404 si el artículo no existe.
  */
 export const deleteArticle = asyncHandler(async (req: Request, res: Response) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    throw new AppError("El id del artículo debe ser un número válido.", 400);
-  }
+  const { id } = req.params as unknown as { id: number };
 
   const deleted = await articleDeleteService.remove(id);
   if (!deleted) {

@@ -4,37 +4,6 @@ import { AppError } from "../middleware/errorHandler.js";
 
 export class ValidationService {
   /**
-   * Exige un texto no vacío.
-   *
-   * @param value - Valor recibido.
-   * @param fieldName - Nombre del campo, usado en el mensaje de error.
-   * @returns El texto sin espacios en los extremos.
-   * @throws AppError 400 si no es un string con contenido.
-   */
-  requireNonEmptyString(value: unknown, fieldName: string): string {
-    if (typeof value !== "string" || !value.trim()) {
-      throw new AppError(`El campo "${fieldName}" es obligatorio.`, 400);
-    }
-    return value.trim();
-  }
-
-  /**
-   * Exige un identificador entero positivo.
-   *
-   * @param value - Valor recibido.
-   * @param fieldName - Nombre del campo, usado en el mensaje de error.
-   * @returns El valor convertido a número.
-   * @throws AppError 400 si no es un entero mayor que cero.
-   */
-  requirePositiveInteger(value: unknown, fieldName: string): number {
-    const numericValue = Number(value);
-    if (!Number.isInteger(numericValue) || numericValue <= 0) {
-      throw new AppError(`El campo "${fieldName}" debe ser un identificador válido.`, 400);
-    }
-    return numericValue;
-  }
-
-  /**
    * Verifica que exista una categoría.
    *
    * @param categoryId - Identificador de la categoría.

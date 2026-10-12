@@ -2,13 +2,23 @@ import { Router, type Request, type Response } from "express";
 import multer from "multer";
 import { cloudinaryService } from "../services/cloudinaryService.js";
 import { validationService } from "../services/validationService.js";
-import { articleValidationService } from "../services/articleValidationService.js";
 import { AppError, asyncHandler } from "../middleware/errorHandler.js";
+import { validateRequest } from "../middleware/validateRequest.js";
 import { deleteArticle } from "../controllers/articleDeleteController.js";
 import ArticleService from "../services/articleService.js";
+import {
+  articleBody,
+  articleIdParams,
+  articleListQuery,
+  imageFile,
+  type ArticleBody,
+} from "../validators/articleValidators.js";
+import { LIMITS } from "../validators/injectionPatterns.js";
 
 const articleService = new ArticleService();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: LIMITS.imageBytes } });
+
+type IdParams = { id: number };
 
 export const articleRoutes = Router();
 
@@ -16,27 +26,28 @@ export const articleRoutes = Router();
  * POST /articles/upload — sube una imagen (campo `image`, máx. 4MB) a Cloudinary.
  *
  * @returns `{ id, url }` de la imagen subida.
- * @throws AppError 400 si no se envía imagen.
+ * @throws AppError 400 si no se envía imagen o no es JPEG, PNG, WEBP o GIF.
  */
 articleRoutes.post(
   "/upload",
   upload.single("image"),
+  validateRequest({ file: imageFile }),
   asyncHandler(async (req: Request, res: Response) => {
-    if (!req.file) {
-      throw new AppError("No se recibió ninguna imagen.", 400);
-    }
-    const uploaded = await cloudinaryService.uploadFromBuffer(req.file.buffer);
+    const uploaded = await cloudinaryService.uploadFromBuffer(req.file!.buffer);
     res.status(200).json(uploaded);
   }),
 );
 
 /**
  * GET /articles?categoryId= — lista artículos, opcionalmente de una categoría.
+ *
+ * @throws AppError 400 si `categoryId` no es un identificador válido.
  */
 articleRoutes.get(
   "/",
+  validateRequest({ query: articleListQuery }),
   asyncHandler(async (req: Request, res: Response) => {
-    const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
+    const { categoryId } = req.query as unknown as { categoryId?: number };
     const items = await articleService.list(categoryId);
     res.status(200).json(items);
   }),
@@ -45,12 +56,13 @@ articleRoutes.get(
 /**
  * GET /articles/:id — devuelve un artículo.
  *
- * @throws AppError 404 si no existe.
+ * @throws AppError 400 si el id no es válido, 404 si no existe.
  */
 articleRoutes.get(
   "/:id",
+  validateRequest({ params: articleIdParams }),
   asyncHandler(async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
+    const { id } = req.params as unknown as IdParams;
     const item = await articleService.getById(id);
     if (!item) {
       throw new AppError(`El artículo con id ${id} no existe.`, 404);
@@ -67,23 +79,14 @@ articleRoutes.get(
  */
 articleRoutes.post(
   "/",
+  validateRequest({ body: articleBody }),
   asyncHandler(async (req: Request, res: Response) => {
-    const { name, description, imageUrl, categoryId, stock, needsRepair } = req.body ?? {};
-    const validatedName = validationService.requireNonEmptyString(name, "name");
-    const validatedCategoryId = validationService.requirePositiveInteger(categoryId, "categoryId");
-    const validatedStock = articleValidationService.requireNonNegativeInteger(stock ?? 0, "stock");
+    const body = req.body as ArticleBody;
 
-    await validationService.ensureCategoryExists(validatedCategoryId);
-    await validationService.ensureArticleNameIsUniqueInCategory(validatedName, validatedCategoryId);
+    await validationService.ensureCategoryExists(body.categoryId);
+    await validationService.ensureArticleNameIsUniqueInCategory(body.name, body.categoryId);
 
-    const created = await articleService.create({
-      name: validatedName,
-      description,
-      imageUrl,
-      categoryId: validatedCategoryId,
-      stock: validatedStock,
-      needsRepair: needsRepair === true,
-    });
+    const created = await articleService.create(body);
     res.status(201).json(created);
   }),
 );
@@ -95,23 +98,14 @@ articleRoutes.post(
  */
 articleRoutes.put(
   "/:id",
+  validateRequest({ params: articleIdParams, body: articleBody }),
   asyncHandler(async (req: Request, res: Response) => {
-    const id = Number(req.params.id);
-    const { name, description, imageUrl, categoryId, stock, needsRepair } = req.body ?? {};
-    const validatedName = validationService.requireNonEmptyString(name, "name");
-    const validatedCategoryId = validationService.requirePositiveInteger(categoryId, "categoryId");
-    const validatedStock = articleValidationService.requireNonNegativeInteger(stock ?? 0, "stock");
+    const { id } = req.params as unknown as IdParams;
+    const body = req.body as ArticleBody;
 
-    await validationService.ensureCategoryExists(validatedCategoryId);
+    await validationService.ensureCategoryExists(body.categoryId);
 
-    const updated = await articleService.update(id, {
-      name: validatedName,
-      description,
-      imageUrl,
-      categoryId: validatedCategoryId,
-      stock: validatedStock,
-      needsRepair: needsRepair === true,
-    });
+    const updated = await articleService.update(id, body);
     if (!updated) {
       throw new AppError(`El artículo con id ${id} no existe.`, 404);
     }
@@ -119,4 +113,4 @@ articleRoutes.put(
   }),
 );
 
-articleRoutes.delete("/:id", deleteArticle);
+articleRoutes.delete("/:id", validateRequest({ params: articleIdParams }), deleteArticle);
