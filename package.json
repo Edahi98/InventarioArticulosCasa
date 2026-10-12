@@ -11,6 +11,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
+    "user:create": "npm run user:create -w inventario-backend --",
     "docker:up": "node scripts/docker.mjs up",
     "docker:down": "node scripts/docker.mjs down",
     "docker:clean": "node scripts/docker.mjs clean",
