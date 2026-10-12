@@ -2,6 +2,9 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import { router } from "./router/index.js";
 import { vAriaFocus } from "./directives/v-aria-focus.js";
+import { useTheme } from "./utils/useTheme.js";
+import "@fontsource/bagel-fat-one";
+import "@fontsource-variable/nunito";
 import "./assets/main.css";
 
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -20,6 +23,8 @@ import {
   faPlus,
   faWrench,
   faCheck,
+  faMoon,
+  faSun,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -36,7 +41,11 @@ library.add(
   faPlus,
   faWrench,
   faCheck,
+  faMoon,
+  faSun,
 );
+
+useTheme();
 
 const app = createApp(App);
 app.use(router);
