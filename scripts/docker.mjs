@@ -83,6 +83,7 @@ function clean() {
 }
 
 const COMMANDS = {
+  build: () => run(["compose", "build"]),
   up: () => run(["compose", "up", "-d", "--build"]),
   down: () => run(["compose", "down", "--remove-orphans"]),
   clean,

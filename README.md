@@ -74,6 +74,7 @@ npm run typecheck      # revisa tipos de frontend y backend y sintaxis del agent
 ### Docker desde la raíz
 
 ```bash
+npm run docker:build     # construye las imágenes sin levantar nada (docker compose build)
 npm run docker:up        # construye y levanta todo el stack (docker compose up -d --build)
 npm run docker:down      # detiene y elimina los contenedores del compose
 npm run docker:clean     # elimina contenedores e imágenes del sistema (conserva los volúmenes)
