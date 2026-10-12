@@ -1,5 +1,6 @@
+import "dotenv/config";
 import bcrypt from "bcryptjs";
-import { db, users } from "../db/client.js";
+import { db, queryClient, users } from "../db/client.js";
 
 /**
  * Crea un usuario con la contraseña cifrada.
@@ -18,7 +19,9 @@ async function main(): Promise<void> {
   console.log(`Usuario "${username}" creado correctamente.`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(() => queryClient.end());
