@@ -1,10 +1,12 @@
-from flask import Flask, jsonify
+from flask import Flask, g, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 
 from src.agent.chat_agent import AgentChat
 from src.backend import Backend
+from src.errors.error_filtro import InstructionRejected
+from src.services.gate_instruction import InstructionGate
 from src.constantes.constantes_limites import (
     CHAT_LIMIT,
     DEFAULT_LIMITS,
@@ -34,8 +36,11 @@ class ApiServer:
     /health (público), /chat (agente + fichas) y /upload (ambos exigen el token).
     """
 
-    def __init__(self, chat: AgentChat, api: Backend, verifier: TokenVerifier, force_https: bool = False) -> None:
+    def __init__(
+        self, chat: AgentChat, api: Backend, verifier: TokenVerifier, gate: InstructionGate, force_https: bool = False
+    ) -> None:
         self._chat = chat
+        self._gate = gate
         self._api = api
         self._verifier = verifier
         self.app = Flask(__name__)
@@ -70,6 +75,10 @@ class ApiServer:
     @JwtRequired.endpoint
     @DtoValidator.json(ChatDto)
     def chat(self, dto: ChatDto):
+        try:
+            self._gate.review(f"api:{g.auth['sub']}", dto.message)
+        except InstructionRejected as rejected:
+            return jsonify({"error": str(rejected)}), rejected.status
         reply, images = self._chat.ask(dto.message)
         return jsonify({"reply": reply, "images": [Codec.to_base64(img) for img in images]})
 

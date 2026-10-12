@@ -28,7 +28,9 @@ from src.dtos.dto_chat import ChatDto
 from src.dtos.dto_link_code import LinkCodeDto
 from src.dtos.dto_upload import UploadDto
 from src.errors.error_backend import BackendError
+from src.errors.error_filtro import InstructionRejected
 from src.services.context_auth import AuthContext
+from src.services.gate_instruction import InstructionGate
 from src.services.session_bot import BotSessions
 
 logger = logging.getLogger(__name__)
@@ -40,8 +42,11 @@ class BotHandlers:
     página web, y cada mensaje se atiende con el token que el backend entregó al canjearlo.
     """
 
-    def __init__(self, chat: AgentChat, api: Backend, sessions: BotSessions, web_url: str) -> None:
+    def __init__(
+        self, chat: AgentChat, api: Backend, sessions: BotSessions, gate: InstructionGate, web_url: str
+    ) -> None:
         self._chat = chat
+        self._gate = gate
         self._api = api
         self._sessions = sessions
         self._web_url = web_url
@@ -72,7 +77,7 @@ class BotHandlers:
             return
         thinking = await update.message.reply_text(PROCESSING)
         chat = await self._valid(thinking, ChatDto, message=update.message.text or "")
-        if chat is None:
+        if chat is None or not await self._allowed(update, thinking, chat.message):
             return
         await self._answer(update, thinking, chat.message, session.token)
 
@@ -98,6 +103,8 @@ class BotHandlers:
         await thinking.edit_text(PROCESSING)
         caption = (update.message.caption or "").strip()
         if caption and await self._valid(thinking, ChatDto, message=caption) is None:
+            return
+        if caption and not await self._allowed(update, thinking, caption):
             return
         template = {True: PHOTO_WITH_CAPTION, False: PHOTO_WITHOUT_CAPTION}[bool(caption)]
         await self._answer(update, thinking, template.format(caption=caption, url=url), session.token)
@@ -140,6 +147,15 @@ class BotHandlers:
         except ValidationError as error:
             await thinking.edit_text(DtoValidator.describe(error))
             return None
+
+    async def _allowed(self, update: Update, thinking, message: str) -> bool:
+        """Pregunta al filtro si el mensaje es de inventario; si no, avisa en el mismo mensaje y retorna False."""
+        try:
+            await asyncio.to_thread(self._gate.review, f"tg:{update.effective_user.id}", message)
+        except InstructionRejected as rejected:
+            await thinking.edit_text(str(rejected))
+            return False
+        return True
 
     def _ask_as(self, token: str, message: str):
         with AuthContext.as_user(token):
