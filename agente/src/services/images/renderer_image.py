@@ -18,8 +18,11 @@ class CardImageRenderer:
     """Arma fichas de archivo de artículos/categorías sobre una grilla, usando GridImageBuilder."""
 
     def render(self, data) -> list[bytes]:
-        """Agrupa en galerías los artículos y categorías que haya en data (un dict o una lista)."""
-        items = [i for i in (data if isinstance(data, list) else [data]) if isinstance(i, dict)]
+        """
+        Agrupa en galerías los artículos y categorías que haya en data (un dict, una lista o una lista de
+        resultados de tools). Un mismo artículo o categoría que aparece en varias tools sale una sola vez.
+        """
+        items = self._unique(self._flatten(data))
         articles = [self._article_card(i) for i in items if self._is_article(i)]
         categories = [self._category_card(i) for i in items if self._is_category(i)]
         return [
@@ -27,6 +30,21 @@ class CardImageRenderer:
             for cards, noun in ((articles, "artículos"), (categories, "categorías"))
             if cards
         ]
+
+    @staticmethod
+    def _flatten(data) -> list[dict]:
+        parts = data if isinstance(data, list) else [data]
+        return [i for part in parts for i in (part if isinstance(part, list) else [part]) if isinstance(i, dict)]
+
+    @classmethod
+    def _unique(cls, items: list[dict]) -> list[dict]:
+        """Une los repetidos por tipo e id; el dato más reciente gana, pero no pisa campos con vacíos."""
+        merged: dict = {}
+        for item in items:
+            key = (cls._is_article(item), item.get("id", id(item)))
+            filled = {k: v for k, v in item.items() if v is not None and v != ""}
+            merged[key] = {**merged.get(key, {}), **filled}
+        return list(merged.values())
 
     @staticmethod
     def _is_article(item: dict) -> bool:

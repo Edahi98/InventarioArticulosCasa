@@ -24,5 +24,5 @@ class AgentChat:
         tools = [m for m in messages if isinstance(m, ToolMessage)]
         logger.info("tools usadas: %s", [m.name for m in tools] or "ninguna")
         results = [Codec.parse(m.content) for m in tools]
-        images = [img for data in results for img in self._renderer.render(data)]
+        images = self._renderer.render(results)
         return messages[-1].content, images
