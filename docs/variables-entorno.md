@@ -13,9 +13,7 @@ Configuración de la base de datos (Supabase), el almacenamiento de imágenes (C
 * **`PORT`**: Puerto del backend (ej. `3000`).
 * **`DATABASE_URL`**: URL de conexión a Supabase (PostgreSQL), con la Connection Pooling URL.
 * **`JWT_SECRET`**: Secreto para la firma de tokens JWT.
-* **`CLOUDINARY_CLOUD_NAME`**: Nombre del cloud en Cloudinary.
-* **`CLOUDINARY_API_KEY`**: API Key de Cloudinary.
-* **`CLOUDINARY_API_SECRET`**: API Secret de Cloudinary.
+* **`CLOUDINARY_URL`**: Credenciales de Cloudinary en una sola variable, con el formato `cloudinary://<api_key>:<api_secret>@<cloud_name>`.
 
 ## Agente (`/agente/.env`)
 Configuración de la IA y conexión del agente inteligente.

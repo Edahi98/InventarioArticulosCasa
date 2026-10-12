@@ -27,7 +27,7 @@ services:
     ports:
       - "4000:4000"
     env_file:
-      # Acá van JWT_SECRET y CLOUDINARY_* (requeridas)
+      # Acá van JWT_SECRET y CLOUDINARY_URL (requeridas)
       - ./backend/.env
     environment:
       PORT: 4000

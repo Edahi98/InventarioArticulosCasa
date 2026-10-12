@@ -60,7 +60,7 @@ async function restoreImages(data: Record<string, Rows>, manifest: ImageEntry[],
  * Reemplaza el contenido actual de las tablas, conserva los ids originales, reinicia las secuencias
  * y vuelve a subir las imágenes a Cloudinary actualizando la URL de cada registro.
  *
- * Requiere `DATABASE_URL` y `CLOUDINARY_*` en el .env.
+ * Requiere `DATABASE_URL` y `CLOUDINARY_URL` en el .env.
  * Uso: `tsx src/scripts/uploadData.ts [carpeta]` (por defecto ./backup).
  */
 async function upload(): Promise<void> {

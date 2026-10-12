@@ -37,9 +37,7 @@ Respaldan y restauran la base de datos (Supabase) junto con sus imágenes (Cloud
 
 ```env
 DATABASE_URL=postgresql://...      # Supabase
-CLOUDINARY_CLOUD_NAME=...          # solo para subir
-CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
+CLOUDINARY_URL=cloudinary://...    # solo para subir
 ```
 
 ## Bajar datos
