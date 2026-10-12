@@ -1,11 +1,10 @@
 # Inventario Inteligente para el Hogar 🏠📦
 
-Sistema integral para la gestión y seguimiento del inventario de artículos del hogar. Diseñado con una arquitectura de microservicios, permite administrar el inventario a través de una interfaz web intuitiva o interactuar mediante lenguaje natural utilizando un Bot de Telegram impulsado por un Agente de IA.
+Sistema integral para la gestión y seguimiento del inventario de artículos del hogar. Diseñado con una arquitectura de microservicios, permite administrar el inventario a través de una interfaz web intuitiva o interactuar mediante lenguaje natural con un Agente de IA que también atiende por Telegram.
 
 ## 🌟 Características Principales
 - **Dashboard Web**: Interfaz construida con Vue y Tailwind CSS para administrar artículos, categorías, notas y stock.
-- **Asistente de IA (Agente)**: Un agente inteligente (Python) que permite hacer consultas por coincidencia aproximada y operaciones con lenguaje natural.
-- **Bot de Telegram**: Interfaz conversacional accesible desde cualquier lugar para registrar o consultar el inventario rápidamente.
+- **Asistente de IA (Agente)**: Un agente inteligente (Python) que permite hacer consultas por coincidencia aproximada y operaciones con lenguaje natural, desde la terminal, una API HTTP o un bot de Telegram integrado, accesible desde cualquier lugar.
 - **Persistencia**: Base de datos en Supabase (PostgreSQL) e imágenes en Cloudinary.
 - **Gestión de Reportes**: Descarga y exportación de reportes de inventario a Excel.
 
@@ -22,7 +21,7 @@ graph TD
     %% Componentes Principales
     subgraph "Capa de Presentación & IA"
         Frontend["Frontend Web<br/>(Vue, Vite, Tailwind)"]
-        Agente["Agente de IA<br/>(FastAPI, LLM)"]
+        Agente["Agente de IA<br/>(LangGraph, Flask, bot de Telegram)"]
     end
 
     %% Capa de Backend
