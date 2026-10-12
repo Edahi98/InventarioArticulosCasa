@@ -20,14 +20,14 @@ async function handleLogout(): Promise<void> {
     >
       <router-link
         to="/"
-        class="flex items-center gap-2 rounded-full pr-3 text-xl text-[var(--l-ink)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--l-ink)]"
+        class="flex min-w-0 items-center gap-2 rounded-full pr-3 text-xl text-[var(--l-ink)] focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[var(--l-ink)]"
         style="font-family: var(--l-display)"
       >
         <AppLogoBadge />
-        Guardacosas
+        <span class="hidden sm:inline">Guardacosas</span>
       </router-link>
 
-      <div class="flex items-center gap-2">
+      <div class="flex shrink-0 items-center gap-2">
         <button
           type="button"
           class="ui-btn ui-btn-sm ui-btn-ghost !px-3"
@@ -41,15 +41,15 @@ async function handleLogout(): Promise<void> {
         <nav v-if="authenticatedHttpClient.isAuthenticated()" class="flex items-center gap-2" aria-label="Principal">
           <router-link to="/search" class="ui-btn ui-btn-sm ui-btn-ghost" aria-label="Buscar">
             <font-awesome-icon icon="magnifying-glass" />
-            <span class="hidden sm:inline">Buscar</span>
+            <span class="hidden lg:inline">Buscar</span>
           </router-link>
           <router-link to="/telegram" class="ui-btn ui-btn-sm ui-btn-ghost" aria-label="Telegram">
             <font-awesome-icon icon="paper-plane" />
-            <span class="hidden md:inline">Telegram</span>
+            <span class="hidden lg:inline">Telegram</span>
           </router-link>
           <router-link to="/users" class="ui-btn ui-btn-sm ui-btn-ghost" aria-label="Habitantes">
             <font-awesome-icon icon="user" />
-            <span class="hidden sm:inline">Habitantes</span>
+            <span class="hidden lg:inline">Habitantes</span>
           </router-link>
           <button type="button" class="ui-btn ui-btn-sm ui-btn-primary" @click="handleLogout">Salir</button>
         </nav>
