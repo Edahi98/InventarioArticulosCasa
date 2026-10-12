@@ -27,7 +27,7 @@ services:
     ports:
       - "4000:4000"
     env_file:
-      # Acá van JWT_SECRET y CLOUDINARY_URL (requeridas)
+      # Acá van JWT_PRIVATE_KEY y CLOUDINARY_URL (requeridas)
       - ./backend/.env
     environment:
       PORT: 4000
@@ -60,8 +60,8 @@ services:
     build: ./agente
     container_name: inventario-agente
     env_file:
-      # Acá van OPENROUTER_API_KEY, TELEGRAM_TOKEN y las credenciales del agente
-      # (INVENTARIO_USER / INVENTARIO_PASS)
+      # Acá van OPENROUTER_API_KEY, TELEGRAM_TOKEN y WEB_URL. El agente no tiene credenciales:
+      # las personas vinculan su cuenta desde la web con un código
       - ./agente/.env
     environment:
       BACKEND_URL: http://inventario-backend:4000

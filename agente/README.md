@@ -17,7 +17,8 @@ Copiar `.env.example` a `.env` y completar:
 - `BACKEND_URL` — URL del backend de InventarioArticulosCasa (requerida)
 - `OPENROUTER_API_KEY` — API key de OpenRouter (requerida)
 - `OPENROUTER_MODEL` — modelo a usar (por defecto `openai/gpt-4o-mini`)
-- `INVENTARIO_USER` / `INVENTARIO_PASS` — credenciales de login contra el backend (opcional; sin ellas, las requests van sin autenticar). Con ellas, el agente vuelve a iniciar sesión solo cuando el token expira o se cierra la sesión
+- `WEB_URL` — URL de la página web; el bot la menciona al pedir que vinculen la cuenta. El agente **no inicia sesión**: las personas vinculan su cuenta con un código que generan en la web (menú «Telegram») y envían al bot con `/vincular CÓDIGO`
+- `INVENTARIO_TOKEN` — solo modo CLI: token obtenido al iniciar sesión en la web
 - `MODE` — `telegram` (bot de Telegram), `server` (expone API HTTP) o `cli` (modo interactivo por terminal)
 - `TELEGRAM_TOKEN` — token de BotFather (requerido con `MODE=telegram`)
 - `PORT` — puerto del servidor Flask cuando `MODE=server`
