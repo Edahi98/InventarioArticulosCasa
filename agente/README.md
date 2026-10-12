@@ -35,6 +35,14 @@ uv run python main.py server     # API HTTP
 
 En modo servidor expone `GET /health`, `POST /chat` y `POST /upload`.
 
+## Imágenes dibujadas por el agente
+
+Si la persona pide crear una imagen para un artículo o categoría, el agente la dibuja como SVG y la tool
+`crear_imagen` la valida (`SvgGuard`: solo formas, degradados y texto; sin scripts ni recursos externos), la
+convierte a PNG con [resvg](https://github.com/RazrFalcon/resvg) (`resvg-py`, sin dependencias nativas) y la
+sube al backend. El texto dentro del SVG usa las fuentes del sistema; si la imagen debe llevar letras, el
+contenedor necesita al menos una fuente instalada.
+
 ## Docker
 
 Se construye y corre como parte del `docker-compose.yaml` de la raíz. No define `EXPOSE`
