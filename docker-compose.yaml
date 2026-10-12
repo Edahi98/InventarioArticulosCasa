@@ -59,19 +59,14 @@ services:
   agente:
     build: ./agente
     container_name: inventario-agente
-    # BACKEND_URL/OPENROUTER_MODEL son de red interna del compose: se definen acá (no en
-    # agente/.env, que NO puede sobreescribir claves ya listadas en `environment:`). Para
-    # cambiarlas usá un .env junto a este compose (ver variables ${...} abajo).
+    env_file:
+      # Acá van OPENROUTER_API_KEY, TELEGRAM_TOKEN y las credenciales del agente
+      # (INVENTARIO_USER / INVENTARIO_PASS)
+      - ./agente/.env
     environment:
       BACKEND_URL: http://inventario-backend:4000
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-4o-mini}
-      # telegram = bot de Telegram | server = API HTTP en :5000 | cli = terminal
-      MODE: ${AGENTE_MODE:-telegram}
-      PORT: 5000
-    env_file:
-      # Acá van INVENTARIO_USER / INVENTARIO_PASS (login contra el backend), TELEGRAM_TOKEN (BotFather) y OPENROUTER_API_KEY
-      - path: ./agente/.env
-        required: false
+      MODE: telegram
     depends_on:
       backend:
         condition: service_healthy
