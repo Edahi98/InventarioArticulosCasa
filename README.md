@@ -72,6 +72,8 @@ npm run build          # compila frontend y backend (con caché)
 npm run typecheck      # revisa tipos de frontend y backend y sintaxis del agente
 ```
 
+Las imágenes de `backend` y `frontend` se construyen desde la raíz del repositorio: cada `Dockerfile` usa `turbo prune <paquete> --docker` para copiar solo los paquetes que necesita y reutilizar la caché de dependencias.
+
 ## 📦 Estructura del Repositorio
 
 *   `/backend`: API RESTful que administra la lógica de negocio y persistencia.
