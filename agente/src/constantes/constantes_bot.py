@@ -2,8 +2,8 @@ MAX_ALBUM = 10
 CAPTION_LIMIT = 1024
 BEAR_FILE = "oso_guardian.png"
 
-PROCESSING = "⏳ Procesando..."
-UPLOADING = "⏳ Subiendo imagen..."
+PROCESSING = "🐻⏳ Los ositos lo están revisando..."
+UPLOADING = "🐻📸 Guardando tu foto..."
 
 PHOTO_WITH_CAPTION = (
     "{caption}\n\n"
@@ -15,19 +15,24 @@ PHOTO_WITHOUT_CAPTION = (
 )
 
 WELCOME = (
-    "👋 Soy el asistente de tu inventario.\n\n"
+    "🐻👋 ¡Hola! Somos los Guardacosas, los ositos que cuidan tu inventario.\n\n"
     "Para empezar, vincula tu cuenta desde la página web:\n"
     "1. Inicia sesión en {web_url}\n"
     "2. Abre «Telegram» en el menú y genera un código\n"
     "3. Envíamelo aquí: /vincular CÓDIGO"
 )
 LINK_REQUIRED = (
-    "🔒 Primero vincula tu cuenta desde la página web:\n"
+    "🐻🔒 Ay, perdoncito... somos los ositos guardianes de esta casa y no podemos confiar en personas "
+    "desconocidas 🥺💗 Todavía no te conocemos, pero si vinculas tu cuenta desde la página web seremos amiguitos:\n"
     "1. Inicia sesión en {web_url}\n"
     "2. Abre «Telegram» en el menú y genera un código\n"
     "3. Envíamelo aquí: /vincular CÓDIGO"
 )
-LINKING = "⏳ Vinculando tu cuenta..."
-LINKED = "✅ Listo, {username}. Ya puedes pedirme cosas de tu inventario. Usa /salir para cerrar la sesión."
-LOGGED_OUT = "👋 Sesión cerrada. Para volver a usarme, genera un código nuevo en la página web."
-NOT_LINKED = "No tienes una cuenta vinculada."
+LINKING = "🐻⏳ Vinculando tu cuenta..."
+LINKED = "🐻✅ ¡Listo, {username}! Ya puedes pedirnos cosas de tu inventario. Usa /salir para cerrar la sesión."
+LOGGED_OUT = "🐻👋 Sesión cerrada, ¡te vamos a extrañar! 🥺 Para volver, genera un código nuevo en la página web."
+NOT_LINKED = "🐻🥺 Todavía no te conocemos, y los guardianes no podemos confiar en desconocidos... 💗 Vincula tu cuenta primero."
+IMAGE_ERROR = "🐻😢 Uy, no pudimos procesar tu imagen: {error}"
+LINK_ERROR = "🐻😢 No pudimos vincular tu cuenta: {error}"
+AGENT_ERROR = "🐻😢 Algo salió mal al contactar al agente: {error}"
+INVALID_INPUT = "🐻🥺 Hmm, no entendimos eso. {details}"

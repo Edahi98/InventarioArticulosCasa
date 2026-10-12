@@ -10,8 +10,12 @@ from telegram.ext import ContextTypes
 from src.agent.chat_agent import AgentChat
 from src.backend import Backend
 from src.constantes.constantes_bot import (
+    AGENT_ERROR,
     BEAR_FILE,
     CAPTION_LIMIT,
+    IMAGE_ERROR,
+    INVALID_INPUT,
+    LINK_ERROR,
     LINK_REQUIRED,
     LINKED,
     LINKING,
@@ -101,7 +105,7 @@ class BotHandlers:
             url = await asyncio.to_thread(self._upload_as, session.token, upload.data, upload.filename)
         except Exception as e:
             logger.exception("Error subiendo la foto")
-            await thinking.edit_text(f"Error al procesar la imagen: {e}")
+            await thinking.edit_text(IMAGE_ERROR.format(error=e))
             return
 
         await thinking.edit_text(PROCESSING)
@@ -122,7 +126,7 @@ class BotHandlers:
         try:
             session = BotSessionDto.model_validate(await asyncio.to_thread(self._api.claim_link_code, dto.code))
         except (BackendError, requests.RequestException, ValidationError) as e:
-            await thinking.edit_text(f"No pude vincular tu cuenta: {e}")
+            await thinking.edit_text(LINK_ERROR.format(error=e))
             return
 
         self._sessions.link(update.effective_user.id, session)
@@ -149,7 +153,7 @@ class BotHandlers:
         try:
             return dto.model_validate(data)
         except ValidationError as error:
-            await thinking.edit_text(DtoValidator.describe(error))
+            await thinking.edit_text(INVALID_INPUT.format(details=DtoValidator.describe(error)))
             return None
 
     async def _allowed(self, update: Update, thinking, message: str) -> bool:
@@ -174,7 +178,7 @@ class BotHandlers:
             reply, images = await asyncio.to_thread(self._ask_as, token, message)
         except Exception as e:
             logger.exception("Error en el agente")
-            await thinking.edit_text(f"Error al contactar al agente: {e}")
+            await thinking.edit_text(AGENT_ERROR.format(error=e))
             return
 
         logger.info("reply=%r  images=%d", reply[:80], len(images))

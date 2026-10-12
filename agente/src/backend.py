@@ -6,7 +6,7 @@ from src.constantes.constantes_red import CLAIM_PATH, LOGOUT_PATH
 from src.errors.error_backend import BackendError
 from src.services.context_auth import AuthContext
 
-SESSION_EXPIRED = "Tu sesión no es válida o expiró. Vuelve a vincular tu cuenta desde la página web."
+SESSION_EXPIRED = "🐻🥺 Tu sesión ya no es válida o expiró. Vuelve a vincular tu cuenta desde la página web."
 
 
 class Backend:
