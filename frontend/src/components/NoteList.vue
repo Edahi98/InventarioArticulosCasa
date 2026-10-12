@@ -7,6 +7,9 @@ import NoteActionModal from "./notes/NoteActionModal.vue";
 
 const props = defineProps<{ articleId: number }>();
 
+const POSTIT_COLORS = ["#ffe98a", "#ffb3cb", "#cdbaf7", "#bfe9d5"];
+const POSTIT_TILTS = [-1.6, 1.2, -0.6, 1.8];
+
 const notes = ref<Note[]>([]);
 const isLoading = ref(true);
 const errorMessage = ref("");
@@ -33,7 +36,7 @@ async function loadNotes(): Promise<void> {
 
 async function handleSubmit(): Promise<void> {
   if (!form.title.trim()) {
-    errorMessage.value = "El título de la nota es obligatorio.";
+    errorMessage.value = "Ponle un título a la nota.";
     return;
   }
 
@@ -86,61 +89,57 @@ onMounted(loadNotes);
 </script>
 
 <template>
-  <section class="flex flex-col gap-4">
-    <h2 class="text-xl font-extrabold text-slate-900">Notas</h2>
+  <section class="space-y-8">
+    <h2 class="ui-sign text-4xl">Notas pegadas</h2>
 
-    <form class="cartoon-panel flex flex-col gap-2 p-4" @submit.prevent="handleSubmit">
-      <input
-        v-model="form.title"
-        type="text"
-        placeholder="Título de la nota"
-        class="cartoon-input"
-      />
-      <textarea
-        v-model="form.description"
-        rows="2"
-        placeholder="Descripción"
-        class="cartoon-input"
-      />
-      <button
-        type="submit"
-        :disabled="isSubmitting"
-        class="cartoon-btn-primary self-start disabled:opacity-50"
-      >
-        {{ isSubmitting ? "Guardando..." : "Añadir nota" }}
-      </button>
-      <p v-if="errorMessage" class="text-sm font-semibold text-rose-600">{{ errorMessage }}</p>
+    <form
+      class="ui-notebook flex flex-col gap-3 py-7 pr-6"
+      @submit.prevent="handleSubmit"
+    >
+      <p class="font-semibold">Pega una nota nueva</p>
+      <input v-model="form.title" type="text" placeholder="¿Qué quieres recordar?" class="ui-input" />
+      <textarea v-model="form.description" rows="2" placeholder="Los detalles, si hay" class="ui-input" />
+      <div class="flex flex-wrap items-center gap-3">
+        <button type="submit" :disabled="isSubmitting" class="ui-btn ui-btn-primary">
+          {{ isSubmitting ? "Pegando..." : "Pegar nota" }}
+        </button>
+        <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
+      </div>
     </form>
 
-    <p v-if="isLoading" class="text-slate-500">Cargando notas...</p>
-    <p v-else-if="notes.length === 0" class="text-slate-500">No hay notas registradas todavía.</p>
+    <p v-if="isLoading" class="text-[var(--l-muted)]">Los guardianes están buscando las notas...</p>
+    <p v-else-if="notes.length === 0" class="text-[var(--l-muted)]">
+      Todavía no hay notas. Aquí caben la garantía, el color o a quién se lo prestaste.
+    </p>
 
-    <ul v-else class="flex flex-col gap-3">
+    <ul v-else class="grid grid-cols-1 gap-8 pt-2 sm:grid-cols-2">
       <li
-        v-for="note in notes"
+        v-for="(note, index) in notes"
         :key="note.id"
-        class="cartoon-card p-3"
+        class="ui-postit flex flex-col gap-3 p-6 pt-8"
+        :style="{
+          background: POSTIT_COLORS[index % POSTIT_COLORS.length],
+          transform: `rotate(${POSTIT_TILTS[index % POSTIT_TILTS.length]}deg)`,
+        }"
       >
-        <div class="flex items-start justify-between gap-2">
-          <div>
-            <h3 class="font-extrabold text-slate-900">{{ note.title }}</h3>
-            <p class="text-sm text-slate-600">{{ note.description }}</p>
-            <p class="mt-1 text-xs text-slate-400">{{ note.createdAt }}</p>
-          </div>
-          <div class="flex shrink-0 gap-1">
-            <button
-              class="cartoon-btn-secondary px-2 py-1 text-xs"
-              @click="openEditModal(note)"
-            >
-              Editar
-            </button>
-            <button
-              class="cartoon-btn-danger px-2 py-1 text-xs"
-              @click="openDeleteModal(note)"
-            >
-              Eliminar
-            </button>
-          </div>
+        <h3 class="text-lg font-semibold leading-snug">{{ note.title }}</h3>
+        <p class="text-sm leading-relaxed">{{ note.description }}</p>
+        <p class="text-xs opacity-60">{{ note.createdAt }}</p>
+        <div class="mt-1 flex gap-2">
+          <button
+            type="button"
+            class="rounded-full bg-[#fffaf2]/70 px-3 py-1 text-xs font-semibold hover:bg-[#fffaf2]"
+            @click="openEditModal(note)"
+          >
+            Editar
+          </button>
+          <button
+            type="button"
+            class="rounded-full bg-[#fffaf2]/70 px-3 py-1 text-xs font-semibold hover:bg-[#fffaf2]"
+            @click="openDeleteModal(note)"
+          >
+            Quitar
+          </button>
         </div>
       </li>
     </ul>
