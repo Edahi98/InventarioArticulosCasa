@@ -10,6 +10,7 @@ from telegram.ext import ContextTypes
 from src.agent.chat_agent import AgentChat
 from src.backend import Backend
 from src.constantes.constantes_bot import (
+    CAPTION_LIMIT,
     LINK_REQUIRED,
     LINKED,
     LINKING,
@@ -174,13 +175,17 @@ class BotHandlers:
             return
 
         logger.info("reply=%r  images=%d", reply[:80], len(images))
-        await (thinking.edit_text(reply) if reply else thinking.delete())
+        captioned = bool(images) and 0 < len(reply) <= CAPTION_LIMIT
+        await (thinking.delete() if captioned or not reply else thinking.edit_text(reply))
         for i in range(0, len(images), MAX_ALBUM):
-            await self._send_album(update, images[i:i + MAX_ALBUM])
+            caption = reply if captioned and i == 0 else None
+            await self._send_album(update, images[i:i + MAX_ALBUM], caption)
 
     @staticmethod
-    async def _send_album(update: Update, images: list[bytes]) -> None:
+    async def _send_album(update: Update, images: list[bytes], caption: str | None = None) -> None:
+        """Envía la foto o el álbum; el texto de la IA va como pie de la primera imagen."""
         if len(images) == 1:
-            await update.message.reply_photo(photo=io.BytesIO(images[0]))
+            await update.message.reply_photo(photo=io.BytesIO(images[0]), caption=caption)
             return
-        await update.message.reply_media_group(media=[InputMediaPhoto(media=io.BytesIO(img)) for img in images])
+        media = [InputMediaPhoto(media=io.BytesIO(img), caption=caption if n == 0 else None) for n, img in enumerate(images)]
+        await update.message.reply_media_group(media=media)
