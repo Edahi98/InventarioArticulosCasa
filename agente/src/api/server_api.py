@@ -4,7 +4,9 @@ from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 
 from src.agent.chat_agent import AgentChat
+from src.api.webhook_telegram import TelegramWebhook
 from src.backend import Backend
+from src.constantes.constantes_estado import WEBHOOK_PATH
 from src.errors.error_filtro import InstructionRejected
 from src.services.gate_instruction import InstructionGate
 from src.constantes.constantes_limites import (
@@ -37,7 +39,13 @@ class ApiServer:
     """
 
     def __init__(
-        self, chat: AgentChat, api: Backend, verifier: TokenVerifier, gate: InstructionGate, force_https: bool = False
+        self,
+        chat: AgentChat,
+        api: Backend,
+        verifier: TokenVerifier,
+        gate: InstructionGate,
+        force_https: bool = False,
+        webhook: TelegramWebhook | None = None,
     ) -> None:
         self._chat = chat
         self._gate = gate
@@ -67,6 +75,10 @@ class ApiServer:
         self.app.add_url_rule("/health", view_func=health, methods=["GET"])
         self.app.add_url_rule("/chat", view_func=self._limiter.limit(CHAT_LIMIT)(self.chat), methods=["POST"])
         self.app.add_url_rule("/upload", view_func=self._limiter.limit(UPLOAD_LIMIT)(self.upload), methods=["POST"])
+        if webhook is not None:
+            self.app.add_url_rule(
+                WEBHOOK_PATH, view_func=self._limiter.exempt(webhook.receive), endpoint="webhook", methods=["POST"]
+            )
 
     @staticmethod
     def health():

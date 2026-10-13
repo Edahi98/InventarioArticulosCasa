@@ -59,6 +59,23 @@ convierte a PNG con [resvg](https://github.com/RazrFalcon/resvg) (`resvg-py`, si
 sube al backend. El texto dentro del SVG usa las fuentes del sistema; si la imagen debe llevar letras, el
 contenedor necesita al menos una fuente instalada.
 
+## Despliegue en Vercel (webhook de Telegram)
+
+La API Flask corre como función de Vercel (`api/index.py` expone `app`, `vercel.json` fija carpeta y duración). Como
+una función no es un proceso permanente, el bot recibe los mensajes por webhook en `POST /telegram/webhook` en lugar de
+hacer polling, y el estado de la conversación vive en Postgres.
+
+Variables del proyecto: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `DECISIONS_MODEL`, `BACKEND_URL`, `WEB_URL`,
+`JWT_ISSUER`, `TELEGRAM_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` (secreto que Telegram envía en cada actualización) y
+`STATE_DATABASE_URL` (Postgres; crea el esquema `agente` aparte del `public` del backend). Sin `STATE_DATABASE_URL` el
+estado queda en memoria, que es lo que usan el CLI, el servidor y el polling locales.
+
+Registrar el webhook una vez desplegado (reemplaza el polling; `uv run python main.py telegram` lo quita al arrancar):
+
+```bash
+uv run python main.py webhook https://<dominio>/telegram/webhook
+```
+
 ## Docker
 
 Se construye y corre como parte del `docker-compose.yaml` de la raíz. No define `EXPOSE`
