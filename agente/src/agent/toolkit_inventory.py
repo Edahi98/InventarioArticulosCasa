@@ -35,6 +35,17 @@ class AgentToolkit:
 
     @DtoValidator.tool(CategoryFilterDto)
     @NameLookup.category(optional=True)
+    def listar_nombres_articulos(self, category_id: int | None = None) -> list[str] | str:
+        """Lista solo los nombres de los artículos (sin fichas ni más datos); category_name filtra por categoría."""
+        return self._inventory.names(ARTICLES, categoryId=category_id)
+
+    @DtoValidator.tool(NoInputDto)
+    def listar_nombres_categorias(self) -> list[str] | str:
+        """Lista solo los nombres de las categorías (sin fichas ni más datos)."""
+        return self._inventory.names(CATEGORIES)
+
+    @DtoValidator.tool(CategoryFilterDto)
+    @NameLookup.category(optional=True)
     def contar_articulos(self, category_id: int | None = None) -> dict | str:
         """Cuenta los artículos de una categoría (category_name) o, sin nombre, de todas las categorías."""
         return self._inventory.count_articles(categoryId=category_id)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from src.backend import Backend
 from src.constantes.constantes_agente import ARTICLES, RESOURCE_FIELDS
 from src.utilerias.util_valor import Valor
@@ -11,6 +13,10 @@ class InventoryClient:
 
     def list(self, resource: str, **params) -> list[dict]:
         return self._api.get(f"/{resource}", params=params or None)
+
+    def names(self, resource: str, **params) -> list[str]:
+        """Solo los nombres de los registros de `resource`, sin sus demás datos."""
+        return [record["name"] for record in self.list(resource, **params)]
 
     def count_articles(self, **params) -> dict:
         """Conteo de artículos por categoría (`categoryId` opcional) que calcula el backend."""
