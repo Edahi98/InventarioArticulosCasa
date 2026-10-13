@@ -54,9 +54,11 @@ QUESTION_TTL_SECONDS = 600
 PENDING_STATE = "Pregunta previa del asistente: {question}\nRespuesta de la persona: {message}"
 
 NOT_INVENTORY = (
-    "🐻🥺 Ay, perdoncito... somos los ositos guardianes de esta casa y solo sabemos cuidar tu inventario. "
-    "🏠💗 Como guardianes no podemos confiar en personas desconocidas ni en cosas que no sean de la casa, "
-    "¡nos da muchito miedo equivocarnos! 😢 Vuelve a escribirnos en 2 minutitos, ¿sí? 🧸"
+    "🐻🥺 Mmm, creemos que no te entendimos bien, ¡perdoncito! Los ositos guardianes solo sabemos cuidar "
+    "tu inventario: artículos, categorías y notas 🏠💗\n\n"
+    "Si fue un malentendido, cuéntanoslo con otras palabritas, por ejemplo «¿qué tengo guardado en la "
+    "cocina?» o «anota que compré un taladro» 🧸✨\n"
+    "Descansamos 2 minutitos y te escuchamos de nuevo, ¿sí? 💤"
 )
 COOLDOWN_ACTIVE = (
     "🐻😴 Shhh... los ositos guardianes estamos descansando un ratito. "
