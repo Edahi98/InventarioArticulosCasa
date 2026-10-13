@@ -35,6 +35,14 @@ uv run python main.py server     # API HTTP
 
 En modo servidor expone `GET /health`, `POST /chat` y `POST /upload`.
 
+## Herramientas encadenadas
+
+El agente es un grafo de LangGraph (`AgentBuilder`) con tres nodos: `modelo`, `herramientas` y `respuesta_final`.
+Después del modelo, una arista condicional manda a `herramientas` si pidió tools o termina si respondió con texto;
+después de las tools vuelve al modelo, que puede encadenar otra (buscar un artículo y luego actualizarlo, crear una
+categoría y luego el artículo). Tras 8 rondas de tools en un mismo mensaje pasa a `respuesta_final`, que responde sin
+más tools con lo que ya se obtuvo.
+
 ## Imágenes dibujadas por el agente
 
 Si la persona pide crear una imagen para un artículo o categoría, el agente la dibuja como SVG y la tool

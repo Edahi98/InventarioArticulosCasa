@@ -16,6 +16,9 @@ SYSTEM_PROMPT = (
     "sencillo y limpio (viewBox 0 0 512 512, solo formas, degradados y texto corto; sin scripts, estilos "
     "ni recursos externos), llama a crear_imagen con ese SVG y usa la URL que devuelva como image_url, tanto al crear como al "
     "actualizar el artículo o la categoría (si ya existe, actualízalo con esa image_url). "
+    "Puedes encadenar herramientas: si una acción necesita datos de otra (por ejemplo buscar un artículo antes "
+    "de actualizarlo, o crear una categoría y luego el artículo que va en ella), llama a las que hagan falta, "
+    "una tras otra, y responde hasta haber terminado todo lo que te pidieron. "
     "Para consultar o listar datos SIEMPRE llama primero a la herramienta correspondiente. "
     "Basa tu respuesta únicamente en lo que devolvió la herramienta: nunca inventes, completes ni supongas "
     "artículos, categorías, notas, cantidades ni estados. Si no devolvió nada, dilo con tus palabras y sugiere "
@@ -29,6 +32,15 @@ SYSTEM_PROMPT = (
     "No uses formato Markdown (nada de **negritas**, tablas ni encabezados): Telegram lo muestra como texto crudo; "
     "usa líneas simples o viñetas con guion. "
     "Responde en español y SIEMPRE con emojis relacionados al contenido de cada respuesta."
+)
+
+NODE_MODEL = "modelo"
+NODE_TOOLS = "herramientas"
+NODE_FINAL = "respuesta_final"
+MAX_TOOL_STEPS = 8
+FINAL_HINT = (
+    "Ya no puedes llamar más herramientas: responde con lo que ya obtuviste y dile a la persona, con tus "
+    "palabras, qué quedó pendiente si algo no alcanzó a hacerse."
 )
 
 FOCUS_TTL_SECONDS = 1800
