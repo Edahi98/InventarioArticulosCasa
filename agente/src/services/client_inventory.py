@@ -47,6 +47,10 @@ class InventoryClient:
         self._api.delete(f"/{resource}/{record_id}")
         return record
 
+    def delete_many(self, resource: str, record_ids: list[int]) -> list[dict]:
+        """Elimina cada registro y devuelve los que se borraron."""
+        return [self.delete(resource, record_id) for record_id in record_ids]
+
     def upload_image(self, data: bytes, filename: str) -> str:
         return self._api.upload_image(data, filename)
 

@@ -11,6 +11,7 @@ from src.dtos.dto_no_input import NoInputDto
 from src.dtos.dto_note_create import NoteCreateDto
 from src.dtos.dto_note_ref import NoteRefDto
 from src.dtos.dto_note_update import NoteUpdateDto
+from src.dtos.dto_notes_ref import NotesRefDto
 from src.dtos.dto_repair_flag import RepairFlagDto
 from src.decorators.decorator_name_lookup import NameLookup
 from src.decorators.decorator_tool_registry import ToolRegistry
@@ -165,3 +166,11 @@ class AgentToolkit:
     def eliminar_nota(self, article_id: int, note_id: int) -> str:
         """Elimina una nota de un artículo identificándola por título aproximado."""
         return f"Nota '{self._inventory.delete(NOTES, note_id)['title']}' eliminada."
+
+    @DtoValidator.tool(NotesRefDto)
+    @NameLookup.article()
+    @NameLookup.notes()
+    def eliminar_notas(self, article_id: int, note_ids: list[int]) -> str:
+        """Elimina varias notas de un artículo de una vez, dando los títulos aproximados en note_titles."""
+        titles = [note["title"] for note in self._inventory.delete_many(NOTES, note_ids)]
+        return f"Notas eliminadas ({len(titles)}): " + ", ".join(f"'{title}'" for title in titles) + "."

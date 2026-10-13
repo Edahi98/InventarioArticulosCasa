@@ -14,7 +14,7 @@ CHOICE_MESSAGE = (
 CHOICE_TARGETS = {
     "articles": ("el artículo", "article_name"),
     "categories": ("la categoría", "category_name (o dentro de la lista category_names)"),
-    "notes": ("la nota", "note_title"),
+    "notes": ("la nota", "note_title (o dentro de la lista note_titles)"),
 }
 CHOICE_FOLLOWUP = (
     "{message}\n[La persona eligió {noun} «{name}»{detail}. Para referirte a ese registro usa "

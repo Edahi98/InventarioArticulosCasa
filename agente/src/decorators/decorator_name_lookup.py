@@ -37,20 +37,28 @@ class NameLookup:
         return decorator
 
     @classmethod
-    def by_names(cls, id_param: str, name_param: str, resource: str, empty: str):
+    def by_names(cls, id_param: str, name_param: str, resource: str, empty: str,
+                 filters: dict[str, str] | None = None, optional: bool = True):
         """
-        Como `by_name`, pero el LLM da una lista de nombres opcional y el método decorado recibe en `id_param`
-        la lista de ids (sin repetir), o None si no se indicó ninguno.
+        Como `by_name`, pero el LLM da una lista de nombres y el método decorado recibe en `id_param` la lista
+        de ids (sin repetir), o None si no se indicó ninguno. Si no es opcional, la lista es obligatoria.
+        Resuelve todos los nombres antes de que el método actúe: si uno es ambiguo o no existe, no se hace nada.
         """
+        exposed_type = (list[str] | None) if optional else list[str]
+        default = None if optional else inspect.Parameter.empty
+
         def decorator(fn):
             @wraps(fn)
             def wrapper(self, *args, **kwargs):
                 queries = [q for q in (kwargs.pop(name_param, None) or []) if Valor.given(q)]
-                ids = [self._resolver.resolve(resource, query, empty) for query in queries]
+                if not queries and not optional:
+                    raise ValueError(f"Falta indicar {name_param}.")
+                scope = {q: kwargs[resolved] for q, resolved in (filters or {}).items()}
+                ids = [self._resolver.resolve(resource, query, empty, **scope) for query in queries]
                 kwargs[id_param] = list(dict.fromkeys(ids)) or None
                 return fn(self, *args, **kwargs)
 
-            return cls._expose(wrapper, fn, id_param, name_param, list[str] | None, None)
+            return cls._expose(wrapper, fn, id_param, name_param, exposed_type, default)
         return decorator
 
     @classmethod
@@ -69,6 +77,11 @@ class NameLookup:
     def note(cls):
         return cls.by_name("note_id", "note_title", NOTES, "No hay notas para ese artículo.",
                            filters={"articleId": "article_id"})
+
+    @classmethod
+    def notes(cls):
+        return cls.by_names("note_ids", "note_titles", NOTES, "No hay notas para ese artículo.",
+                            filters={"articleId": "article_id"}, optional=False)
 
     @staticmethod
     def _expose(wrapper, fn, id_param: str, name_param: str, exposed_type, default):
