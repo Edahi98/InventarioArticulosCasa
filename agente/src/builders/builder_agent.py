@@ -7,6 +7,9 @@ from src.agent.node_model import ModelNode
 from src.constantes.constantes_agente import (
     DEFAULT_OPENROUTER_MODEL,
     FINAL_HINT,
+    LLM_MAX_RETRIES,
+    LLM_REASONING,
+    LLM_TIMEOUT_MS,
     NODE_FINAL,
     NODE_MODEL,
     NODE_TOOLS,
@@ -33,7 +36,13 @@ class AgentBuilder:
         return self
 
     def build(self):
-        llm = ChatOpenRouter(model=self._model, api_key=self._api_key)
+        llm = ChatOpenRouter(
+            model=self._model,
+            api_key=self._api_key,
+            request_timeout=LLM_TIMEOUT_MS,
+            max_retries=LLM_MAX_RETRIES,
+            reasoning=LLM_REASONING,
+        )
         return self._graph(llm).compile()
 
     def _graph(self, llm) -> StateGraph:

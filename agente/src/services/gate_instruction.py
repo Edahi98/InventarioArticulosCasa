@@ -15,6 +15,7 @@ from src.constantes.constantes_filtro import (
     STATUS_UNVERIFIED,
     UNVERIFIED,
 )
+from src.constantes.constantes_estado import NS_GATE
 from src.errors.error_filtro import DecisionsError, InstructionRejected
 from src.services.client_decisions import DecisionsClient
 from src.services.memory_question import QuestionMemory
@@ -32,14 +33,15 @@ class InstructionGate:
         self,
         decisions: DecisionsClient,
         questions: QuestionMemory,
+        store,
         cooldown: int = COOLDOWN_SECONDS,
-        clock: Callable[[], float] = time.monotonic,
+        clock: Callable[[], float] = time.time,
     ) -> None:
         self._decisions = decisions
         self._questions = questions
+        self._store = store
         self._cooldown = cooldown
         self._clock = clock
-        self._blocked_until: dict[str, float] = {}
 
     def review(self, key: str, message: str) -> None:
         """
@@ -50,14 +52,17 @@ class InstructionGate:
         score = self._score(message, self._questions.pending(key))
         if score >= INVENTORY_THRESHOLD:
             return
-        self._blocked_until[key] = self._clock() + self._cooldown
+        self._store.put(NS_GATE, key, self._clock() + self._cooldown, self._cooldown)
         logger.info("Mensaje fuera del inventario (puntaje=%.2f); espera de %ss", score, self._cooldown)
         raise InstructionRejected(NOT_INVENTORY, STATUS_REJECTED)
 
     def _check_cooldown(self, key: str) -> None:
-        remaining = self._blocked_until.get(key, 0.0) - self._clock()
+        blocked_until = self._store.get(NS_GATE, key)
+        if blocked_until is None:
+            return
+        remaining = blocked_until - self._clock()
         if remaining <= 0:
-            self._blocked_until.pop(key, None)
+            self._store.delete(NS_GATE, key)
             return
         raise InstructionRejected(COOLDOWN_ACTIVE.format(seconds=math.ceil(remaining)), STATUS_COOLDOWN)
 

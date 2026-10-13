@@ -27,14 +27,19 @@ class AgentChat:
     """
 
     def __init__(
-        self, agent: CompiledGraph, decisions: DecisionsClient, questions: QuestionMemory, choices: ChoiceMemory
+        self,
+        agent: CompiledGraph,
+        decisions: DecisionsClient,
+        questions: QuestionMemory,
+        choices: ChoiceMemory,
+        focus: FocusMemory,
     ) -> None:
         self._agent = agent
         self._decisions = decisions
         self._questions = questions
         self._choices = choices
         self._renderer = CardImageRenderer()
-        self._focus = FocusMemory()
+        self._focus = focus
 
     def ask(self, message: str, key: str) -> tuple[str, list[bytes]]:
         """
