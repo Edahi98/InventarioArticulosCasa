@@ -70,6 +70,12 @@ Variables del proyecto: `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `DECISIONS_MOD
 `STATE_DATABASE_URL` (Postgres; crea el esquema `agente` aparte del `public` del backend). Sin `STATE_DATABASE_URL` el
 estado queda en memoria, que es lo que usan el CLI, el servidor y el polling locales.
 
+`STATE_DATABASE_URL` debe ser la URL del pooler de Supabase (`aws-0-<región>.pooler.supabase.com:6543`, usuario
+`postgres.<ref>`): la conexión directa (`db.<ref>.supabase.co`) es solo IPv6 y Vercel no tiene salida IPv6.
+
+El proyecto se despliega desde la carpeta `agente/` con la CLI (`vercel deploy --prod`), sin integración de Git: en la
+raíz del monorepo Vercel detecta Turborepo y deja de instalar las dependencias de Python.
+
 Registrar el webhook una vez desplegado (reemplaza el polling; `uv run python main.py telegram` lo quita al arrancar):
 
 ```bash
