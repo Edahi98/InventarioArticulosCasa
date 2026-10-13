@@ -1,9 +1,9 @@
 from itertools import takewhile
 
-from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
+from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, ToolMessage
 from langgraph.graph import END, MessagesState
 
-from src.constantes.constantes_agente import MAX_TOOL_STEPS, NODE_FINAL, NODE_MODEL, NODE_TOOLS
+from src.constantes.constantes_agente import CHOICE_KEY, MAX_TOOL_STEPS, NODE_FINAL, NODE_MODEL, NODE_TOOLS
 
 
 class ToolRouter:
@@ -14,8 +14,19 @@ class ToolRouter:
         return NODE_TOOLS if getattr(state["messages"][-1], "tool_calls", None) else END
 
     def after_tools(self, state: MessagesState) -> str:
-        """Con las tools ya resueltas vuelve al modelo (puede encadenar otra) o, al llegar al tope, a la respuesta final."""
-        return NODE_FINAL if self._steps(state["messages"]) >= MAX_TOOL_STEPS else NODE_MODEL
+        """
+        Con las tools ya resueltas vuelve al modelo (puede encadenar otra). Va a la respuesta final, sin más
+        tools, si alguna pidió a la persona elegir entre varias opciones o si se llegó al tope de rondas.
+        """
+        messages = state["messages"]
+        waiting = self._asks_choice(messages) or self._steps(messages) >= MAX_TOOL_STEPS
+        return NODE_FINAL if waiting else NODE_MODEL
+
+    @staticmethod
+    def _asks_choice(messages: list[AnyMessage]) -> bool:
+        """Si alguna tool de la última ronda devolvió una petición de elegir entre varias coincidencias."""
+        latest = takewhile(lambda m: isinstance(m, ToolMessage), reversed(messages))
+        return any(CHOICE_KEY in str(m.content) for m in latest)
 
     @staticmethod
     def _steps(messages: list[AnyMessage]) -> int:

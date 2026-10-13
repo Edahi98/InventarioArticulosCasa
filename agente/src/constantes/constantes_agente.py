@@ -61,7 +61,8 @@ NODE_FINAL = "respuesta_final"
 MAX_TOOL_STEPS = 8
 FINAL_HINT = (
     "Ya no puedes llamar más herramientas: responde con lo que ya obtuviste y dile a la persona, con tus "
-    "palabras, qué quedó pendiente si algo no alcanzó a hacerse."
+    "palabras, qué quedó pendiente si algo no alcanzó a hacerse. Si una herramienta pidió elegir entre varias "
+    "coincidencias, no hagas nada más: pídele que escoja una de las opciones (le aparecen como botones)."
 )
 
 FOCUS_TTL_SECONDS = 1800
