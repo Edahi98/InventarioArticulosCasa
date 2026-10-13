@@ -1,6 +1,7 @@
 import asyncio
 import io
 import logging
+import time
 
 import requests
 from pydantic import ValidationError
@@ -187,8 +188,10 @@ class BotHandlers:
 
     async def _allowed(self, update: Update, thinking, message: str) -> bool:
         """Pregunta al filtro si el mensaje es de inventario; si no, avisa en el mismo mensaje y retorna False."""
+        started = time.perf_counter()
         try:
             await asyncio.to_thread(self._gate.review, f"tg:{update.effective_user.id}", message)
+            logger.info("Filtro resuelto en %.1fs", time.perf_counter() - started)
         except InstructionRejected as rejected:
             await thinking.edit_text(str(rejected))
             return False
@@ -205,7 +208,9 @@ class BotHandlers:
     async def _answer(self, update: Update, thinking, message: str, token: str) -> None:
         try:
             key = f"tg:{update.effective_user.id}"
+            started = time.perf_counter()
             reply, images = await asyncio.to_thread(self._ask_as, token, message, key)
+            logger.info("Agente resuelto en %.1fs", time.perf_counter() - started)
         except Exception as e:
             logger.exception("Error en el agente")
             await thinking.edit_text(AGENT_ERROR.format(error=e))
