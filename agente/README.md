@@ -20,8 +20,11 @@ Copiar `.env.example` a `.env` y completar:
 - `DECISIONS_MODEL` — modelo de la API de decisions de OpenRouter que filtra los mensajes (por defecto `typesafe/jev-1.13`). Si un mensaje no es para gestionar el inventario, no llega al agente y la persona espera 2 minutos
 - `WEB_URL` — URL de la página web; el bot la menciona al pedir que vinculen la cuenta. El agente **no inicia sesión**: las personas vinculan su cuenta con un código que generan en la web (menú «Telegram») y envían al bot con `/vincular CÓDIGO`
 - `INVENTARIO_TOKEN` — solo modo CLI: token obtenido al iniciar sesión en la web
-- `MODE` — `telegram` (bot de Telegram), `server` (expone API HTTP) o `cli` (modo interactivo por terminal)
-- `TELEGRAM_TOKEN` — token de BotFather (requerido con `MODE=telegram`)
+- `JWT_ISSUER` — emisor esperado en los tokens del backend (debe coincidir con el del backend)
+- `MODE` — `telegram` (bot por polling), `webhook` (registra el webhook de Telegram), `server` (expone API HTTP) o `cli` (modo interactivo por terminal)
+- `TELEGRAM_TOKEN` — token de BotFather (requerido con `MODE=telegram` y en Vercel)
+- `TELEGRAM_WEBHOOK_SECRET` — secreto que Telegram envía en cada actualización del webhook (solo Vercel)
+- `STATE_DATABASE_URL` — Postgres donde se guarda el estado de la conversación (esquema `agente`); sin ella el estado queda en memoria
 - `PORT` — puerto del servidor Flask cuando `MODE=server`
 
 ## Uso
@@ -50,6 +53,22 @@ Si el nombre que da la persona coincide con varios artículos, categorías o not
 le pide elegir y el bot de Telegram muestra un teclado con las opciones. Al pulsar una, el bot retoma la petición
 original con ese registro (`id:N`). Las opciones caducan a los 10 minutos y un nombre idéntico y único se resuelve
 sin preguntar.
+
+## Cuando el asistente te pregunta algo
+
+Si al asistente le falta un dato (por ejemplo, para qué artículo es una foto), te lo pregunta con una pregunta de
+verdad. Se acuerda de esa pregunta unos 10 minutos, así que puedes contestar corto («la radio») o mandar la foto y
+entiende a qué te refieres.
+
+## Mensajes que no son de inventario
+
+El asistente solo atiende cosas del inventario. Si le escribes otra cosa, responde con cariño, te invita a
+explicárselo con otras palabras y descansa 2 minutos antes de escuchar de nuevo.
+
+## Si tarda demasiado
+
+Cada mensaje tiene un máximo de unos 50 segundos. Si se pasa, el asistente avisa que no alcanzó a contarte cómo
+terminó y que puede que una parte ya esté hecha, para que mires tu inventario antes de repetirlo.
 
 ## Imágenes dibujadas por el agente
 
