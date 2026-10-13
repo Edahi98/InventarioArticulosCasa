@@ -2,7 +2,7 @@ import mimetypes
 
 import requests
 
-from src.constantes.constantes_red import CLAIM_PATH, LOGOUT_PATH
+from src.constantes.constantes_red import BACKEND_TIMEOUT_SECONDS, CLAIM_PATH, LOGOUT_PATH
 from src.errors.error_backend import BackendError
 from src.services.context_auth import AuthContext
 
@@ -46,6 +46,7 @@ class Backend:
 
     def _request(self, method: str, path: str, auth: bool = True, headers: dict | None = None, **kwargs):
         merged = {**(AuthContext.headers() if auth else {}), **(headers or {})}
+        kwargs.setdefault("timeout", BACKEND_TIMEOUT_SECONDS)
         res = self._session.request(method, f"{self._base_url}{path}", headers=merged, **kwargs)
         if res.ok:
             return self._json(res)
