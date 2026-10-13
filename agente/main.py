@@ -16,6 +16,7 @@ from src.constantes.constantes_filtro import DEFAULT_DECISIONS_MODEL
 from src.errors.error_filtro import InstructionRejected
 from src.services.client_decisions import DecisionsClient
 from src.services.gate_instruction import InstructionGate
+from src.services.memory_question import QuestionMemory
 from src.constantes.constantes_auth import DEFAULT_JWT_ISSUER, JWKS_PATH
 from src.services.context_auth import AuthContext
 from src.services.search_fuzzy import FuzzySearch
@@ -49,10 +50,12 @@ class InventoryAgentApp:
             .with_tools(tools)
             .build()
         )
-        self._chat = AgentChat(agent)
-        self._gate = InstructionGate(
-            DecisionsClient(os.environ["OPENROUTER_API_KEY"], os.getenv("DECISIONS_MODEL", DEFAULT_DECISIONS_MODEL))
+        decisions = DecisionsClient(
+            os.environ["OPENROUTER_API_KEY"], os.getenv("DECISIONS_MODEL", DEFAULT_DECISIONS_MODEL)
         )
+        questions = QuestionMemory()
+        self._chat = AgentChat(agent, decisions, questions)
+        self._gate = InstructionGate(decisions, questions)
 
     def run(self) -> None:
         modes = {"cli": self._run_cli, "server": self._run_server, "telegram": self._run_telegram}

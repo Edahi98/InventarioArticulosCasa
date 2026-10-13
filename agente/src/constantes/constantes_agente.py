@@ -38,6 +38,11 @@ FOCUS_FRAME = (
     "persona pide ahora; si pide otra cosa o nombra otro artículo o categoría, ignóralo.]"
 )
 
+QUESTION_FRAME = (
+    "[Contexto: antes le preguntaste a la persona: «{question}». Su mensaje puede ser la respuesta a eso; "
+    "úsalo solo si ayuda a entender lo que pide ahora.]"
+)
+
 ARTICLES = "articles"
 CATEGORIES = "categories"
 NOTES = "notes"
