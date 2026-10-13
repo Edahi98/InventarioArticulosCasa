@@ -41,4 +41,8 @@ NOT_LINKED = "🐻🥺 Todavía no te conocemos, y los guardianes no podemos con
 IMAGE_ERROR = "🐻😢 Uy, no pudimos procesar tu imagen: {error}"
 LINK_ERROR = "🐻😢 No pudimos vincular tu cuenta: {error}"
 AGENT_ERROR = "🐻😢 Algo salió mal al contactar al agente: {error}"
+TIMEOUT_ERROR = (
+    "🐻⌛ Uy, nos tardamos demasiado y no alcanzamos a contarte cómo terminó. Puede que una parte ya esté "
+    "hecha, así que mira tu inventario antes de repetirlo, ¿sí? 💗"
+)
 INVALID_INPUT = "🐻🥺 Hmm, no entendimos eso. {details}"

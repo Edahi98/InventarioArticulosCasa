@@ -9,4 +9,5 @@ NS_SESSION = "session"
 
 WEBHOOK_PATH = "/telegram/webhook"
 WEBHOOK_HEADER = "X-Telegram-Bot-Api-Secret-Token"
+WEBHOOK_BUDGET_SECONDS = 50
 WEBHOOK_UPDATES = ["message", "callback_query"]
