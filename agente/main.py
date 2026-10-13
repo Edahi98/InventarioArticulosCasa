@@ -17,11 +17,14 @@ from src.errors.error_filtro import InstructionRejected
 from src.services.client_decisions import DecisionsClient
 from src.services.gate_instruction import InstructionGate
 from src.services.memory_choice import ChoiceMemory
+from src.services.memory_focus import FocusMemory
 from src.services.memory_question import QuestionMemory
 from src.constantes.constantes_auth import DEFAULT_JWT_ISSUER, JWKS_PATH
 from src.services.context_auth import AuthContext
 from src.services.search_fuzzy import FuzzySearch
 from src.services.session_bot import BotSessions
+from src.services.store_memory import StoreMemory
+from src.services.store_postgres import StorePostgres
 from src.services.uploader_image import ImageUploader
 from src.services.verifier_jwt import TokenVerifier
 from src.services.client_inventory import InventoryClient
@@ -54,10 +57,13 @@ class InventoryAgentApp:
         decisions = DecisionsClient(
             os.environ["OPENROUTER_API_KEY"], os.getenv("DECISIONS_MODEL", DEFAULT_DECISIONS_MODEL)
         )
-        questions = QuestionMemory()
-        self._choices = ChoiceMemory()
-        self._chat = AgentChat(agent, decisions, questions, self._choices)
-        self._gate = InstructionGate(decisions, questions)
+        self._store = (
+            StorePostgres(os.environ["STATE_DATABASE_URL"]) if os.getenv("STATE_DATABASE_URL") else StoreMemory()
+        )
+        questions = QuestionMemory(self._store)
+        self._choices = ChoiceMemory(self._store)
+        self._chat = AgentChat(agent, decisions, questions, self._choices, FocusMemory(self._store))
+        self._gate = InstructionGate(decisions, questions, self._store)
 
     def run(self) -> None:
         modes = {"cli": self._run_cli, "server": self._run_server, "telegram": self._run_telegram}
@@ -75,7 +81,7 @@ class InventoryAgentApp:
 
     def _run_telegram(self) -> None:
         handlers = BotHandlers(
-            self._chat, self._api, BotSessions(), self._gate, self._choices, os.getenv("WEB_URL", "la página web")
+            self._chat, self._api, BotSessions(self._store), self._gate, self._choices, os.getenv("WEB_URL", "la página web")
         )
         bot = TelegramBotBuilder().with_token(os.environ["TELEGRAM_TOKEN"]).with_handlers(handlers).build()
         print("Bot de Telegram iniciado.")
