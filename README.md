@@ -88,6 +88,18 @@ npm run docker:rebuild   # docker:clean y luego docker:up
 
 Las imágenes de `backend` y `frontend` se construyen desde la raíz del repositorio: cada `Dockerfile` usa `turbo prune <paquete> --docker` para copiar solo los paquetes que necesita y reutilizar la caché de dependencias.
 
+## ☁️ Publicarlo en internet (Vercel)
+
+Cada parte vive en su propio proyecto de Vercel:
+
+- `guardacosas`: la página web.
+- `guardacosas-backend`: el servidor que guarda los datos.
+- `guardacosas-agente`: el asistente que contesta en Telegram.
+
+Cada vez que se sube un cambio a la rama principal, la web y el servidor se actualizan solos. El asistente se
+publica a mano desde su carpeta (ver `agente/README.md`). Las claves y contraseñas se configuran en cada proyecto de
+Vercel, nunca en el código.
+
 ## 📦 Estructura del Repositorio
 
 *   `/backend`: API RESTful que administra la lógica de negocio y persistencia.
