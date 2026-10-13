@@ -12,6 +12,10 @@ class InventoryClient:
     def list(self, resource: str, **params) -> list[dict]:
         return self._api.get(f"/{resource}", params=params or None)
 
+    def count_articles(self, **params) -> dict:
+        """Conteo de artículos por categoría (`categoryId` opcional) que calcula el backend."""
+        return self._api.get(f"/{ARTICLES}/count", params=params or None)
+
     def get(self, resource: str, record_id: int) -> dict:
         return self._api.get(f"/{resource}/{record_id}")
 

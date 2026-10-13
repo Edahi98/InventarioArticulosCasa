@@ -33,6 +33,12 @@ class AgentToolkit:
         """Lista artículos. Si se da category_name, filtra por esa categoría."""
         return self._inventory.list(ARTICLES, categoryId=category_id)
 
+    @DtoValidator.tool(CategoryFilterDto)
+    @NameLookup.category(optional=True)
+    def contar_articulos(self, category_id: int | None = None) -> dict | str:
+        """Cuenta los artículos de una categoría (category_name) o, sin nombre, de todas las categorías."""
+        return self._inventory.count_articles(categoryId=category_id)
+
     @DtoValidator.tool(ArticleRefDto)
     @NameLookup.article()
     def obtener_articulo(self, article_id: int) -> dict | str:
