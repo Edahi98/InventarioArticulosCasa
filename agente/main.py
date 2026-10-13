@@ -33,6 +33,7 @@ from src.services.search_inventory import InventorySearch
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 class InventoryAgentApp:
