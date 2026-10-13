@@ -1,6 +1,14 @@
-from telegram.ext import Application, ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    Application,
+    ApplicationBuilder,
+    CallbackQueryHandler,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
 
 from src.bot.handlers_bot import BotHandlers
+from src.constantes.constantes_bot import CHOICE_PATTERN
 
 
 class TelegramBotBuilder:
@@ -23,6 +31,7 @@ class TelegramBotBuilder:
         app.add_handler(CommandHandler("start", self._handlers.start))
         app.add_handler(CommandHandler(["vincular", "link"], self._handlers.link))
         app.add_handler(CommandHandler(["salir", "logout"], self._handlers.logout))
+        app.add_handler(CallbackQueryHandler(self._handlers.choose, pattern=CHOICE_PATTERN))
         app.add_handler(MessageHandler(filters.PHOTO, self._handlers.photo))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handlers.text))
         return app

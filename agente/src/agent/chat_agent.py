@@ -4,11 +4,12 @@ import requests
 from langchain_core.messages import ToolMessage
 from langgraph.pregel import Pregel as CompiledGraph
 
-from src.constantes.constantes_agente import QUESTION_FRAME
+from src.constantes.constantes_agente import CHOICE_KEY, QUESTION_FRAME
 from src.constantes.constantes_filtro import ASKS_THRESHOLD, QUESTION_MARKS
 from src.errors.error_filtro import DecisionsError
 from src.services.client_decisions import DecisionsClient
 from src.services.images.renderer_image import CardImageRenderer
+from src.services.memory_choice import ChoiceMemory
 from src.services.memory_focus import FocusMemory
 from src.services.memory_question import QuestionMemory
 from src.utilerias.util_codec import Codec
@@ -25,10 +26,13 @@ class AgentChat:
     el artículo o la categoría del último mensaje para anteponerlo al siguiente.
     """
 
-    def __init__(self, agent: CompiledGraph, decisions: DecisionsClient, questions: QuestionMemory) -> None:
+    def __init__(
+        self, agent: CompiledGraph, decisions: DecisionsClient, questions: QuestionMemory, choices: ChoiceMemory
+    ) -> None:
         self._agent = agent
         self._decisions = decisions
         self._questions = questions
+        self._choices = choices
         self._renderer = CardImageRenderer()
         self._focus = FocusMemory()
 
@@ -38,6 +42,7 @@ class AgentChat:
         `key` identifica a la persona (tg:<id>, api:<sub> o cli) para recordar de qué se estaba hablando.
         """
         framed = self._frame(key, message)
+        self._choices.clear(key)
         result = self._agent.invoke({"messages": [{"role": "user", "content": framed}]})
         messages = result["messages"]
         self._questions.clear(key)
@@ -45,6 +50,7 @@ class AgentChat:
         tools = [m for m in messages if isinstance(m, ToolMessage)]
         logger.info("tools usadas: %s", [m.name for m in tools] or "ninguna")
         results = [Codec.parse(m.content) for m in tools]
+        self._offer_choice(key, message, results)
         self._remember(key, tools, results)
         images = self._renderer.render(results)
         return messages[-1].content, images
@@ -53,6 +59,13 @@ class AgentChat:
         """Olvida el contexto de esa persona (al cerrar sesión)."""
         self._focus.forget(key)
         self._questions.clear(key)
+        self._choices.clear(key)
+
+    def _offer_choice(self, key: str, message: str, results: list) -> None:
+        """Si alguna tool no pudo decidir entre varios registros, guarda las opciones para que la persona elija."""
+        requests_ = [r[CHOICE_KEY] for r in results if isinstance(r, dict) and CHOICE_KEY in r]
+        if requests_:
+            self._choices.offer(key, message, requests_[0]["resource"], requests_[0]["options"])
 
     def _frame(self, key: str, message: str) -> str:
         """El mensaje con el contexto vigente: la pregunta que se le hizo a la persona y de qué se hablaba."""

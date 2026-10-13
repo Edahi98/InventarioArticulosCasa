@@ -13,6 +13,8 @@ from src.constantes.constantes_bot import (
     AGENT_ERROR,
     BEAR_FILE,
     CAPTION_LIMIT,
+    CHOICE_EXPIRED,
+    CHOICE_PROMPT,
     IMAGE_ERROR,
     INVALID_INPUT,
     LINK_ERROR,
@@ -28,6 +30,7 @@ from src.constantes.constantes_bot import (
     UPLOADING,
     WELCOME,
 )
+from src.bot.keyboard_choice import ChoiceKeyboard
 from src.constantes.constantes_imagenes import ASSETS_DIR
 from src.decorators.decorator_dto_validator import DtoValidator
 from src.dtos.dto_bot_session import BotSessionDto
@@ -38,6 +41,7 @@ from src.errors.error_backend import BackendError
 from src.errors.error_filtro import InstructionRejected
 from src.services.context_auth import AuthContext
 from src.services.gate_instruction import InstructionGate
+from src.services.memory_choice import ChoiceMemory
 from src.services.session_bot import BotSessions
 
 logger = logging.getLogger(__name__)
@@ -50,10 +54,17 @@ class BotHandlers:
     """
 
     def __init__(
-        self, chat: AgentChat, api: Backend, sessions: BotSessions, gate: InstructionGate, web_url: str
+        self,
+        chat: AgentChat,
+        api: Backend,
+        sessions: BotSessions,
+        gate: InstructionGate,
+        choices: ChoiceMemory,
+        web_url: str,
     ) -> None:
         self._chat = chat
         self._gate = gate
+        self._choices = choices
         self._api = api
         self._sessions = sessions
         self._web_url = web_url
@@ -117,6 +128,23 @@ class BotHandlers:
             return
         template = {True: PHOTO_WITH_CAPTION, False: PHOTO_WITHOUT_CAPTION}[bool(caption)]
         await self._answer(update, thinking, template.format(caption=caption, url=url), session.token)
+
+    async def choose(self, update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+        """Botón de una lista de coincidencias: retoma la petición original con la opción elegida."""
+        query = update.callback_query
+        await query.answer()
+        session = self._sessions.get(update.effective_user.id)
+        if session is None:
+            await query.message.reply_text(LINK_REQUIRED.format(web_url=self._web_url))
+            return
+        index = int(query.data.split(":")[1])
+        followup = self._choices.pick(f"tg:{update.effective_user.id}", index)
+        await query.edit_message_reply_markup(reply_markup=None)
+        if followup is None:
+            await query.message.reply_text(CHOICE_EXPIRED)
+            return
+        thinking = await query.message.reply_text(PROCESSING)
+        await self._answer(update, thinking, followup, session.token)
 
     async def _link(self, update: Update, code: str) -> None:
         """Canjea el código en el backend y guarda la sesión de esta persona de Telegram."""
@@ -184,6 +212,10 @@ class BotHandlers:
             return
 
         logger.info("reply=%r  images=%d", reply[:80], len(images))
+        options = self._choices.options(key)
+        if options:
+            await thinking.edit_text(reply or CHOICE_PROMPT, reply_markup=ChoiceKeyboard.build(options))
+            return
         pictures = images or ([self._bear] if reply else [])
         captioned = bool(pictures) and 0 < len(reply) <= CAPTION_LIMIT
         await (thinking.delete() if captioned or not reply else thinking.edit_text(reply))
@@ -194,8 +226,9 @@ class BotHandlers:
     @staticmethod
     async def _send_album(update: Update, images: list[bytes], caption: str | None = None) -> None:
         """Envía la foto o el álbum; el texto de la IA va como pie de la primera imagen."""
+        target = update.effective_message
         if len(images) == 1:
-            await update.message.reply_photo(photo=io.BytesIO(images[0]), caption=caption)
+            await target.reply_photo(photo=io.BytesIO(images[0]), caption=caption)
             return
         media = [InputMediaPhoto(media=io.BytesIO(img), caption=caption if n == 0 else None) for n, img in enumerate(images)]
-        await update.message.reply_media_group(media=media)
+        await target.reply_media_group(media=media)

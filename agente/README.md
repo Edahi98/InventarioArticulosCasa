@@ -43,6 +43,14 @@ después de las tools vuelve al modelo, que puede encadenar otra (buscar un art�
 categoría y luego el artículo). Tras 8 rondas de tools en un mismo mensaje pasa a `respuesta_final`, que responde sin
 más tools con lo que ya se obtuvo.
 
+## Varias coincidencias
+
+Si el nombre que da la persona coincide con varios artículos, categorías o notas (por ejemplo «taladro» con
+«Taladro percutor» y «Taladro inalámbrico», o dos «Silla» en categorías distintas), la tool no actúa: el agente
+le pide elegir y el bot de Telegram muestra un teclado con las opciones. Al pulsar una, el bot retoma la petición
+original con ese registro (`id:N`). Las opciones caducan a los 10 minutos y un nombre idéntico y único se resuelve
+sin preguntar.
+
 ## Imágenes dibujadas por el agente
 
 Si la persona pide crear una imagen para un artículo o categoría, el agente la dibuja como SVG y la tool

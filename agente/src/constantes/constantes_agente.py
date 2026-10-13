@@ -1,6 +1,25 @@
 DEFAULT_OPENROUTER_MODEL = "openai/gpt-4o-mini"
 SEARCH_TOP_K = 5
 SEARCH_MIN_SCORE = 50
+AMBIGUITY_GAP = 8
+ID_REFERENCE = r"(?i)id:(\d+)"
+NOT_FOUND = "No encontré ese registro; puede que ya no exista."
+
+CHOICE_KEY = "choice_required"
+CHOICE_TTL_SECONDS = 600
+CHOICE_MESSAGE = (
+    "Hay varias coincidencias y todavía no se hizo nada. A la persona le aparecen botones para elegir una: "
+    "no elijas por ella ni vuelvas a llamar la herramienta; con tus palabras pídele que elija una de las opciones."
+)
+CHOICE_TARGETS = {
+    "articles": ("el artículo", "article_name"),
+    "categories": ("la categoría", "category_name"),
+    "notes": ("la nota", "note_title"),
+}
+CHOICE_FOLLOWUP = (
+    "{message}\n[La persona eligió {noun} «{name}»{detail}. Para referirte a ese registro usa "
+    '{param}="id:{id}" y continúa con lo que pidió.]'
+)
 
 SYSTEM_PROMPT = (
     "Eres un asistente de gestión de inventario doméstico y debes usar tus herramientas para todo: "
@@ -19,6 +38,8 @@ SYSTEM_PROMPT = (
     "Puedes encadenar herramientas: si una acción necesita datos de otra (por ejemplo buscar un artículo antes "
     "de actualizarlo, o crear una categoría y luego el artículo que va en ella), llama a las que hagan falta, "
     "una tras otra, y responde hasta haber terminado todo lo que te pidieron. "
+    "Si una herramienta avisa que hay varias coincidencias, la persona ya está viendo botones para elegir: no "
+    "elijas por ella, pídele con ternura que escoja una opción y espera su elección. "
     "Para consultar o listar datos SIEMPRE llama primero a la herramienta correspondiente. "
     "Basa tu respuesta únicamente en lo que devolvió la herramienta: nunca inventes, completes ni supongas "
     "artículos, categorías, notas, cantidades ni estados. Si no devolvió nada, dilo con tus palabras y sugiere "

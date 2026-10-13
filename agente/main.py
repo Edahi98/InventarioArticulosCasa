@@ -16,6 +16,7 @@ from src.constantes.constantes_filtro import DEFAULT_DECISIONS_MODEL
 from src.errors.error_filtro import InstructionRejected
 from src.services.client_decisions import DecisionsClient
 from src.services.gate_instruction import InstructionGate
+from src.services.memory_choice import ChoiceMemory
 from src.services.memory_question import QuestionMemory
 from src.constantes.constantes_auth import DEFAULT_JWT_ISSUER, JWKS_PATH
 from src.services.context_auth import AuthContext
@@ -54,7 +55,8 @@ class InventoryAgentApp:
             os.environ["OPENROUTER_API_KEY"], os.getenv("DECISIONS_MODEL", DEFAULT_DECISIONS_MODEL)
         )
         questions = QuestionMemory()
-        self._chat = AgentChat(agent, decisions, questions)
+        self._choices = ChoiceMemory()
+        self._chat = AgentChat(agent, decisions, questions, self._choices)
         self._gate = InstructionGate(decisions, questions)
 
     def run(self) -> None:
@@ -72,7 +74,9 @@ class InventoryAgentApp:
         ApiServer(self._chat, self._api, verifier, self._gate, force_https).app.run(host="0.0.0.0", port=port)
 
     def _run_telegram(self) -> None:
-        handlers = BotHandlers(self._chat, self._api, BotSessions(), self._gate, os.getenv("WEB_URL", "la página web"))
+        handlers = BotHandlers(
+            self._chat, self._api, BotSessions(), self._gate, self._choices, os.getenv("WEB_URL", "la página web")
+        )
         bot = TelegramBotBuilder().with_token(os.environ["TELEGRAM_TOKEN"]).with_handlers(handlers).build()
         print("Bot de Telegram iniciado.")
         bot.run_polling()

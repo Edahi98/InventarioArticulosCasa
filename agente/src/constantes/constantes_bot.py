@@ -2,7 +2,13 @@ MAX_ALBUM = 10
 CAPTION_LIMIT = 1024
 BEAR_FILE = "oso_guardian.png"
 
-PROCESSING = "🐻⏳ Los ositos lo están revisando..."
+CHOICE_CALLBACK = "pick"
+CHOICE_PATTERN = r"^pick:\d{1,2}$"
+CHOICE_LABEL_LIMIT = 60
+CHOICE_PROMPT = "🐻🔎 Encontramos varias coincidencias, ¿cuál de estas es? 👇"
+CHOICE_EXPIRED = "🐻⌛ Esa elección ya caducó. Vuelve a pedirnos lo que querías y lo hacemos de nuevo 💗"
+
+PROCESSING ="🐻⏳ Los ositos lo están revisando..."
 UPLOADING = "🐻📸 Guardando tu foto..."
 
 PHOTO_WITH_CAPTION = (
