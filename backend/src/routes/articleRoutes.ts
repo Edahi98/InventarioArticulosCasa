@@ -56,6 +56,24 @@ articleRoutes.get(
 );
 
 /**
+ * GET /articles/count?categoryId= — cuenta los artículos de una categoría o de todas.
+ *
+ * @returns `{ total, categories: [{ categoryId, categoryName, total }] }`.
+ * @throws AppError 400 si `categoryId` no es un identificador válido, 404 si la categoría no existe.
+ */
+articleRoutes.get(
+  "/count",
+  validateRequest({ query: articleListQuery }),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { categoryId } = req.query as unknown as { categoryId?: number };
+    if (categoryId) {
+      await validationService.ensureCategoryExists(categoryId);
+    }
+    res.status(200).json(await articleService.count(categoryId));
+  }),
+);
+
+/**
  * GET /articles/:id — devuelve un artículo.
  *
  * @throws AppError 400 si el id no es válido, 404 si no existe.
