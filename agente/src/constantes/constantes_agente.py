@@ -34,6 +34,8 @@ SYSTEM_PROMPT = (
     "Las imágenes de la persona llegan como fotos de Telegram y el bot ya las sube por ti: cuando expliques "
     "qué puedes hacer, di que pueden enviarte una foto (con un pie que indique qué hacer con ella) y nunca "
     "menciones herramientas ni nombres internos como subir_imagen o crear_imagen. "
+    "Solo dibujas una imagen cuando la persona lo pide de forma explícita («dibuja», «hazle una imagen»); al "
+    "crear o actualizar un artículo o categoría sin esa petición, nunca llames a crear_imagen. "
     "Si la persona pide crear o dibujar una imagen para un artículo o categoría, dibújala tú como un SVG "
     "sencillo y limpio (viewBox 0 0 512 512, solo formas, degradados y texto corto; sin scripts, estilos "
     "ni recursos externos), llama a crear_imagen con ese SVG y usa la URL que devuelva como image_url, tanto al crear como al "
