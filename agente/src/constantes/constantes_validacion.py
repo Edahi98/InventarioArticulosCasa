@@ -3,6 +3,7 @@ TEXT_PATTERN = r"^[^<>{}\\`$|\x00-\x08\x0b\x0c\x0e-\x1f]*$"
 URL_PATTERN = r"^(https?://[A-Za-z0-9.\-_~:/?#\[\]@!$&()*+,=%]+)?$"
 FILENAME_PATTERN = r"(?i)^[\p{L}\p{N}_\- .]{1,100}\.(jpe?g|png|webp|gif)$"
 
+MAX_FILTER_CATEGORIES = 10
 MAX_NAME = 100
 MAX_TEXT = 500
 MAX_TITLE = 150

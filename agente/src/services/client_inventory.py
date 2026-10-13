@@ -14,6 +14,13 @@ class InventoryClient:
     def list(self, resource: str, **params) -> list[dict]:
         return self._api.get(f"/{resource}", params=params or None)
 
+    def list_each(self, resource: str, key: str, values: list | None) -> list[dict]:
+        """Une el listado de cada valor de `key` sin repetir registros; sin valores, lista todo."""
+        if not values:
+            return self.list(resource)
+        found = [record for value in values for record in self.list(resource, **{key: value})]
+        return list({record["id"]: record for record in found}.values())
+
     def names(self, resource: str, **params) -> list[str]:
         """Solo los nombres de los registros de `resource`, sin sus demás datos."""
         return [record["name"] for record in self.list(resource, **params)]

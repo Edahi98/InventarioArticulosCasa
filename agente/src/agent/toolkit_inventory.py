@@ -2,6 +2,7 @@ from src.decorators.decorator_dto_validator import DtoValidator
 from src.dtos.dto_article_create import ArticleCreateDto
 from src.dtos.dto_article_ref import ArticleRefDto
 from src.dtos.dto_article_update import ArticleUpdateDto
+from src.dtos.dto_categories_filter import CategoriesFilterDto
 from src.dtos.dto_category_create import CategoryCreateDto
 from src.dtos.dto_category_filter import CategoryFilterDto
 from src.dtos.dto_category_ref import CategoryRefDto
@@ -27,11 +28,11 @@ class AgentToolkit:
         self._inventory = inventory
         self._resolver = NameResolver(inventory, search)
 
-    @DtoValidator.tool(CategoryFilterDto)
-    @NameLookup.category(optional=True)
-    def listar_articulos(self, category_id: int | None = None) -> list[dict] | str:
-        """Lista artículos. Si se da category_name, filtra por esa categoría."""
-        return self._inventory.list(ARTICLES, categoryId=category_id)
+    @DtoValidator.tool(CategoriesFilterDto)
+    @NameLookup.categories()
+    def listar_articulos(self, category_ids: list[int] | None = None) -> list[dict] | str:
+        """Lista artículos. Con category_names (una o varias categorías) filtra por ellas; sin nombres, todos."""
+        return self._inventory.list_each(ARTICLES, "categoryId", category_ids)
 
     @DtoValidator.tool(CategoryFilterDto)
     @NameLookup.category(optional=True)
