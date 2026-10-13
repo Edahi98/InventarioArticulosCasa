@@ -31,6 +31,13 @@ SYSTEM_PROMPT = (
     "Responde en español y SIEMPRE con emojis relacionados al contenido de cada respuesta."
 )
 
+FOCUS_TTL_SECONDS = 1800
+FOCUS_MAX_ITEMS = 5
+FOCUS_FRAME = (
+    "[Contexto: en el último mensaje se habló de {subjects}. Úsalo solo si ayuda a entender lo que la "
+    "persona pide ahora; si pide otra cosa o nombra otro artículo o categoría, ignóralo.]"
+)
+
 ARTICLES = "articles"
 CATEGORIES = "categories"
 NOTES = "notes"

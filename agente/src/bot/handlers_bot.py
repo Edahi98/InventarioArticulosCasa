@@ -70,6 +70,7 @@ class BotHandlers:
 
     async def logout(self, update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         session = self._sessions.drop(update.effective_user.id)
+        self._chat.forget(f"tg:{update.effective_user.id}")
         if session is None:
             await update.message.reply_text(NOT_LINKED)
             return
@@ -165,9 +166,9 @@ class BotHandlers:
             return False
         return True
 
-    def _ask_as(self, token: str, message: str):
+    def _ask_as(self, token: str, message: str, key: str):
         with AuthContext.as_user(token):
-            return self._chat.ask(message)
+            return self._chat.ask(message, key)
 
     def _upload_as(self, token: str, data: bytes, filename: str) -> str:
         with AuthContext.as_user(token):
@@ -175,7 +176,8 @@ class BotHandlers:
 
     async def _answer(self, update: Update, thinking, message: str, token: str) -> None:
         try:
-            reply, images = await asyncio.to_thread(self._ask_as, token, message)
+            key = f"tg:{update.effective_user.id}"
+            reply, images = await asyncio.to_thread(self._ask_as, token, message, key)
         except Exception as e:
             logger.exception("Error en el agente")
             await thinking.edit_text(AGENT_ERROR.format(error=e))

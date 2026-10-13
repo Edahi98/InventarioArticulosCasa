@@ -79,7 +79,7 @@ class ApiServer:
             self._gate.review(f"api:{g.auth['sub']}", dto.message)
         except InstructionRejected as rejected:
             return jsonify({"error": str(rejected)}), rejected.status
-        reply, images = self._chat.ask(dto.message)
+        reply, images = self._chat.ask(dto.message, f"api:{g.auth['sub']}")
         return jsonify({"reply": reply, "images": [Codec.to_base64(img) for img in images]})
 
     @JwtRequired.endpoint

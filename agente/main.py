@@ -94,7 +94,7 @@ class InventoryAgentApp:
                 except InstructionRejected as rejected:
                     print(f"Agente: {rejected}\n")
                     continue
-                reply, images = self._chat.ask(user_input)
+                reply, images = self._chat.ask(user_input, "cli")
                 print(f"Agente: {reply or f'[{len(images)} imagen(es) generada(s)]'}\n")
 
 
