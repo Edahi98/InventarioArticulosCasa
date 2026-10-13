@@ -1,6 +1,6 @@
 from rapidfuzz import fuzz, process, utils
 
-from src.constantes.constantes_agente import SEARCH_MIN_SCORE, SEARCH_TOP_K
+from src.constantes.constantes_agente import AMBIGUITY_GAP, SEARCH_MIN_SCORE, SEARCH_TOP_K
 from src.utilerias.util_codec import Codec
 
 
@@ -12,6 +12,21 @@ class FuzzySearch:
         _, _, index = process.extractOne(self._text(query), self._documents(items),
                                          scorer=fuzz.WRatio, processor=utils.default_process)
         return items[index]
+
+    def close(self, query: str, items: list[dict], gap: int = AMBIGUITY_GAP) -> list[dict]:
+        """
+        Los elementos que pueden ser lo que la persona nombró: los de nombre idéntico o, si no hay, el más
+        parecido junto con los que quedan a menos de `gap` puntos de él.
+        """
+        text = self._text(query).casefold()
+        exact = [i for i in items if self._text(i.get("name") or i.get("title", "")).casefold() == text]
+        if exact:
+            return exact
+        matches = process.extract(self._text(query), self._documents(items), scorer=fuzz.WRatio,
+                                  processor=utils.default_process, limit=SEARCH_TOP_K)
+        best = matches[0][1]
+        floor = max(best - gap, SEARCH_MIN_SCORE)
+        return [items[index] for _, score, index in matches if score == best or score >= floor]
 
     def top(self, query: str, items: list[dict], k: int = SEARCH_TOP_K) -> list[dict]:
         """Hasta k elementos que superan el puntaje mínimo, del más al menos parecido."""

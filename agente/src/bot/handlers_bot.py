@@ -10,7 +10,14 @@ from telegram.ext import ContextTypes
 from src.agent.chat_agent import AgentChat
 from src.backend import Backend
 from src.constantes.constantes_bot import (
+    AGENT_ERROR,
+    BEAR_FILE,
     CAPTION_LIMIT,
+    CHOICE_EXPIRED,
+    CHOICE_PROMPT,
+    IMAGE_ERROR,
+    INVALID_INPUT,
+    LINK_ERROR,
     LINK_REQUIRED,
     LINKED,
     LINKING,
@@ -23,6 +30,8 @@ from src.constantes.constantes_bot import (
     UPLOADING,
     WELCOME,
 )
+from src.bot.keyboard_choice import ChoiceKeyboard
+from src.constantes.constantes_imagenes import ASSETS_DIR
 from src.decorators.decorator_dto_validator import DtoValidator
 from src.dtos.dto_bot_session import BotSessionDto
 from src.dtos.dto_chat import ChatDto
@@ -32,6 +41,7 @@ from src.errors.error_backend import BackendError
 from src.errors.error_filtro import InstructionRejected
 from src.services.context_auth import AuthContext
 from src.services.gate_instruction import InstructionGate
+from src.services.memory_choice import ChoiceMemory
 from src.services.session_bot import BotSessions
 
 logger = logging.getLogger(__name__)
@@ -44,13 +54,21 @@ class BotHandlers:
     """
 
     def __init__(
-        self, chat: AgentChat, api: Backend, sessions: BotSessions, gate: InstructionGate, web_url: str
+        self,
+        chat: AgentChat,
+        api: Backend,
+        sessions: BotSessions,
+        gate: InstructionGate,
+        choices: ChoiceMemory,
+        web_url: str,
     ) -> None:
         self._chat = chat
         self._gate = gate
+        self._choices = choices
         self._api = api
         self._sessions = sessions
         self._web_url = web_url
+        self._bear = (ASSETS_DIR / BEAR_FILE).read_bytes()
 
     async def start(self, update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         if ctx.args:
@@ -63,6 +81,7 @@ class BotHandlers:
 
     async def logout(self, update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         session = self._sessions.drop(update.effective_user.id)
+        self._chat.forget(f"tg:{update.effective_user.id}")
         if session is None:
             await update.message.reply_text(NOT_LINKED)
             return
@@ -98,7 +117,7 @@ class BotHandlers:
             url = await asyncio.to_thread(self._upload_as, session.token, upload.data, upload.filename)
         except Exception as e:
             logger.exception("Error subiendo la foto")
-            await thinking.edit_text(f"Error al procesar la imagen: {e}")
+            await thinking.edit_text(IMAGE_ERROR.format(error=e))
             return
 
         await thinking.edit_text(PROCESSING)
@@ -110,6 +129,23 @@ class BotHandlers:
         template = {True: PHOTO_WITH_CAPTION, False: PHOTO_WITHOUT_CAPTION}[bool(caption)]
         await self._answer(update, thinking, template.format(caption=caption, url=url), session.token)
 
+    async def choose(self, update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
+        """Botón de una lista de coincidencias: retoma la petición original con la opción elegida."""
+        query = update.callback_query
+        await query.answer()
+        session = self._sessions.get(update.effective_user.id)
+        if session is None:
+            await query.message.reply_text(LINK_REQUIRED.format(web_url=self._web_url))
+            return
+        index = int(query.data.split(":")[1])
+        followup = self._choices.pick(f"tg:{update.effective_user.id}", index)
+        await query.edit_message_reply_markup(reply_markup=None)
+        if followup is None:
+            await query.message.reply_text(CHOICE_EXPIRED)
+            return
+        thinking = await query.message.reply_text(PROCESSING)
+        await self._answer(update, thinking, followup, session.token)
+
     async def _link(self, update: Update, code: str) -> None:
         """Canjea el código en el backend y guarda la sesión de esta persona de Telegram."""
         thinking = await update.message.reply_text(LINKING)
@@ -119,7 +155,7 @@ class BotHandlers:
         try:
             session = BotSessionDto.model_validate(await asyncio.to_thread(self._api.claim_link_code, dto.code))
         except (BackendError, requests.RequestException, ValidationError) as e:
-            await thinking.edit_text(f"No pude vincular tu cuenta: {e}")
+            await thinking.edit_text(LINK_ERROR.format(error=e))
             return
 
         self._sessions.link(update.effective_user.id, session)
@@ -146,7 +182,7 @@ class BotHandlers:
         try:
             return dto.model_validate(data)
         except ValidationError as error:
-            await thinking.edit_text(DtoValidator.describe(error))
+            await thinking.edit_text(INVALID_INPUT.format(details=DtoValidator.describe(error)))
             return None
 
     async def _allowed(self, update: Update, thinking, message: str) -> bool:
@@ -158,9 +194,9 @@ class BotHandlers:
             return False
         return True
 
-    def _ask_as(self, token: str, message: str):
+    def _ask_as(self, token: str, message: str, key: str):
         with AuthContext.as_user(token):
-            return self._chat.ask(message)
+            return self._chat.ask(message, key)
 
     def _upload_as(self, token: str, data: bytes, filename: str) -> str:
         with AuthContext.as_user(token):
@@ -168,24 +204,31 @@ class BotHandlers:
 
     async def _answer(self, update: Update, thinking, message: str, token: str) -> None:
         try:
-            reply, images = await asyncio.to_thread(self._ask_as, token, message)
+            key = f"tg:{update.effective_user.id}"
+            reply, images = await asyncio.to_thread(self._ask_as, token, message, key)
         except Exception as e:
             logger.exception("Error en el agente")
-            await thinking.edit_text(f"Error al contactar al agente: {e}")
+            await thinking.edit_text(AGENT_ERROR.format(error=e))
             return
 
         logger.info("reply=%r  images=%d", reply[:80], len(images))
-        captioned = bool(images) and 0 < len(reply) <= CAPTION_LIMIT
+        options = self._choices.options(key)
+        if options:
+            await thinking.edit_text(reply or CHOICE_PROMPT, reply_markup=ChoiceKeyboard.build(options))
+            return
+        pictures = images or ([self._bear] if reply else [])
+        captioned = bool(pictures) and 0 < len(reply) <= CAPTION_LIMIT
         await (thinking.delete() if captioned or not reply else thinking.edit_text(reply))
-        for i in range(0, len(images), MAX_ALBUM):
+        for i in range(0, len(pictures), MAX_ALBUM):
             caption = reply if captioned and i == 0 else None
-            await self._send_album(update, images[i:i + MAX_ALBUM], caption)
+            await self._send_album(update, pictures[i:i + MAX_ALBUM], caption)
 
     @staticmethod
     async def _send_album(update: Update, images: list[bytes], caption: str | None = None) -> None:
         """Envía la foto o el álbum; el texto de la IA va como pie de la primera imagen."""
+        target = update.effective_message
         if len(images) == 1:
-            await update.message.reply_photo(photo=io.BytesIO(images[0]), caption=caption)
+            await target.reply_photo(photo=io.BytesIO(images[0]), caption=caption)
             return
         media = [InputMediaPhoto(media=io.BytesIO(img), caption=caption if n == 0 else None) for n, img in enumerate(images)]
-        await update.message.reply_media_group(media=media)
+        await target.reply_media_group(media=media)

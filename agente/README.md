@@ -35,6 +35,30 @@ uv run python main.py server     # API HTTP
 
 En modo servidor expone `GET /health`, `POST /chat` y `POST /upload`.
 
+## Herramientas encadenadas
+
+El agente es un grafo de LangGraph (`AgentBuilder`) con tres nodos: `modelo`, `herramientas` y `respuesta_final`.
+Después del modelo, una arista condicional manda a `herramientas` si pidió tools o termina si respondió con texto;
+después de las tools vuelve al modelo, que puede encadenar otra (buscar un artículo y luego actualizarlo, crear una
+categoría y luego el artículo). Tras 8 rondas de tools en un mismo mensaje pasa a `respuesta_final`, que responde sin
+más tools con lo que ya se obtuvo.
+
+## Varias coincidencias
+
+Si el nombre que da la persona coincide con varios artículos, categorías o notas (por ejemplo «taladro» con
+«Taladro percutor» y «Taladro inalámbrico», o dos «Silla» en categorías distintas), la tool no actúa: el agente
+le pide elegir y el bot de Telegram muestra un teclado con las opciones. Al pulsar una, el bot retoma la petición
+original con ese registro (`id:N`). Las opciones caducan a los 10 minutos y un nombre idéntico y único se resuelve
+sin preguntar.
+
+## Imágenes dibujadas por el agente
+
+Si la persona pide crear una imagen para un artículo o categoría, el agente la dibuja como SVG y la tool
+`crear_imagen` la valida (`SvgGuard`: solo formas, degradados y texto; sin scripts ni recursos externos), la
+convierte a PNG con [resvg](https://github.com/RazrFalcon/resvg) (`resvg-py`, sin dependencias nativas) y la
+sube al backend. El texto dentro del SVG usa las fuentes del sistema; si la imagen debe llevar letras, el
+contenedor necesita al menos una fuente instalada.
+
 ## Docker
 
 Se construye y corre como parte del `docker-compose.yaml` de la raíz. No define `EXPOSE`

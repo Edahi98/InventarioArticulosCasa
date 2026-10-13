@@ -4,6 +4,7 @@ from zlib import crc32
 import requests
 from PIL import Image
 from src.utilerias.util_red import Red
+from src.utilerias.util_registro import Records
 from src.services.images.asset_loader import AssetLoader
 from src.constantes.constantes_colores import Colors
 from src.constantes.constantes_imagenes import (
@@ -18,23 +19,18 @@ class CardImageRenderer:
     """Arma fichas de archivo de artículos/categorías sobre una grilla, usando GridImageBuilder."""
 
     def render(self, data) -> list[bytes]:
-        """Agrupa en galerías los artículos y categorías que haya en data (un dict o una lista)."""
-        items = [i for i in (data if isinstance(data, list) else [data]) if isinstance(i, dict)]
-        articles = [self._article_card(i) for i in items if self._is_article(i)]
-        categories = [self._category_card(i) for i in items if self._is_category(i)]
+        """
+        Agrupa en galerías los artículos y categorías que haya en data (un dict, una lista o una lista de
+        resultados de tools). Un mismo artículo o categoría que aparece en varias tools sale una sola vez.
+        """
+        items = Records.unique(Records.flatten(data))
+        articles = [self._article_card(i) for i in items if Records.is_article(i)]
+        categories = [self._category_card(i) for i in items if Records.is_category(i)]
         return [
             self._gallery(cards, noun)
             for cards, noun in ((articles, "artículos"), (categories, "categorías"))
             if cards
         ]
-
-    @staticmethod
-    def _is_article(item: dict) -> bool:
-        return "categoryId" in item or "needsRepair" in item
-
-    @classmethod
-    def _is_category(cls, item: dict) -> bool:
-        return "id" in item and "name" in item and not cls._is_article(item)
 
     def _gallery(self, cards: list[Image.Image], noun: str) -> bytes:
         title = f"Inventario - {len(cards)} {noun}" if len(cards) > 1 else None

@@ -12,6 +12,13 @@ class DtoBase(BaseModel):
     @field_validator("*", mode="before")
     @classmethod
     def reject_injection(cls, value):
+        return cls._clean(value)
+
+    @classmethod
+    def _clean(cls, value):
+        """Textos (también los de una lista) sin scripts ni SQL y normalizados; cualquier otro valor pasa igual."""
+        if isinstance(value, list):
+            return [cls._clean(item) for item in value]
         if not isinstance(value, str):
             return value
         if Injection.detect(value):

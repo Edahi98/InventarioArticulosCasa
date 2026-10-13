@@ -2,6 +2,7 @@ from src.decorators.decorator_dto_validator import DtoValidator
 from src.dtos.dto_article_create import ArticleCreateDto
 from src.dtos.dto_article_ref import ArticleRefDto
 from src.dtos.dto_article_update import ArticleUpdateDto
+from src.dtos.dto_categories_filter import CategoriesFilterDto
 from src.dtos.dto_category_create import CategoryCreateDto
 from src.dtos.dto_category_filter import CategoryFilterDto
 from src.dtos.dto_category_ref import CategoryRefDto
@@ -10,6 +11,7 @@ from src.dtos.dto_no_input import NoInputDto
 from src.dtos.dto_note_create import NoteCreateDto
 from src.dtos.dto_note_ref import NoteRefDto
 from src.dtos.dto_note_update import NoteUpdateDto
+from src.dtos.dto_notes_ref import NotesRefDto
 from src.dtos.dto_repair_flag import RepairFlagDto
 from src.decorators.decorator_name_lookup import NameLookup
 from src.decorators.decorator_tool_registry import ToolRegistry
@@ -27,11 +29,28 @@ class AgentToolkit:
         self._inventory = inventory
         self._resolver = NameResolver(inventory, search)
 
+    @DtoValidator.tool(CategoriesFilterDto)
+    @NameLookup.categories()
+    def listar_articulos(self, category_ids: list[int] | None = None) -> list[dict] | str:
+        """Lista artículos. Con category_names (una o varias categorías) filtra por ellas; sin nombres, todos."""
+        return self._inventory.list_each(ARTICLES, "categoryId", category_ids)
+
     @DtoValidator.tool(CategoryFilterDto)
     @NameLookup.category(optional=True)
-    def listar_articulos(self, category_id: int | None = None) -> list[dict] | str:
-        """Lista artículos. Si se da category_name, filtra por esa categoría."""
-        return self._inventory.list(ARTICLES, categoryId=category_id)
+    def listar_nombres_articulos(self, category_id: int | None = None) -> list[str] | str:
+        """Lista solo los nombres de los artículos (sin fichas ni más datos); category_name filtra por categoría."""
+        return self._inventory.names(ARTICLES, categoryId=category_id)
+
+    @DtoValidator.tool(NoInputDto)
+    def listar_nombres_categorias(self) -> list[str] | str:
+        """Lista solo los nombres de las categorías (sin fichas ni más datos)."""
+        return self._inventory.names(CATEGORIES)
+
+    @DtoValidator.tool(CategoryFilterDto)
+    @NameLookup.category(optional=True)
+    def contar_articulos(self, category_id: int | None = None) -> dict | str:
+        """Cuenta los artículos de una categoría (category_name) o, sin nombre, de todas las categorías."""
+        return self._inventory.count_articles(categoryId=category_id)
 
     @DtoValidator.tool(ArticleRefDto)
     @NameLookup.article()
@@ -147,3 +166,11 @@ class AgentToolkit:
     def eliminar_nota(self, article_id: int, note_id: int) -> str:
         """Elimina una nota de un artículo identificándola por título aproximado."""
         return f"Nota '{self._inventory.delete(NOTES, note_id)['title']}' eliminada."
+
+    @DtoValidator.tool(NotesRefDto)
+    @NameLookup.article()
+    @NameLookup.notes()
+    def eliminar_notas(self, article_id: int, note_ids: list[int]) -> str:
+        """Elimina varias notas de un artículo de una vez, dando los títulos aproximados en note_titles."""
+        titles = [note["title"] for note in self._inventory.delete_many(NOTES, note_ids)]
+        return f"Notas eliminadas ({len(titles)}): " + ", ".join(f"'{title}'" for title in titles) + "."

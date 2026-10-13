@@ -1,10 +1,15 @@
 import ArticleBuilder from "../builders/articleBuilder.js";
 import { db, articles, categories } from "../db/client.js";
 import { type Article } from "../db/schema.js";
-import { eq, getTableColumns } from "drizzle-orm";
+import { count, eq, getTableColumns } from "drizzle-orm";
 import { searchService } from "./searchService.js";
 
 export type ArticleWithCategory = Article & { categoryName: string | null };
+
+export type ArticleCount = {
+  total: number;
+  categories: { categoryId: number; categoryName: string; total: number }[];
+};
 
 export default class ArticleService {
   /**
@@ -23,6 +28,24 @@ export default class ArticleService {
       return query.where(eq(articles.categoryId, categoryId));
     }
     return query;
+  }
+
+  /**
+   * Cuenta los artículos por categoría; las categorías sin artículos aparecen con cero.
+   *
+   * @param categoryId - Si se indica, solo cuenta la de esa categoría.
+   * @returns El total de artículos y el conteo de cada categoría (`categoryId`, `categoryName`, `total`).
+   */
+  async count(categoryId?: number): Promise<ArticleCount> {
+    const rows = await db
+      .select({ categoryId: categories.id, categoryName: categories.name, total: count(articles.id) })
+      .from(categories)
+      .leftJoin(articles, eq(articles.categoryId, categories.id))
+      .where(categoryId ? eq(categories.id, categoryId) : undefined)
+      .groupBy(categories.id, categories.name)
+      .orderBy(categories.name);
+
+    return { total: rows.reduce((sum, row) => sum + row.total, 0), categories: rows };
   }
 
   /**
