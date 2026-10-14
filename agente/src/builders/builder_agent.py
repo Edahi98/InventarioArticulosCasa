@@ -52,7 +52,7 @@ class AgentBuilder:
         graph.add_node(NODE_TOOLS, ToolNode(self._tools))
         graph.add_node(NODE_FINAL, ModelNode(llm, FINAL_HINT))
         graph.add_edge(START, NODE_MODEL)
-        graph.add_conditional_edges(NODE_MODEL, router.after_model, [NODE_TOOLS, END])
+        graph.add_conditional_edges(NODE_MODEL, router.after_model, [NODE_TOOLS, NODE_FINAL, END])
         graph.add_conditional_edges(NODE_TOOLS, router.after_tools, [NODE_MODEL, NODE_FINAL])
         graph.add_edge(NODE_FINAL, END)
         return graph
