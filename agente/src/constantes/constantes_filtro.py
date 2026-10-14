@@ -10,7 +10,11 @@ QUESTION = {
     "instructions": (
         "Clasificar si el propósito completo del mensaje es gestionar un inventario doméstico: "
         "consultar, buscar, crear, editar, eliminar o describir artículos, categorías o notas, "
-        "mostrar sus imágenes o crear o dibujar la imagen de un artículo o categoría. Cuando el texto "
+        "mostrar sus imágenes o crear o dibujar la imagen de un artículo o categoría. También es "
+        "gestionar el inventario contar lo que pasó con algo que se tiene, aunque no sea una orden y "
+        "no use verbos como crear o borrar: «se lo presté a mi tío», «ya no tengo la silla», «se me "
+        "acabaron las pilas», «se rompió el ventilador», «la radio está en la cocina», «compré un "
+        "taladro», «anota que compré un taladro», «cámbiale el nombre a la lámpara». Cuando el texto "
         "incluye una pregunta previa del asistente, la respuesta de la persona se evalúa en ese contexto: "
         "dar el dato que se le pidió (un nombre, una cantidad, una categoría o una confirmación) sobre "
         "el inventario es gestionar el inventario. Evaluar el mensaje entero y no solo su inicio: es "
@@ -24,7 +28,7 @@ QUESTION = {
     ),
     "criteria": {
         "true": (
-            "Todo el mensaje es una solicitud de consultar o modificar artículos, categorías, notas "
+            "Todo el mensaje es una solicitud, directa o implícita, de consultar o modificar artículos, categorías, notas "
             "o imágenes del inventario de la casa, sin ninguna otra solicitud dentro."
         ),
         "false": (
