@@ -13,6 +13,7 @@ from src.dtos.dto_note_ref import NoteRefDto
 from src.dtos.dto_note_update import NoteUpdateDto
 from src.dtos.dto_notes_ref import NotesRefDto
 from src.dtos.dto_repair_flag import RepairFlagDto
+from src.dtos.dto_stock_subtract import StockSubtractDto
 from src.decorators.decorator_name_lookup import NameLookup
 from src.decorators.decorator_tool_registry import ToolRegistry
 from src.constantes.constantes_agente import ARTICLES, CATEGORIES, NOTES
@@ -88,6 +89,18 @@ class AgentToolkit:
         """Actualiza solo los campos indicados de un artículo. article_name identifica cuál actualizar."""
         return self._inventory.update(ARTICLES, article_id, name=name, categoryId=category_id,
                                       stock=stock, description=description, imageUrl=image_url)
+
+    @DtoValidator.tool(ArticleRefDto)
+    @NameLookup.article()
+    def contar_stock(self, article_id: int) -> dict | str:
+        """Cuenta cuántas unidades (stock) hay de un artículo."""
+        return self._inventory.stock(article_id)
+
+    @DtoValidator.tool(StockSubtractDto)
+    @NameLookup.article()
+    def restar_stock(self, article_id: int, amount: int = 1) -> dict | str:
+        """Resta unidades al stock de un artículo (una por defecto) solo si le queda al menos una."""
+        return self._inventory.subtract_stock(article_id, amount)
 
     @DtoValidator.tool(RepairFlagDto)
     @NameLookup.article()

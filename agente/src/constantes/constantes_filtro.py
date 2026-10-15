@@ -10,7 +10,20 @@ QUESTION = {
     "instructions": (
         "Clasificar si el propósito completo del mensaje es gestionar un inventario doméstico: "
         "consultar, buscar, crear, editar, eliminar o describir artículos, categorías o notas, "
-        "mostrar sus imágenes o crear o dibujar la imagen de un artículo o categoría. Cuando el texto "
+        "mostrar sus imágenes o crear o dibujar la imagen de un artículo o categoría. También es "
+        "gestionar el inventario contar lo que pasó con algo que se tiene (se compró, se prestó, se "
+        "gastó, se rompió, cambió de lugar), aunque no sea una orden y no use verbos como crear o "
+        "borrar, y un mismo mensaje puede contar varias cosas a la vez. También lo es preguntar de "
+        "forma informal o coloquial por lo que se tiene guardado, dónde está o cómo está organizado o repartido en categorías, "
+        "aunque no mencione palabras como inventario, artículo o categoría, y aunque empiece con "
+        "muletillas, saludos o frases como si la persona le hablara a alguien que ya conoce sus cosas. "
+        "Son del inventario las preguntas sobre las pertenencias de la casa: si se tiene algo, cuántas "
+        "hay, dónde quedó, en qué estado está, cómo se organizó, qué falta o qué se agregó, y los "
+        "pedidos de recordar, repasar, resumir o confirmar lo que hay guardado. Una referencia a las "
+        "cosas, objetos, pertenencias o lugares de la casa cuenta como inventario aunque no precise "
+        "cuál. Ante la duda entre una consulta vaga sobre las cosas propias y una charla ajena, se "
+        "considera inventario; solo es falso cuando el tema es claramente otro. "
+        "Cuando el texto "
         "incluye una pregunta previa del asistente, la respuesta de la persona se evalúa en ese contexto: "
         "dar el dato que se le pidió (un nombre, una cantidad, una categoría o una confirmación) sobre "
         "el inventario es gestionar el inventario. Evaluar el mensaje entero y no solo su inicio: es "
@@ -24,7 +37,7 @@ QUESTION = {
     ),
     "criteria": {
         "true": (
-            "Todo el mensaje es una solicitud de consultar o modificar artículos, categorías, notas "
+            "Todo el mensaje es una solicitud, directa, implícita o dicha de manera coloquial, de consultar o modificar artículos, categorías, notas "
             "o imágenes del inventario de la casa, sin ninguna otra solicitud dentro."
         ),
         "false": (

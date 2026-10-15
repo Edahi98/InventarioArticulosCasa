@@ -10,8 +10,15 @@ class ToolRouter:
     """Aristas condicionales del grafo: deciden si se encadena otra tool, se vuelve al modelo o se cierra."""
 
     def after_model(self, state: MessagesState) -> str:
-        """Si el modelo pidió tools va al nodo de tools; si respondió con texto, termina."""
-        return NODE_TOOLS if getattr(state["messages"][-1], "tool_calls", None) else END
+        """
+        Si el modelo pidió tools va al nodo de tools; si respondió con texto, termina. Si terminó sin escribir
+        nada después de usar tools, pasa a la respuesta final para que él mismo cuente lo que hizo.
+        """
+        last = state["messages"][-1]
+        if getattr(last, "tool_calls", None):
+            return NODE_TOOLS
+        silent = not str(last.content).strip() and self._steps(state["messages"]) > 0
+        return NODE_FINAL if silent else END
 
     def after_tools(self, state: MessagesState) -> str:
         """

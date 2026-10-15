@@ -41,6 +41,22 @@ class InventoryClient:
         payload = {f: changes[f] if Valor.given(changes.get(f)) else current[f] for f in RESOURCE_FIELDS[resource]}
         return self._complete(resource, self._api.put(f"/{resource}/{record_id}", payload))
 
+    def stock(self, article_id: int) -> dict:
+        """Nombre y unidades (stock) de un artículo."""
+        article = self.get(ARTICLES, article_id)
+        return {"name": article["name"], "stock": article["stock"]}
+
+    def subtract_stock(self, article_id: int, amount: int) -> dict:
+        """
+        Resta `amount` unidades solo si después queda al menos una; si no, no cambia nada y lo informa
+        (`subtracted` False) para que quien llama decida, por ejemplo eliminar el artículo.
+        """
+        article = self.get(ARTICLES, article_id)
+        before = article["stock"]
+        subtracted = before > amount
+        after = self.update(ARTICLES, article_id, stock=before - amount)["stock"] if subtracted else before
+        return {"name": article["name"], "stock_before": before, "stock_after": after, "subtracted": subtracted}
+
     def delete(self, resource: str, record_id: int) -> dict:
         """Elimina el registro y devuelve el que se borró."""
         record = self.get(resource, record_id)
