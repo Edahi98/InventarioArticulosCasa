@@ -282,6 +282,10 @@ NODE_MODEL = "modelo"
 NODE_TOOLS = "herramientas"
 NODE_FINAL = "respuesta_final"
 MAX_TOOL_STEPS = 8
+TOOLS_REMINDER = (
+    "<tools>Las únicas herramientas que existen, con su nombre exacto, son: {names}. Úsalas solo como llamada "
+    "a herramienta: no inventes otros nombres ni escribas una llamada como texto en tu respuesta.</tools>"
+)
 FINAL_HINT = (
     "Ya no puedes llamar más herramientas: responde con lo que ya obtuviste y dile a la persona, con tus "
     "palabras, qué quedó pendiente si algo no alcanzó a hacerse. Si una herramienta pidió elegir entre varias "
