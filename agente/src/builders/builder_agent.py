@@ -13,6 +13,7 @@ from src.constantes.constantes_agente import (
     NODE_FINAL,
     NODE_MODEL,
     NODE_TOOLS,
+    TOOLS_REMINDER,
 )
 
 
@@ -48,7 +49,7 @@ class AgentBuilder:
     def _graph(self, llm) -> StateGraph:
         router = ToolRouter()
         graph = StateGraph(MessagesState)
-        graph.add_node(NODE_MODEL, ModelNode(llm.bind_tools(self._tools)))
+        graph.add_node(NODE_MODEL, ModelNode(llm.bind_tools(self._tools), self._reminder()))
         graph.add_node(NODE_TOOLS, ToolNode(self._tools))
         graph.add_node(NODE_FINAL, ModelNode(llm, FINAL_HINT))
         graph.add_edge(START, NODE_MODEL)
@@ -56,3 +57,7 @@ class AgentBuilder:
         graph.add_conditional_edges(NODE_TOOLS, router.after_tools, [NODE_MODEL, NODE_FINAL])
         graph.add_edge(NODE_FINAL, END)
         return graph
+
+    def _reminder(self) -> str:
+        """Recordatorio con los nombres exactos de las tools para que el modelo no invente otras."""
+        return TOOLS_REMINDER.format(names=", ".join(tool.name for tool in self._tools))

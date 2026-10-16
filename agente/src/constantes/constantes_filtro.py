@@ -13,7 +13,10 @@ QUESTION = {
         "mostrar sus imágenes o crear o dibujar la imagen de un artículo o categoría. También es "
         "gestionar el inventario contar lo que pasó con algo que se tiene (se compró, se prestó, se "
         "gastó, se rompió, cambió de lugar), aunque no sea una orden y no use verbos como crear o "
-        "borrar, y un mismo mensaje puede contar varias cosas a la vez. También lo es preguntar de "
+        "borrar, y un mismo mensaje puede contar varias cosas a la vez. También lo es contar o "
+        "recordar algo sobre una cosa que se tiene que no es una orden (un trámite, una revisión, "
+        "una verificación, una garantía, un servicio, un vencimiento, un pendiente o una observación "
+        "sobre su uso o su estado), porque se guarda como nota del artículo. También lo es preguntar de "
         "forma informal o coloquial por lo que se tiene guardado, dónde está o cómo está organizado o repartido en categorías, "
         "aunque no mencione palabras como inventario, artículo o categoría, y aunque empiece con "
         "muletillas, saludos o frases como si la persona le hablara a alguien que ya conoce sus cosas. "
@@ -23,6 +26,11 @@ QUESTION = {
         "cosas, objetos, pertenencias o lugares de la casa cuenta como inventario aunque no precise "
         "cuál. Ante la duda entre una consulta vaga sobre las cosas propias y una charla ajena, se "
         "considera inventario; solo es falso cuando el tema es claramente otro. "
+        "Es lenguaje cotidiano del hogar: la persona puede hablar con modismos y mexicanismos, con "
+        "diminutivos, de forma muy indirecta, sin decir quién hace la acción o como si le hablara a "
+        "un familiar, y puede mencionar el mandado, el súper, el tianguis, gangas, regalos, préstamos "
+        "o cómo tiene acomodada la casa; nada de eso lo vuelve ajeno al inventario mientras trate de "
+        "las cosas que se tienen, se compran, se pierden, se prestan, se acomodan o se anotan. "
         "Cuando el texto "
         "incluye una pregunta previa del asistente, la respuesta de la persona se evalúa en ese contexto: "
         "dar el dato que se le pidió (un nombre, una cantidad, una categoría o una confirmación) sobre "
@@ -37,7 +45,7 @@ QUESTION = {
     ),
     "criteria": {
         "true": (
-            "Todo el mensaje es una solicitud, directa, implícita o dicha de manera coloquial, de consultar o modificar artículos, categorías, notas "
+            "Todo el mensaje es una solicitud, directa, implícita o dicha de manera coloquial o con modismos mexicanos, de consultar o modificar artículos, categorías, notas "
             "o imágenes del inventario de la casa, sin ninguna otra solicitud dentro."
         ),
         "false": (
