@@ -92,6 +92,12 @@ class AgentToolkit:
 
     @DtoValidator.tool(ArticleRefDto)
     @NameLookup.article()
+    def categoria_de_articulo(self, article_id: int) -> dict | str:
+        """Dice a qué categoría pertenece un artículo."""
+        return self._inventory.category_of(article_id)
+
+    @DtoValidator.tool(ArticleRefDto)
+    @NameLookup.article()
     def contar_stock(self, article_id: int) -> dict | str:
         """Cuenta cuántas unidades (stock) hay de un artículo."""
         return self._inventory.stock(article_id)

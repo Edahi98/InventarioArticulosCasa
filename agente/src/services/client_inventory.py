@@ -46,6 +46,11 @@ class InventoryClient:
         article = self.get(ARTICLES, article_id)
         return {"name": article["name"], "stock": article["stock"]}
 
+    def category_of(self, article_id: int) -> dict:
+        """Nombre de un artículo y de la categoría a la que pertenece."""
+        article = self.get(ARTICLES, article_id)
+        return {"name": article["name"], "category": article["categoryName"]}
+
     def subtract_stock(self, article_id: int, amount: int) -> dict:
         """
         Resta `amount` unidades solo si después queda al menos una; si no, no cambia nada y lo informa
