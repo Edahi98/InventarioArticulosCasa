@@ -49,6 +49,18 @@ export class BearBuilder {
   }
 
   /**
+   * Arma un oso con el objeto a sus pies y expone la cabeza y los brazos para animarlos.
+   *
+   * @param bear - Categoría que representa el oso.
+   * @returns El oso con referencias a sus partes móviles.
+   */
+  rigWithProp(bear: InventoryBear): BearRig {
+    const rig = this.rig(bear);
+    rig.root.add(this.prop(bear.prop));
+    return rig;
+  }
+
+  /**
    * Arma un oso sin objeto y expone la cabeza y los brazos para animarlos.
    *
    * @param bear - Categoría que representa el oso.

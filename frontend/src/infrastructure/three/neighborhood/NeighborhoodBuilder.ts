@@ -6,7 +6,10 @@ import {
   SphereGeometry,
   Vector3,
 } from "three";
+import { BearBuilder } from "../BearBuilder.js";
+import { Backdrop } from "./Backdrop.js";
 import { DayLife } from "./DayLife.js";
+import { GuardianBear } from "./GuardianBear.js";
 import { HouseFactory } from "./HouseFactory.js";
 import { HouseLife, type SmokePuff } from "./HouseLife.js";
 import { IslandBuilder } from "./IslandBuilder.js";
@@ -32,6 +35,8 @@ export interface HouseEntry {
   glass: MeshStandardMaterial;
   door: Group;
   smoke: SmokePuff[];
+  stars: Mesh[];
+  bear: GuardianBear;
   baseY: number;
   height: number;
   templateId: string;
@@ -44,6 +49,7 @@ export interface NeighborhoodWorld {
   lamps: MeshStandardMaterial[];
   traffic: Traffic;
   dayLife: DayLife;
+  backdrop: Backdrop;
   radius: number;
 }
 
@@ -58,6 +64,7 @@ export class NeighborhoodBuilder {
   private readonly life = new HouseLife(this.rng);
   private readonly lampGlass: MeshStandardMaterial[] = [];
   private readonly padMaterials = new Map<number, MeshStandardMaterial>();
+  private readonly bears = new BearBuilder();
 
   /**
    * @param categories - Categorías del inventario; cada una se vuelve una casa.
@@ -91,8 +98,9 @@ export class NeighborhoodBuilder {
 
     const traffic = new Traffic(plan.curve, ROAD_WIDTH, Math.min(Math.max(Math.round(count / 3) + 1, 2), 6));
     const dayLife = new DayLife(plan.islandRadius * 2, plan.islandRadius * 2);
-    world.add(traffic.group, dayLife.group);
-    return { world, houses, swaying, lamps: this.lampGlass, traffic, dayLife, radius: plan.islandRadius };
+    const backdrop = new Backdrop(plan.islandRadius, this.categories.map((category) => category.id), this.trees);
+    world.add(backdrop.group, traffic.group, dayLife.group);
+    return { world, houses, swaying, lamps: this.lampGlass, traffic, dayLife, backdrop, radius: plan.islandRadius };
   }
 
   private pad(color: number): MeshStandardMaterial {
@@ -123,6 +131,12 @@ export class NeighborhoodBuilder {
 
     const doorLocal = decor.worldToLocal(built.door.getWorldPosition(new Vector3()));
     decor.add(new YardDetails(this.rng).build(doorLocal.x + 0.19, doorLocal.z, HouseFactory.accentColor(category.id)));
+
+    const bear = new GuardianBear(this.bears, category.id);
+    const side = built.door.position.x >= 0 ? 1 : -1;
+    bear.group.position.set(built.door.position.x + 0.19 + side * 0.95, 0, built.door.position.z + 0.9);
+    bear.group.rotation.y = -side * 0.45;
+    built.group.add(bear.group);
     return {
       id: category.id,
       name: category.name,
@@ -131,6 +145,8 @@ export class NeighborhoodBuilder {
       glass: built.glass,
       door: built.door,
       smoke: this.life.smoke(built.group, built.chimney, category.count),
+      stars: this.life.stars(built.group, category.count, built.height),
+      bear,
       baseY: built.group.position.y,
       height: built.height,
       templateId: built.templateId,

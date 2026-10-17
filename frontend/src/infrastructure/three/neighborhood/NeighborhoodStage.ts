@@ -22,6 +22,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { SkyTexture } from "../SkyTexture.js";
+import type { Backdrop } from "./Backdrop.js";
 import type { DayLife } from "./DayLife.js";
 import { NeighborhoodBuilder, type HouseEntry, type MapCategory } from "./NeighborhoodBuilder.js";
 import type { Traffic } from "./Traffic.js";
@@ -90,6 +91,7 @@ export class NeighborhoodStage {
   private readonly nightSky: NightSky;
   private readonly traffic: Traffic;
   private readonly dayLife: DayLife;
+  private readonly backdrop: Backdrop;
   private hourOverride: number | null = null;
   private state: SkyState;
   private hoverId: number | null = null;
@@ -127,7 +129,8 @@ export class NeighborhoodStage {
     this.scene.background = this.sky;
     this.scene.fog = this.fog;
 
-    const { world, houses, swaying, lamps, traffic, dayLife, radius } = new NeighborhoodBuilder(categories).build();
+    const { world, houses, swaying, lamps, traffic, dayLife, backdrop, radius } = new NeighborhoodBuilder(categories).build();
+    this.backdrop = backdrop;
     this.traffic = traffic;
     this.dayLife = dayLife;
     this.houses = houses;
@@ -172,7 +175,7 @@ export class NeighborhoodStage {
     this.controls.target.set(0, 0.4, 0);
     this.camera.position.set(Math.sin(yaw) * distance * 0.8, distance * 0.6, Math.cos(yaw) * distance * 0.8);
     this.fog.near = distance * 0.9;
-    this.fog.far = distance * 3.2;
+    this.fog.far = distance * 2.7;
     this.controls.update();
     this.renderOnce();
   }
@@ -490,7 +493,8 @@ export class NeighborhoodStage {
     this.applySky(t);
     this.animateHouses(t);
     this.traffic.update(t, this.state.night, !this.options.reducedMotion);
-    this.dayLife.update(t, this.state.night, !this.options.reducedMotion);    this.swaying.forEach((tree, index) => {
+    this.dayLife.update(t, this.state.night, !this.options.reducedMotion);
+    this.backdrop.update(t, this.state.night, !this.options.reducedMotion);    this.swaying.forEach((tree, index) => {
       tree.rotation.z = Math.sin(t * 1.1 + index) * 0.025;
     });
     this.flyCamera(now);
@@ -536,6 +540,13 @@ export class NeighborhoodStage {
       const resting = house.count > 0 ? 0.12 + night * 1.5 : 0.02;
       house.glass.emissiveIntensity = resting + level * GLOW;
       if (this.flight?.id !== house.id) house.door.rotation.y = 0;
+      house.bear.update(t, level, !this.options.reducedMotion);
+      house.stars.forEach((star) => {
+        const { angle, radius, height, phase } = star.userData as { angle: number; radius: number; height: number; phase: number };
+        const turn = angle + t * 0.6;
+        star.position.set(Math.cos(turn) * radius, height + Math.sin(t * 2 + phase) * 0.08, Math.sin(turn) * radius);
+        star.rotation.y = t * 1.6 + phase;
+      });
       house.smoke.forEach((puff) => {
         const p = this.options.reducedMotion ? puff.phase % 1 : (t * puff.speed + puff.phase) % 1;
         const [ox, oy, oz] = puff.origin;

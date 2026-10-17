@@ -1,6 +1,7 @@
 import {
   Color,
   CylinderGeometry,
+  ExtrudeGeometry,
   Group,
   InstancedMesh,
   Matrix4,
@@ -8,6 +9,7 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
+  Shape,
   SphereGeometry,
 } from "three";
 import { SeededRandom } from "./SeededRandom.js";
@@ -25,6 +27,24 @@ const BLOOMS = [0xff8fb7, 0xffe35c, 0xffffff, 0xb89cf2] as const;
 
 export class HouseLife {
   private readonly puffGeometry = new SphereGeometry(1, 10, 8);
+  private readonly starGeometry = HouseLife.starShape();
+  private readonly starMaterial = new MeshStandardMaterial({ color: 0xffd43b, emissive: 0xffb300, emissiveIntensity: 0.55, roughness: 0.35, metalness: 0.2 });
+
+  private static starShape(): ExtrudeGeometry {
+    const outline = new Shape();
+    for (let point = 0; point < 10; point += 1) {
+      const radius = point % 2 === 0 ? 1 : 0.46;
+      const angle = (point / 10) * Math.PI * 2 + Math.PI / 2;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      if (point === 0) outline.moveTo(x, y);
+      else outline.lineTo(x, y);
+    }
+    outline.closePath();
+    const geometry = new ExtrudeGeometry(outline, { depth: 0.35, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.12, bevelSegments: 3 });
+    geometry.center();
+    return geometry;
+  }
 
   /**
    * @param rng - Azar con semilla, para que el jardín de una casa siempre sea el mismo.
@@ -53,6 +73,26 @@ export class HouseLife {
         speed: this.rng.between(0.16, 0.24),
         origin: chimney,
       };
+    });
+  }
+
+  /**
+   * Estrellas coleccionables: una estrella dorada flotando sobre la casa por cada cosa que guarda
+   * (hasta 6). Se mueven en círculo y suben y bajan; se agregan al grupo de la casa.
+   *
+   * @param house - Grupo de la casa, para que las estrellas la sigan al levantarse.
+   * @param count - Artículos que guarda la casa.
+   * @param height - Altura de la casa.
+   * @returns Las estrellas para animar.
+   */
+  stars(house: Group, count: number, height: number): Mesh[] {
+    const total = Math.min(count, 6);
+    return Array.from({ length: total }, (_, index) => {
+      const star = new Mesh(this.starGeometry, this.starMaterial);
+      star.userData = { angle: (index / total) * Math.PI * 2, radius: 0.95, height: height + 0.85, phase: index * 1.3 };
+      star.scale.setScalar(0.16);
+      house.add(star);
+      return star;
     });
   }
 
