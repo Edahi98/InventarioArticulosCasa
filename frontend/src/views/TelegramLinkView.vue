@@ -1,27 +1,18 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from "vue";
+import { computed, ref } from "vue";
 import type { TelegramLinkCode } from "../core/domain/telegramLink.js";
 import { createTelegramLinkCodeUseCase } from "../core/usecases/createTelegramLinkCode.js";
+import { useClipboard } from "../composables/useClipboard.js";
+import { useCountdown } from "../composables/useCountdown.js";
 import MenuBackdrop from "../components/ui/MenuBackdrop.vue";
 
 const link = ref<TelegramLinkCode | null>(null);
 const isLoading = ref(false);
 const errorMessage = ref("");
-const copied = ref(false);
-const now = ref(Date.now());
 
-let ticker: ReturnType<typeof setInterval> | undefined;
+const { copied, copy, reset: resetCopied } = useClipboard();
+const { remainingSeconds, isExpired, countdown, start } = useCountdown(() => link.value?.expiresAt ?? null);
 
-const remainingSeconds = computed(() => {
-  if (!link.value) return 0;
-  return Math.max(0, Math.floor((new Date(link.value.expiresAt).getTime() - now.value) / 1000));
-});
-const isExpired = computed(() => link.value !== null && remainingSeconds.value === 0);
-const countdown = computed(() => {
-  const minutes = Math.floor(remainingSeconds.value / 60);
-  const seconds = String(remainingSeconds.value % 60).padStart(2, "0");
-  return `${minutes}:${seconds}`;
-});
 const displayCode = computed(() => (link.value ? `${link.value.code.slice(0, 4)}-${link.value.code.slice(4)}` : ""));
 const botLink = computed(() =>
   link.value?.botUsername ? `https://t.me/${link.value.botUsername}?start=${link.value.code}` : "",
@@ -29,15 +20,11 @@ const botLink = computed(() =>
 
 async function generate(): Promise<void> {
   errorMessage.value = "";
-  copied.value = false;
+  resetCopied();
   isLoading.value = true;
   try {
     link.value = await createTelegramLinkCodeUseCase.execute();
-    now.value = Date.now();
-    clearInterval(ticker);
-    ticker = setInterval(() => {
-      now.value = Date.now();
-    }, 1000);
+    start();
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : "No se pudo generar el código.";
   } finally {
@@ -47,15 +34,8 @@ async function generate(): Promise<void> {
 
 async function copyCommand(): Promise<void> {
   if (!link.value) return;
-  try {
-    await navigator.clipboard.writeText(`/vincular ${link.value.code}`);
-    copied.value = true;
-  } catch {
-    errorMessage.value = "No se pudo copiar; escríbelo a mano.";
-  }
+  if (!(await copy(`/vincular ${link.value.code}`))) errorMessage.value = "No se pudo copiar; escríbelo a mano.";
 }
-
-onBeforeUnmount(() => clearInterval(ticker));
 </script>
 
 <template>

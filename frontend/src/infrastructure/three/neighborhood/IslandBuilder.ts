@@ -14,6 +14,7 @@ import {
   Vector2,
   type BufferGeometry,
 } from "three";
+import { SurfaceTextures } from "../SurfaceTextures.js";
 import type { SeededRandom } from "./SeededRandom.js";
 import type { TreeFactory } from "./TreeFactory.js";
 
@@ -62,7 +63,7 @@ export class IslandBuilder {
   private material(color: number): MeshStandardMaterial {
     const cached = this.materials.get(color);
     if (cached) return cached;
-    const created = new MeshStandardMaterial({ color, roughness: 0.78, side: DoubleSide });
+    const created = new MeshStandardMaterial({ color, roughness: 0.78, side: DoubleSide, map: SurfaceTextures.clay(), bumpMap: SurfaceTextures.clay(), bumpScale: 0.35 });
     this.materials.set(color, created);
     return created;
   }

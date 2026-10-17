@@ -1,4 +1,6 @@
-import { CircleGeometry, Group, Mesh, SphereGeometry } from "three";
+import { CircleGeometry, Group, Mesh, MeshStandardMaterial, SphereGeometry } from "three";
+import { GrassField } from "../GrassField.js";
+import { SurfaceTextures } from "../SurfaceTextures.js";
 import { SeededRandom } from "../neighborhood/SeededRandom.js";
 import type { Toy } from "./Toy.js";
 
@@ -11,9 +13,19 @@ export class Landscape {
    * @returns Un suelo redondo enorme.
    */
   static meadow(toy: Toy, color = 0xbfe9d5): Mesh {
-    const meadow = new Mesh(new CircleGeometry(170, 64), toy.clay.get(color));
+    const meadow = new Mesh(new CircleGeometry(170, 64), new MeshStandardMaterial({ color, map: SurfaceTextures.grass(), bumpMap: SurfaceTextures.grass(), bumpScale: 0.9, roughness: 1 }));
     meadow.rotation.x = -Math.PI / 2;
     return meadow;
+  }
+
+  /**
+   * @param seed - Semilla del azar.
+   * @param radius - Radio del disco que se cubre de pasto.
+   * @param scale - Tamaño de las briznas, flores y rocas (el mundo de estas escenas es unas 2 veces más grande que el del mapa).
+   * @returns Pasto en 3D con flores, arbustos, hongos y rocas sobre la pradera.
+   */
+  static vegetation(seed: string, radius = 42, scale = 2.2): Group {
+    return new GrassField({ seed, radius, scale, y: 0.02, density: 6 }).group;
   }
 
   /**

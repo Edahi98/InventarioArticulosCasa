@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { searchArticles, type SearchResult } from "../infrastructure/httpSearchRepository.js";
-import { searchForm } from "../validators/searchValidators.js";
-import { validateInput } from "../validators/validateInput.js";
 import { listPeekBears } from "../core/usecases/listHomeBears.js";
 import type { LoginMood } from "../infrastructure/three/LoginStage.js";
+import { useArticleSearch } from "../composables/useArticleSearch.js";
 import ArticleRow from "../components/articles/ArticleRow.vue";
 import BearPeekScene from "../components/BearPeekScene.vue";
 import MenuBackdrop from "../components/ui/MenuBackdrop.vue";
@@ -13,13 +11,7 @@ import MenuBackdrop from "../components/ui/MenuBackdrop.vue";
 const router = useRouter();
 const bears = listPeekBears();
 
-const query = ref("");
-const results = ref<SearchResult[]>([]);
-const isLoading = ref(false);
-const searched = ref(false);
-const queryError = ref("");
-
-let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+const { query, results, isLoading, searched, queryError } = useArticleSearch();
 
 const gazeX = computed(() => Math.min(query.value.length / 16, 1) * 1.6 - 0.8);
 const mood = computed<LoginMood>(() => {
@@ -27,35 +19,6 @@ const mood = computed<LoginMood>(() => {
   if (searched.value && results.value.length === 0) return "sad";
   return "idle";
 });
-
-watch(query, (val) => {
-  if (debounceTimer) clearTimeout(debounceTimer);
-  queryError.value = "";
-  if (!val.trim()) {
-    results.value = [];
-    searched.value = false;
-    return;
-  }
-
-  const checked = validateInput(searchForm, { q: val });
-  if (!checked.ok) {
-    queryError.value = `La búsqueda ${checked.failure.fields.q ?? "no es válida"}.`;
-    results.value = [];
-    searched.value = false;
-    return;
-  }
-  debounceTimer = setTimeout(() => runSearch(checked.data.q), 300);
-});
-
-async function runSearch(q: string): Promise<void> {
-  isLoading.value = true;
-  searched.value = true;
-  try {
-    results.value = await searchArticles(q);
-  } finally {
-    isLoading.value = false;
-  }
-}
 
 function goToArticle(id: number): void {
   router.push(`/articles/${id}`);

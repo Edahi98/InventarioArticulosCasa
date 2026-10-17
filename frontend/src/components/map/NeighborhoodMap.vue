@@ -1,32 +1,53 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import type { Category } from "../../core/domain/category.js";
 import { HueSequence } from "../../infrastructure/three/neighborhood/HueSequence.js";
 import type { NeighborhoodHover, NeighborhoodStage } from "../../infrastructure/three/neighborhood/NeighborhoodStage.js";
+import { useCanvasStage } from "../../composables/useCanvasStage.js";
+import { useDayClock } from "../../composables/useDayClock.js";
+import { useWindowListener } from "../../composables/useWindowListener.js";
 
 const props = defineProps<{ categories: Category[]; counts: Record<number, number> }>();
 const emit = defineEmits<{ select: [id: number]; edit: [category: Category]; remove: [category: Category] }>();
 
-const host = ref<HTMLDivElement | null>(null);
-const canvas = ref<HTMLCanvasElement | null>(null);
-const status = ref<"loading" | "ready" | "unsupported">("loading");
 const anchor = ref<NeighborhoodHover | null>(null);
 const pickedId = ref<number | null>(null);
-const hour = ref(12);
-const manualHour = ref(false);
 const entering = ref(false);
 const width = ref(1200);
 
-let stage: NeighborhoodStage | null = null;
-let resizeObserver: ResizeObserver | null = null;
-let visibilityObserver: IntersectionObserver | null = null;
+const { hour, manualHour, clock, isNight, scrub, followClock } = useDayClock((value) => stage.value?.setHour(value));
 
-const clock = computed(() => {
-  const moment = new Date();
-  moment.setHours(Math.floor(hour.value), Math.round((hour.value % 1) * 60), 0, 0);
-  return moment.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
+const { host, canvas, status, stage } = useCanvasStage<NeighborhoodStage>({
+  enabled: () => props.categories.length > 0,
+  onResize: (nextWidth) => {
+    width.value = nextWidth;
+  },
+  create: async (target, reducedMotion) => {
+    const { NeighborhoodStage } = await import("../../infrastructure/three/neighborhood/NeighborhoodStage.js");
+    return new NeighborhoodStage(
+      target,
+      props.categories.map(({ id, name }) => ({ id, name, count: countOf(id) })),
+      {
+        onHover: (next) => {
+          anchor.value = next;
+        },
+        onPick: (id) => {
+          pickedId.value = id;
+        },
+        onEnter: () => {
+          entering.value = true;
+          anchor.value = null;
+        },
+        onSelect: (id) => emit("select", id),
+        onHour: (next) => {
+          hour.value = next;
+        },
+      },
+      { reducedMotion },
+    );
+  },
 });
-const isNight = computed(() => hour.value < 6 || hour.value >= 19);
+
 const totalItems = computed(() => Object.values(props.counts).reduce((sum, value) => sum + value, 0));
 const picked = computed(() => props.categories.find((category) => category.id === pickedId.value) ?? null);
 const showCard = computed(() => anchor.value?.selected === true && picked.value !== null);
@@ -51,74 +72,14 @@ function things(count: number): string {
 
 function pick(id: number): void {
   if (pickedId.value === id) {
-    stage?.enterHouse(id);
+    stage.value?.enterHouse(id);
     return;
   }
-  stage?.focus(id);
+  stage.value?.focus(id);
 }
 
-function scrub(event: Event): void {
-  manualHour.value = true;
-  stage?.setHour(Number((event.target as HTMLInputElement).value));
-}
-
-function followClock(): void {
-  manualHour.value = false;
-  stage?.setHour(null);
-}
-
-function handleKey(event: KeyboardEvent): void {
-  if (event.key === "Escape" && pickedId.value !== null) stage?.focus(null);
-}
-
-onMounted(async () => {
-  window.addEventListener("keydown", handleKey);
-  if (!host.value || !canvas.value || props.categories.length === 0) return;
-  try {
-    const { NeighborhoodStage } = await import("../../infrastructure/three/neighborhood/NeighborhoodStage.js");
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    stage = new NeighborhoodStage(
-      canvas.value,
-      props.categories.map(({ id, name }) => ({ id, name, count: countOf(id) })),
-      {
-        onHover: (next) => {
-          anchor.value = next;
-        },
-        onPick: (id) => {
-          pickedId.value = id;
-        },
-        onEnter: () => {
-          entering.value = true;
-          anchor.value = null;
-        },
-        onSelect: (id) => emit("select", id),
-        onHour: (next) => {
-          hour.value = next;
-        },
-      },
-      { reducedMotion },
-    );
-  } catch {
-    status.value = "unsupported";
-    return;
-  }
-  resizeObserver = new ResizeObserver(([entry]) => {
-    if (!entry) return;
-    width.value = entry.contentRect.width;
-    stage?.resize(entry.contentRect.width, entry.contentRect.height);
-  });
-  resizeObserver.observe(host.value);
-  visibilityObserver = new IntersectionObserver(([entry]) => stage?.setVisible(Boolean(entry?.isIntersecting)));
-  visibilityObserver.observe(host.value);
-  status.value = "ready";
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("keydown", handleKey);
-  resizeObserver?.disconnect();
-  visibilityObserver?.disconnect();
-  stage?.dispose();
-  stage = null;
+useWindowListener("keydown", (event) => {
+  if (event.key === "Escape" && pickedId.value !== null) stage.value?.focus(null);
 });
 </script>
 

@@ -9,6 +9,7 @@ import {
   SphereGeometry,
   Vector2,
 } from "three";
+import { SurfaceTextures } from "../SurfaceTextures.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
 type Vec3 = [number, number, number];
@@ -34,7 +35,7 @@ export class HouseParts {
   material(color: number): MeshStandardMaterial {
     const cached = this.materials.get(color);
     if (cached) return cached;
-    const created = new MeshStandardMaterial({ color, roughness: 0.62, metalness: 0 });
+    const created = new MeshStandardMaterial({ color, roughness: 0.62, metalness: 0, map: SurfaceTextures.clay(), bumpMap: SurfaceTextures.clay(), bumpScale: 0.35 });
     this.materials.set(color, created);
     return created;
   }

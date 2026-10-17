@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTheme } from "../../utils/useTheme.js";
+import { useTheme } from "../../composables/useTheme.js";
 import HomePark from "./HomePark.vue";
 
 defineEmits<{ enter: [] }>();

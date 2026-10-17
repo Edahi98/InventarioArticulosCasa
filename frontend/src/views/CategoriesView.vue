@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 import type { Category } from "../core/domain/category.js";
-import { countArticlesByCategoryUseCase } from "../core/usecases/countArticlesByCategory.js";
-import { listCategoriesUseCase } from "../core/usecases/listCategories.js";
+import { useCategoriesOverview } from "../composables/useCategoriesOverview.js";
 import CategoryDeleteDialog from "../components/categories/CategoryDeleteDialog.vue";
 import CategoryEditModal from "../components/categories/CategoryEditModal.vue";
 import NeighborhoodMap from "../components/map/NeighborhoodMap.vue";
@@ -11,42 +10,24 @@ import ExportButton from "../components/reports/ExportButton.vue";
 
 const router = useRouter();
 
-const categories = ref<Category[]>([]);
-const counts = ref<Record<number, number>>({});
-const isLoading = ref(true);
-const errorMessage = ref("");
+const { categories, counts, isLoading, errorMessage, replace, remove } = useCategoriesOverview();
 
 const editingCategory = ref<Category | null>(null);
 const deletingCategory = ref<Category | null>(null);
-
-async function load(): Promise<void> {
-  try {
-    const [list, report] = await Promise.all([listCategoriesUseCase.execute(), countArticlesByCategoryUseCase.execute()]);
-    categories.value = list;
-    counts.value = Object.fromEntries(report.categories.map((entry) => [entry.categoryId, entry.total]));
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : "Error al cargar las categorías.";
-  } finally {
-    isLoading.value = false;
-  }
-}
 
 function handleSelect(id: number): void {
   router.push(`/categories/${id}/articles`);
 }
 
 function handleCategorySaved(updated: Category): void {
-  const index = categories.value.findIndex((category) => category.id === updated.id);
-  if (index !== -1) categories.value[index] = updated;
+  replace(updated);
   editingCategory.value = null;
 }
 
 function handleCategoryDeleted(id: number): void {
-  categories.value = categories.value.filter((category) => category.id !== id);
+  remove(id);
   deletingCategory.value = null;
 }
-
-onMounted(load);
 </script>
 
 <template>

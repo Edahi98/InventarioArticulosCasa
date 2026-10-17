@@ -1,48 +1,28 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 import type { SystemUser } from "../core/domain/user.js";
-import { listUsersUseCase } from "../core/usecases/listUsers.js";
+import { useUsers } from "../composables/useUsers.js";
 import { roomTone } from "../utils/roomTone.js";
 import UserFormModal from "../components/users/UserFormModal.vue";
 import UserDeleteDialog from "../components/users/UserDeleteDialog.vue";
 import MenuBackdrop from "../components/ui/MenuBackdrop.vue";
 
-const usersList = ref<SystemUser[]>([]);
-const isLoading = ref(true);
-const errorMessage = ref("");
+const { usersList, isLoading, errorMessage, upsert, remove } = useUsers();
 
 const isCreating = ref(false);
 const editingUser = ref<SystemUser | null>(null);
 const deletingUser = ref<SystemUser | null>(null);
 
-async function loadUsers(): Promise<void> {
-  isLoading.value = true;
-  try {
-    usersList.value = await listUsersUseCase.execute();
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : "Error al cargar los usuarios.";
-  } finally {
-    isLoading.value = false;
-  }
-}
-
 function handleSaved(saved: SystemUser): void {
-  const index = usersList.value.findIndex((user) => user.id === saved.id);
-  if (index !== -1) {
-    usersList.value[index] = saved;
-  } else {
-    usersList.value.push(saved);
-  }
+  upsert(saved);
   isCreating.value = false;
   editingUser.value = null;
 }
 
 function handleDeleted(id: number): void {
-  usersList.value = usersList.value.filter((user) => user.id !== id);
+  remove(id);
   deletingUser.value = null;
 }
-
-onMounted(loadUsers);
 </script>
 
 <template>

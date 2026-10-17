@@ -1,5 +1,6 @@
 import { Group, Vector3 } from "three";
 import { BearBuilder } from "../BearBuilder.js";
+import { HelicopterFleet } from "../neighborhood/HelicopterFleet.js";
 import { SeededRandom } from "../neighborhood/SeededRandom.js";
 import { TreeFactory } from "../neighborhood/TreeFactory.js";
 import { Carousel } from "./Carousel.js";
@@ -21,6 +22,7 @@ export class ParkBuilder {
   private readonly carousel: Carousel;
   private readonly train: ToyTrain;
   private readonly toys: ParkSkyToys;
+  private readonly fleet = new HelicopterFleet({ center: [PARK_CENTER.x, 10.5, PARK_CENTER.z - 8], rx: 20, rz: 10, scale: 3.2 });
   private readonly confetti = new Confetti();
   private readonly rng = new SeededRandom("fiesta");
   private nextParty = 7;
@@ -42,7 +44,7 @@ export class ParkBuilder {
     this.train.group.position.set(PARK_CENTER.x, 0, PARK_CENTER.z);
     this.toys = new ParkSkyToys(clay, (point) => this.confetti.burst(point, 70));
     this.interactives = [...this.wheel.interactives, ...this.carousel.interactives, ...this.train.interactives, ...this.toys.interactives];
-    this.group.add(this.scenery.group, this.wheel.group, this.carousel.group, this.train.group, this.toys.group, this.confetti.mesh);
+    this.group.add(this.scenery.group, this.wheel.group, this.carousel.group, this.train.group, this.toys.group, this.fleet.group, this.confetti.mesh);
   }
 
   /**
@@ -70,6 +72,7 @@ export class ParkBuilder {
     this.carousel.update(elapsed, night, moving);
     this.train.update(elapsed, night, moving);
     this.toys.update(elapsed, night, moving);
+    this.fleet.update(elapsed, moving);
     this.confetti.update(dt);
     if (moving && elapsed > this.nextParty) {
       this.confetti.burst(this.rng.pick(CELEBRATIONS), 55);

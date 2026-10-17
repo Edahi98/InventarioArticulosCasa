@@ -1,0 +1,162 @@
+{
+  "articulos": [
+    "Leche condensada",
+    "Leche entera",
+    "Huevo",
+    "Azúcar",
+    "Harina de trigo",
+    "Limón",
+    "Sal",
+    "Taladro",
+    "Licuadora",
+    "Molde para panqué"
+  ],
+  "resultados": [
+    {
+      "term": "1 Lata de Leche Condensada LA LECHERA®",
+      "matches": [
+        {
+          "articleId": 1,
+          "name": "Leche condensada",
+          "categoryName": "Cocina",
+          "location": "Alacena arriba",
+          "stock": 2,
+          "score": 0.7,
+          "method": "contenida"
+        }
+      ]
+    },
+    {
+      "term": "2 Tazas de Granos de elote amarillo",
+      "matches": []
+    },
+    {
+      "term": "1 Barra de Mantequilla fundida (90 g)",
+      "matches": []
+    },
+    {
+      "term": "5 Huevos",
+      "matches": [
+        {
+          "articleId": 3,
+          "name": "Huevo",
+          "categoryName": "Cocina",
+          "location": "Refrigerador",
+          "stock": 12,
+          "score": 1,
+          "method": "exacta"
+        }
+      ]
+    },
+    {
+      "term": "1 Cucharadita de Canela molida",
+      "matches": []
+    },
+    {
+      "term": "1 Cucharada de Polvo para hornear",
+      "matches": []
+    },
+    {
+      "term": "1/2 Taza de Harina de trigo pasada por un colador",
+      "matches": [
+        {
+          "articleId": 5,
+          "name": "Harina de trigo",
+          "categoryName": "Cocina",
+          "location": "Alacena",
+          "stock": 1,
+          "score": 0.7,
+          "method": "contenida"
+        }
+      ]
+    },
+    {
+      "term": "1 Cucharada de Azúcar glass",
+      "matches": [
+        {
+          "articleId": 4,
+          "name": "Azúcar",
+          "categoryName": "Cocina",
+          "location": "Alacena",
+          "stock": 1,
+          "score": 0.7,
+          "method": "contenida"
+        }
+      ]
+    },
+    {
+      "term": "2 tazas de Azúcar, al gusto",
+      "matches": [
+        {
+          "articleId": 4,
+          "name": "Azúcar",
+          "categoryName": "Cocina",
+          "location": "Alacena",
+          "stock": 1,
+          "score": 1,
+          "method": "exacta"
+        }
+      ]
+    },
+    {
+      "term": "Huevos (grandes)",
+      "matches": [
+        {
+          "articleId": 3,
+          "name": "Huevo",
+          "categoryName": "Cocina",
+          "location": "Refrigerador",
+          "stock": 12,
+          "score": 1,
+          "method": "exacta"
+        }
+      ]
+    },
+    {
+      "term": "3 limones",
+      "matches": [
+        {
+          "articleId": 6,
+          "name": "Limón",
+          "categoryName": "Cocina",
+          "location": "Frutero",
+          "stock": 4,
+          "score": 1,
+          "method": "exacta"
+        }
+      ]
+    },
+    {
+      "term": "Harína de trigo",
+      "matches": [
+        {
+          "articleId": 5,
+          "name": "Harina de trigo",
+          "categoryName": "Cocina",
+          "location": "Alacena",
+          "stock": 1,
+          "score": 1,
+          "method": "exacta"
+        }
+      ]
+    },
+    {
+      "term": "cucharadita de sal",
+      "matches": [
+        {
+          "articleId": 7,
+          "name": "Sal",
+          "categoryName": "Cocina",
+          "location": "Alacena",
+          "stock": 1,
+          "score": 1,
+          "method": "exacta"
+        }
+      ]
+    },
+    {
+      "term": "Lechuga romana",
+      "matches": []
+    }
+  ]
+}

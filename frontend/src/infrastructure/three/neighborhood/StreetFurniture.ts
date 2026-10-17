@@ -1,4 +1,5 @@
 import { CylinderGeometry, Group, Mesh, MeshStandardMaterial, SphereGeometry, type Curve, type Vector3 } from "three";
+import { SurfaceTextures } from "../SurfaceTextures.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RoadBuilder } from "./RoadBuilder.js";
 import { SeededRandom } from "./SeededRandom.js";
@@ -49,7 +50,7 @@ export class StreetFurniture {
   private material(color: number): MeshStandardMaterial {
     const cached = this.materials.get(color);
     if (cached) return cached;
-    const created = new MeshStandardMaterial({ color, roughness: 0.7 });
+    const created = new MeshStandardMaterial({ color, roughness: 0.7, map: SurfaceTextures.clay(), bumpMap: SurfaceTextures.clay(), bumpScale: 0.35 });
     this.materials.set(color, created);
     return created;
   }

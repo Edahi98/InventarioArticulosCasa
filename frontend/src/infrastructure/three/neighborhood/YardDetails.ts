@@ -10,6 +10,7 @@ import {
   TubeGeometry,
   Vector3,
 } from "three";
+import { SurfaceTextures } from "../SurfaceTextures.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SeededRandom } from "./SeededRandom.js";
 
@@ -50,7 +51,7 @@ export class YardDetails {
   private material(color: number): MeshStandardMaterial {
     const cached = this.materials.get(color);
     if (cached) return cached;
-    const created = new MeshStandardMaterial({ color, roughness: 0.75 });
+    const created = new MeshStandardMaterial({ color, roughness: 0.75, map: SurfaceTextures.clay(), bumpMap: SurfaceTextures.clay(), bumpScale: 0.35 });
     this.materials.set(color, created);
     return created;
   }

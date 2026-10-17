@@ -13,6 +13,7 @@ import {
   Vector3,
   type Curve,
 } from "three";
+import { SurfaceTextures } from "../SurfaceTextures.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
 const ASPHALT = 0x6b5a78;
@@ -62,9 +63,12 @@ export class RoadBuilder {
   private static ribbon(curve: Curve<Vector3>, from: number, to: number, y: number, color: number): Mesh {
     const positions: number[] = [];
     const indices: number[] = [];
+    const uvs: number[] = [];
+    const stretch = curve.getLength() / 3;
     for (let index = 0; index <= SAMPLES; index += 1) {
       const { point, normal } = RoadBuilder.frame(curve, index / SAMPLES);
       positions.push(point.x + normal.x * from, y, point.z + normal.z * from, point.x + normal.x * to, y, point.z + normal.z * to);
+      uvs.push(0, (index / SAMPLES) * stretch, 1, (index / SAMPLES) * stretch);
       if (index < SAMPLES) {
         const base = index * 2;
         indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
@@ -72,9 +76,10 @@ export class RoadBuilder {
     }
     const geometry = new BufferGeometry();
     geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
-    const mesh = new Mesh(geometry, new MeshStandardMaterial({ color, roughness: 0.85, side: DoubleSide }));
+    const mesh = new Mesh(geometry, new MeshStandardMaterial({ color, roughness: 0.85, side: DoubleSide, map: SurfaceTextures.asphalt(), bumpMap: SurfaceTextures.asphalt(), bumpScale: 0.6 }));
     mesh.receiveShadow = true;
     return mesh;
   }

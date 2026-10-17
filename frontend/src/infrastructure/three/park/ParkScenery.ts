@@ -2,17 +2,28 @@ import { CircleGeometry, Color, CylinderGeometry, DodecahedronGeometry, Group, I
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SeededRandom } from "../neighborhood/SeededRandom.js";
 import type { TreeFactory } from "../neighborhood/TreeFactory.js";
+import { GrassField } from "../GrassField.js";
+import { SurfaceTextures } from "../SurfaceTextures.js";
+import { ToyBoat, type BoatKind } from "../neighborhood/ToyBoat.js";
 import type { ClayMaterials } from "./ClayMaterials.js";
 
 export const POND = { x: -2.5, z: 8.6, radius: 2.7 };
 export const PARK_CENTER = { x: 9.5, z: 2.5 };
 
+const PLAZA = { rx: 16.2, rz: 8.7 };
+const WHEEL = { x: 12, z: -8, radius: 4.5 };
+const FENCE_Z = 13.4;
+const PARK_BOATS: { kind: BoatKind; color: number; tone: "sky" | "rose"; radius: number; speed: number; phase: number }[] = [
+  { kind: "velero", color: 0xff8fb7, tone: "sky", radius: 1.5, speed: 0.45, phase: 0 },
+  { kind: "lancha", color: 0xffe35c, tone: "rose", radius: 0.9, speed: -0.7, phase: 3 },
+];
 const HILLS = [0xa9ddc5, 0xcfc3e6, 0xffd9c7, 0xc7e3b2, 0xb7d2f0] as const;
 const BLOOMS = [0xff8fb7, 0xffe35c, 0xffffff, 0xb89cf2, 0xffb066] as const;
 
 export class ParkScenery {
   readonly group = new Group();
   private readonly swaying: Group[] = [];
+  private readonly boats: { group: Group; radius: number; speed: number; phase: number }[] = [];
   private readonly rng = new SeededRandom("parque");
 
   /**
@@ -26,7 +37,7 @@ export class ParkScenery {
     private readonly trees: TreeFactory,
     private readonly clay: ClayMaterials,
   ) {
-    this.group.add(this.meadow(), this.plaza(), ...this.hills(), this.pond(), this.fence(), this.flowers(), ...this.forest());
+    this.group.add(this.meadow(), this.grass().group, this.plaza(), ...this.hills(), this.pond(), this.fence(), this.flowers(), ...this.forest());
   }
 
   /**
@@ -40,13 +51,35 @@ export class ParkScenery {
     this.swaying.forEach((tree, index) => {
       tree.rotation.z = Math.sin(t * 1.1 + index) * 0.025;
     });
+    this.boats.forEach((boat) => {
+      const angle = t * boat.speed + boat.phase;
+      const direction = Math.sign(boat.speed);
+      boat.group.position.set(POND.x + Math.cos(angle) * boat.radius, 0.1 + Math.sin(t * 1.6 + boat.phase) * 0.03, POND.z + Math.sin(angle) * boat.radius);
+      boat.group.rotation.y = Math.atan2(-Math.cos(angle) * direction, -Math.sin(angle) * direction);
+      boat.group.rotation.z = Math.sin(t * 1.2 + boat.phase) * 0.05;
+    });
   }
 
   private meadow(): Mesh {
-    const meadow = new Mesh(new CircleGeometry(170, 72), this.clay.get(0xbfe9d5));
+    const meadow = new Mesh(new CircleGeometry(170, 72), new MeshStandardMaterial({ color: 0xbfe9d5, map: SurfaceTextures.grass(), bumpMap: SurfaceTextures.grass(), bumpScale: 0.9, roughness: 1 }));
     meadow.rotation.x = -Math.PI / 2;
     meadow.receiveShadow = true;
     return meadow;
+  }
+
+  private grass(): GrassField {
+    return new GrassField({
+      seed: "parque-pasto",
+      radius: 50,
+      center: [8, 0],
+      scale: 2,
+      y: 0.02,
+      accept: (x, z) =>
+        ((x - PARK_CENTER.x) / PLAZA.rx) ** 2 + ((z - PARK_CENTER.z) / PLAZA.rz) ** 2 > 1 &&
+        (x - POND.x) ** 2 + (z - POND.z) ** 2 > (POND.radius + 0.8) ** 2 &&
+        (x - WHEEL.x) ** 2 + (z - WHEEL.z) ** 2 > WHEEL.radius ** 2 &&
+        Math.abs(z - FENCE_Z) > 0.6,
+    });
   }
 
   private plaza(): Mesh {
@@ -81,7 +114,15 @@ export class ParkScenery {
       pond.add(stone);
     }
     pond.position.set(POND.x, 0, POND.z);
+    this.group.add(...PARK_BOATS.map((spec, index) => this.pondBoat(spec, index)));
     return pond;
+  }
+
+  private pondBoat(spec: (typeof PARK_BOATS)[number], index: number): Group {
+    const boat = ToyBoat.build(spec.color, spec.kind, spec.tone, index);
+    boat.scale.setScalar(0.9);
+    this.boats.push({ group: boat, radius: spec.radius, speed: spec.speed, phase: spec.phase });
+    return boat;
   }
 
   private fence(): Group {

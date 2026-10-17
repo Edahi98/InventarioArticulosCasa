@@ -6,9 +6,9 @@ import { listCategoriesUseCase } from "../core/usecases/listCategories.js";
 import { createArticleUseCase } from "../core/usecases/createArticle.js";
 import { updateArticleUseCase } from "../core/usecases/updateArticle.js";
 import { getArticleByIdUseCase } from "../core/usecases/getArticleById.js";
-import { uploadArticleImageUseCase } from "../core/usecases/uploadArticleImage.js";
 import { articleForm } from "../validators/articleValidators.js";
-import { validateInput } from "../validators/validateInput.js";
+import { useFormSubmit } from "../composables/useFormSubmit.js";
+import { useImageUpload } from "../composables/useImageUpload.js";
 import ArticleRow from "../components/articles/ArticleRow.vue";
 import ImageUploader from "../components/ImageUploader.vue";
 import FormField from "../components/ui/FormField.vue";
@@ -31,14 +31,9 @@ const form = reactive({
   needsRepair: false,
 });
 
-const pendingFile = ref<File | null>(null);
-const pendingPreview = ref("");
-
 const isLoading = ref(isEditMode.value);
-const isSubmitting = ref(false);
-const isUploading = ref(false);
-const errorMessage = ref("");
-const fieldErrors = ref<Record<string, string>>({});
+const { isSubmitting, errorMessage, fieldErrors, validate, submit, fail } = useFormSubmit();
+const { pendingPreview, isUploading, hasImage, select: handleImageSelected, resolveUrl } = useImageUpload(() => form.imageUrl);
 
 const preview = computed(() => ({
   name: form.name || "El nombre del artículo",
@@ -63,34 +58,14 @@ onMounted(async () => {
     form.stock = article.stock;
     form.needsRepair = article.needsRepair;
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "No se pudo cargar el artículo.";
+    fail(error instanceof Error ? error.message : "No se pudo cargar el artículo.");
   } finally {
     isLoading.value = false;
   }
 });
 
-function handleImageSelected(file: File, previewUrl: string): void {
-  pendingFile.value = file;
-  pendingPreview.value = previewUrl;
-}
-
-async function resolveImageUrl(): Promise<string> {
-  if (!pendingFile.value) return form.imageUrl;
-  isUploading.value = true;
-  try {
-    const uploaded = await uploadArticleImageUseCase.execute(pendingFile.value);
-    return uploaded.url;
-  } finally {
-    isUploading.value = false;
-  }
-}
-
 async function handleSubmit(): Promise<void> {
-  errorMessage.value = "";
-  fieldErrors.value = {};
-
-  const checked = validateInput(articleForm, {
+  const data = validate(articleForm, {
     name: form.name,
     description: form.description,
     location: form.location,
@@ -98,20 +73,14 @@ async function handleSubmit(): Promise<void> {
     stock: form.stock,
     needsRepair: form.needsRepair,
   });
-  if (!checked.ok) {
-    fieldErrors.value = checked.failure.fields;
-    errorMessage.value = checked.failure.message;
-    return;
-  }
-  if (!form.imageUrl && !pendingFile.value) {
-    errorMessage.value = "Elige una foto del artículo antes de guardarlo.";
+  if (!data) return;
+  if (!hasImage.value) {
+    fail("Elige una foto del artículo antes de guardarlo.");
     return;
   }
 
-  isSubmitting.value = true;
-  try {
-    const input = { ...checked.data, imageUrl: await resolveImageUrl() };
-
+  await submit(async () => {
+    const input = { ...data, imageUrl: await resolveUrl() };
     if (articleId) {
       await updateArticleUseCase.execute(articleId, input);
       router.push(`/articles/${articleId}`);
@@ -119,12 +88,7 @@ async function handleSubmit(): Promise<void> {
       await createArticleUseCase.execute(input);
       router.push(`/categories/${form.categoryId}/articles`);
     }
-  } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "No se pudo guardar el artículo.";
-  } finally {
-    isSubmitting.value = false;
-  }
+  }, "No se pudo guardar el artículo.");
 }
 </script>
 

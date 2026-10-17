@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import type { Note } from "../core/domain/note.js";
-import { listNotesByArticleUseCase } from "../core/usecases/listNotesByArticle.js";
 import { createNoteUseCase } from "../core/usecases/createNote.js";
 import { noteForm } from "../validators/noteValidators.js";
-import { validateInput } from "../validators/validateInput.js";
+import { useFormSubmit } from "../composables/useFormSubmit.js";
+import { useNotes } from "../composables/useNotes.js";
 import NoteActionModal from "./notes/NoteActionModal.vue";
 
 const props = defineProps<{ articleId: number }>();
@@ -12,11 +12,9 @@ const props = defineProps<{ articleId: number }>();
 const POSTIT_COLORS = ["#ffe98a", "#ffb3cb", "#cdbaf7", "#bfe9d5"];
 const POSTIT_TILTS = [-1.6, 1.2, -0.6, 1.8];
 
-const notes = ref<Note[]>([]);
-const isLoading = ref(true);
-const errorMessage = ref("");
-const fieldErrors = ref<Record<string, string>>({});
-const isSubmitting = ref(false);
+const { notes, isLoading, loadError, load, replace, remove } = useNotes(() => props.articleId);
+const { isSubmitting, errorMessage: formError, fieldErrors, validate, submit } = useFormSubmit();
+const errorMessage = computed(() => formError.value || loadError.value);
 
 const activeNote = ref<Note | null>(null);
 const activeMode = ref<"edit" | "delete">("edit");
@@ -26,39 +24,18 @@ const form = reactive({
   description: "",
 });
 
-async function loadNotes(): Promise<void> {
-  isLoading.value = true;
-  try {
-    notes.value = await listNotesByArticleUseCase.execute(props.articleId);
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : "Error al cargar las notas.";
-  } finally {
-    isLoading.value = false;
-  }
-}
-
 async function handleSubmit(): Promise<void> {
-  errorMessage.value = "";
-  fieldErrors.value = {};
+  const data = validate(noteForm, { title: form.title, description: form.description });
+  if (!data) return;
 
-  const checked = validateInput(noteForm, { title: form.title, description: form.description });
-  if (!checked.ok) {
-    fieldErrors.value = checked.failure.fields;
-    errorMessage.value = checked.failure.message;
-    return;
-  }
+  const saved = await submit(async () => {
+    await createNoteUseCase.execute({ ...data, articleId: props.articleId });
+  }, "No se pudo guardar la nota.");
+  if (!saved) return;
 
-  isSubmitting.value = true;
-  try {
-    await createNoteUseCase.execute({ ...checked.data, articleId: props.articleId });
-    form.title = "";
-    form.description = "";
-    await loadNotes();
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : "No se pudo guardar la nota.";
-  } finally {
-    isSubmitting.value = false;
-  }
+  form.title = "";
+  form.description = "";
+  await load();
 }
 
 function openEditModal(note: Note): void {
@@ -76,19 +53,14 @@ function closeModal(): void {
 }
 
 function handleSaved(updated: Note): void {
-  const index = notes.value.findIndex((note) => note.id === updated.id);
-  if (index !== -1) {
-    notes.value[index] = updated;
-  }
+  replace(updated);
   closeModal();
 }
 
 function handleDeleted(id: number): void {
-  notes.value = notes.value.filter((note) => note.id !== id);
+  remove(id);
   closeModal();
 }
-
-onMounted(loadNotes);
 </script>
 
 <template>

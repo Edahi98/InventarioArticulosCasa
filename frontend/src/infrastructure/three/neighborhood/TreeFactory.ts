@@ -1,4 +1,5 @@
 import { CylinderGeometry, Group, Mesh, MeshStandardMaterial, SphereGeometry } from "three";
+import { SurfaceTextures } from "../SurfaceTextures.js";
 import type { SeededRandom } from "./SeededRandom.js";
 
 const TRUNK = 0x9a6b52;
@@ -52,7 +53,7 @@ export class TreeFactory {
   private material(color: number): MeshStandardMaterial {
     const cached = this.materials.get(color);
     if (cached) return cached;
-    const created = new MeshStandardMaterial({ color, roughness: 0.7 });
+    const created = new MeshStandardMaterial({ color, roughness: 0.7, map: SurfaceTextures.foliage(), bumpMap: SurfaceTextures.foliage(), bumpScale: 0.6 });
     this.materials.set(color, created);
     return created;
   }

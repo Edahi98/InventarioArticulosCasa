@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { watch } from "vue";
 import type { InventoryBear } from "../../core/domain/inventoryBear.js";
 import type { BearStage } from "../../infrastructure/three/BearStage.js";
+import { useCanvasStage } from "../../composables/useCanvasStage.js";
 
 const props = withDefaults(
   defineProps<{
@@ -12,56 +13,19 @@ const props = withDefaults(
   { activeId: null },
 );
 
-const host = ref<HTMLDivElement | null>(null);
-const canvas = ref<HTMLCanvasElement | null>(null);
-const status = ref<"loading" | "ready" | "unsupported">("loading");
-
-let stage: BearStage | null = null;
-let resizeObserver: ResizeObserver | null = null;
-let visibilityObserver: IntersectionObserver | null = null;
-
-function handlePointer(event: PointerEvent): void {
-  if (!host.value || !stage) return;
-  const box = host.value.getBoundingClientRect();
-  stage.setPointer(((event.clientX - box.left) / box.width) * 2 - 1, ((event.clientY - box.top) / box.height) * 2 - 1);
-}
-
-function handleLeave(): void {
-  stage?.setPointer(0, 0);
-}
-
-onMounted(async () => {
-  if (!host.value || !canvas.value) return;
-  try {
+const { host, canvas, status, stage, handlePointer, handleLeave } = useCanvasStage<BearStage>({
+  pointer: "host",
+  create: async (target, reducedMotion) => {
     const { BearStage } = await import("../../infrastructure/three/BearStage.js");
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    stage = new BearStage(canvas.value, props.bears, { reducedMotion });
-  } catch {
-    status.value = "unsupported";
-    return;
-  }
-
-  stage.setActive(props.activeId);
-  resizeObserver = new ResizeObserver(([entry]) => {
-    if (entry) stage?.resize(entry.contentRect.width, entry.contentRect.height);
-  });
-  resizeObserver.observe(host.value);
-  visibilityObserver = new IntersectionObserver(([entry]) => stage?.setVisible(Boolean(entry?.isIntersecting)));
-  visibilityObserver.observe(host.value);
-  status.value = "ready";
+    return new BearStage(target, props.bears, { reducedMotion });
+  },
+  onReady: (ready) => ready.setActive(props.activeId),
 });
 
 watch(
   () => props.activeId,
-  (id) => stage?.setActive(id),
+  (id) => stage.value?.setActive(id),
 );
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  visibilityObserver?.disconnect();
-  stage?.dispose();
-  stage = null;
-});
 </script>
 
 <template>

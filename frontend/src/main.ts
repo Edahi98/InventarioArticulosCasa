@@ -2,7 +2,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import { router } from "./router/index.js";
 import { vAriaFocus } from "./directives/v-aria-focus.js";
-import { useTheme } from "./utils/useTheme.js";
+import { useTheme } from "./composables/useTheme.js";
 import "@fontsource/bagel-fat-one";
 import "@fontsource-variable/nunito";
 import "./assets/main.css";
@@ -30,6 +30,7 @@ import {
   faMap,
   faDoorOpen,
   faXmark,
+  faListCheck,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -53,6 +54,7 @@ library.add(
   faMap,
   faDoorOpen,
   faXmark,
+  faListCheck,
 );
 
 useTheme();

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { reactive } from "vue";
 import type { SystemUser } from "../../core/domain/user.js";
 import { createUserUseCase } from "../../core/usecases/createUser.js";
 import { updateUserUseCase } from "../../core/usecases/updateUser.js";
+import { useFormSubmit } from "../../composables/useFormSubmit.js";
 import { userCreateForm, userUpdateForm } from "../../validators/userValidators.js";
-import { validateInput } from "../../validators/validateInput.js";
 import FormField from "../ui/FormField.vue";
 import ModalShell from "../ui/ModalShell.vue";
 
@@ -18,40 +18,22 @@ const form = reactive({
   password: "",
 });
 
-const isSubmitting = ref(false);
-const errorMessage = ref("");
-const fieldErrors = ref<Record<string, string>>({});
+const { isSubmitting, errorMessage, fieldErrors, validate, submit } = useFormSubmit();
 
 async function handleSubmit(): Promise<void> {
-  errorMessage.value = "";
-  fieldErrors.value = {};
+  const data = validate(isEditMode ? userUpdateForm : userCreateForm, { username: form.username, password: form.password }) as {
+    username: string;
+    password?: string;
+  } | null;
+  if (!data) return;
 
-  const checked = validateInput(isEditMode ? userUpdateForm : userCreateForm, {
-    username: form.username,
-    password: form.password,
-  });
-  if (!checked.ok) {
-    fieldErrors.value = checked.failure.fields;
-    errorMessage.value = checked.failure.message;
-    return;
-  }
-  const { username, password } = checked.data as { username: string; password?: string };
-
-  isSubmitting.value = true;
-  try {
-    let saved: SystemUser;
-    if (isEditMode && props.user) {
-      saved = await updateUserUseCase.execute(props.user.id, { username, password });
-    } else {
-      saved = await createUserUseCase.execute({ username, password: password ?? "" });
-    }
+  await submit(async () => {
+    const saved =
+      isEditMode && props.user
+        ? await updateUserUseCase.execute(props.user.id, { username: data.username, password: data.password })
+        : await createUserUseCase.execute({ username: data.username, password: data.password ?? "" });
     emit("saved", saved);
-  } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "No se pudo guardar el usuario.";
-  } finally {
-    isSubmitting.value = false;
-  }
+  }, "No se pudo guardar el usuario.");
 }
 </script>
 

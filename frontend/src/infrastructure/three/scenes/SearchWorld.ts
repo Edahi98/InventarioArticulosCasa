@@ -47,7 +47,7 @@ export class SearchWorld implements ScenicWorld {
     const bears = new BearBuilder();
     const trees = new TreeFactory(this.rng);
     this.group.position.y = GROUND;
-    this.group.add(Landscape.meadow(toy), Landscape.hills(toy, "busqueda-colinas", 50), this.confetti.mesh, this.buildMagnifier(toy));
+    this.group.add(Landscape.meadow(toy), Landscape.vegetation("busqueda-pasto"), Landscape.hills(toy, "busqueda-colinas", 50), this.confetti.mesh, this.buildMagnifier(toy));
     this.group.add(...this.footprints(toy));
     [[-18, -10, 2], [-13, -16, 2.4], [16, -12, 2.1], [21, -7, 1.8], [8, -18, 2.4], [-23, -4, 1.6]].forEach(([x, z, scale]) => {
       this.group.add(trees.build(x as number, z as number, scale as number, this.rng.chance(0.3)));
