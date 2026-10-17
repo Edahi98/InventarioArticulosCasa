@@ -10,6 +10,7 @@ import {
   Vector3,
   type BufferGeometry,
 } from "three";
+import { SurfaceTextures } from "./SurfaceTextures.js";
 import type { BearProp, BearTone, InventoryBear } from "../../core/domain/inventoryBear.js";
 import { BearSymbolBuilder } from "./BearSymbolBuilder.js";
 
@@ -89,7 +90,7 @@ export class BearBuilder {
   }
 
   private material(color: number): MeshStandardMaterial {
-    return new MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.02 });
+    return new MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.02, map: SurfaceTextures.fur(), bumpMap: SurfaceTextures.fur(), bumpScale: 0.8 });
   }
 
   private mesh(
