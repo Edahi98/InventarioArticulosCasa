@@ -1,27 +1,20 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
-import type { ParkStage } from "../../infrastructure/three/park/ParkStage.js";
-import type { SkyVariant } from "../../infrastructure/three/sky/SkyBuilder.js";
-import type { SkyStage } from "../../infrastructure/three/sky/SkyStage.js";
+import type { ScenicStage } from "../../infrastructure/three/scenes/ScenicStage.js";
+import type { ScenicWorld } from "../../infrastructure/three/scenes/ScenicWorld.js";
 import { useTheme } from "../../utils/useTheme.js";
 
-const props = withDefaults(defineProps<{ scene: SkyVariant | "parque"; celebrate?: number }>(), { celebrate: 0 });
+type Scene = "casa" | "barrio" | "correo" | "busqueda" | "almacen" | "empaque";
 
-interface Backdrop {
-  setDark(dark: boolean): void;
-  setPointer(x: number, y: number): void;
-  resize(width: number, height: number): void;
-  setVisible(visible: boolean): void;
-  dispose(): void;
-  celebrate?: () => void;
-}
+const props = withDefaults(defineProps<{ scene: Scene; celebrate?: number }>(), { celebrate: 0 });
 
-const LABELS: Record<SkyVariant | "parque", string> = {
-  cielo: "Un cielo de juguete con un arcoíris, globos aerostáticos con ositos, una isla flotante, un barquito y un cohete",
-  isla: "Un cielo de juguete con una isla flotante con castillo y globos aerostáticos con ositos",
-  correo: "Un cielo de juguete con un cohete y globos aerostáticos con ositos pilotos",
-  puerto: "Un mar de nubes de juguete con un barquito de vela, una isla flotante y un globo aerostático",
-  parque: "Un parque de juguete con una rueda de la fortuna, un carrusel y un trencito",
+const LABELS: Record<Scene, string> = {
+  casa: "La entrada de una casita de juguete con un buzón, una llave gigante y dos ositos que dan la bienvenida",
+  barrio: "Una calle de juguete con casitas de colores, cada una con su osito en la puerta, y cochecitos pasando",
+  correo: "Un cielo de juguete con aviones de papel, sobres, globos de conversación y un buzón gigante con un osito cartero",
+  busqueda: "Una pradera de juguete con una lupa gigante, huellas, signos de interrogación y ositos escondidos tras los arbustos",
+  almacen: "Un cuarto de guardado de juguete con estantes llenos de cajas, cajas apiladas, una escalera y ositos ayudando",
+  empaque: "Un cuarto de empaque de juguete con una banda transportadora de paquetes y una caja abierta de la que salen estrellas",
 };
 
 const { isDark } = useTheme();
@@ -29,7 +22,7 @@ const host = ref<HTMLDivElement | null>(null);
 const canvas = ref<HTMLCanvasElement | null>(null);
 const status = ref<"loading" | "ready" | "unsupported">("loading");
 
-let stage: Backdrop | null = null;
+let stage: ScenicStage | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let visibilityObserver: IntersectionObserver | null = null;
 
@@ -37,20 +30,24 @@ function handlePointer(event: PointerEvent): void {
   stage?.setPointer((event.clientX / window.innerWidth) * 2 - 1, (event.clientY / window.innerHeight) * 2 - 1);
 }
 
-async function createStage(target: HTMLCanvasElement): Promise<Backdrop> {
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (props.scene === "parque") {
-    const { ParkStage } = await import("../../infrastructure/three/park/ParkStage.js");
-    return new ParkStage(target, { reducedMotion, centered: true }) as ParkStage;
-  }
-  const { SkyStage } = await import("../../infrastructure/three/sky/SkyStage.js");
-  return new SkyStage(target, { reducedMotion, variant: props.scene }) as SkyStage;
+async function createWorld(): Promise<ScenicWorld> {
+  const worlds: Record<Scene, () => Promise<ScenicWorld>> = {
+    casa: async () => new (await import("../../infrastructure/three/scenes/HouseFrontWorld.js")).HouseFrontWorld(),
+    barrio: async () => new (await import("../../infrastructure/three/scenes/NeighborhoodWorld.js")).NeighborhoodWorld(),
+    correo: async () => new (await import("../../infrastructure/three/scenes/PostWorld.js")).PostWorld(),
+    busqueda: async () => new (await import("../../infrastructure/three/scenes/SearchWorld.js")).SearchWorld(),
+    almacen: async () => new (await import("../../infrastructure/three/scenes/StorageWorld.js")).StorageWorld("almacen"),
+    empaque: async () => new (await import("../../infrastructure/three/scenes/StorageWorld.js")).StorageWorld("empaque"),
+  };
+  return worlds[props.scene]();
 }
 
 onMounted(async () => {
   if (!host.value || !canvas.value) return;
   try {
-    stage = await createStage(canvas.value);
+    const [{ ScenicStage }, world] = await Promise.all([import("../../infrastructure/three/scenes/ScenicStage.js"), createWorld()]);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    stage = new ScenicStage(canvas.value, { reducedMotion, world });
     stage.setDark(isDark.value);
   } catch {
     status.value = "unsupported";
@@ -69,7 +66,7 @@ onMounted(async () => {
 watch(isDark, (dark) => stage?.setDark(dark));
 watch(
   () => props.celebrate,
-  () => stage?.celebrate?.(),
+  () => stage?.celebrate(),
 );
 
 onBeforeUnmount(() => {

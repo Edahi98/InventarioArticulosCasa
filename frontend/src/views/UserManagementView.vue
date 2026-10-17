@@ -47,7 +47,7 @@ onMounted(loadUsers);
 
 <template>
   <section class="isolate mx-auto max-w-2xl px-4 pb-12 pt-20 md:px-8">
-    <MenuBackdrop scene="isla" class="pointer-events-none fixed inset-0 -z-10" />
+    <MenuBackdrop scene="barrio" class="pointer-events-none fixed inset-0 -z-10" />
     <div class="menu-panel">
       <header class="menu-title">
         <h1 class="ui-sign text-4xl leading-none md:text-5xl">Quién vive en la casa</h1>

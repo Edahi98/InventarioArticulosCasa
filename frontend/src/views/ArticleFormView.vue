@@ -130,7 +130,7 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <section class="isolate mx-auto max-w-5xl px-4 pb-12 pt-6 md:px-8">
-    <MenuBackdrop scene="correo" class="pointer-events-none fixed inset-0 -z-10" />
+    <MenuBackdrop scene="empaque" class="pointer-events-none fixed inset-0 -z-10" />
     <router-link to="/categories" class="ui-btn ui-btn-sm ui-btn-ghost mb-14">
       <span aria-hidden="true">&larr;</span> Todos los cuartos
     </router-link>
