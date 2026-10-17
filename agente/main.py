@@ -5,6 +5,7 @@ import sys
 from dotenv import load_dotenv
 
 from src.agent.chat_agent import AgentChat
+from src.agent.toolkit_checklist import ChecklistToolkit
 from src.agent.toolkit_image import ImageToolkit
 from src.agent.toolkit_search import SearchToolkit
 from src.agent.toolkit_inventory import AgentToolkit
@@ -29,6 +30,8 @@ from src.services.store_postgres import StorePostgres
 from src.services.uploader_image import ImageUploader
 from src.services.verifier_jwt import TokenVerifier
 from src.services.client_inventory import InventoryClient
+from src.services.reader_page import PageReader
+from src.services.review_checklist import ChecklistReview
 from src.services.search_inventory import InventorySearch
 
 load_dotenv()
@@ -49,6 +52,7 @@ class InventoryAgentApp:
             *AgentToolkit(inventory, search).tools(),
             *SearchToolkit(InventorySearch(inventory, search)).tools(),
             *ImageToolkit(ImageUploader(inventory)).tools(),
+            *ChecklistToolkit(PageReader(self._api), ChecklistReview(self._api)).tools(),
         ]
         agent = (
             AgentBuilder()
