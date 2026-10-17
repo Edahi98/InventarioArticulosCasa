@@ -192,7 +192,7 @@ CATEGORIES = "categories"
 NOTES = "notes"
 
 RESOURCE_FIELDS = {
-    ARTICLES: ("name", "categoryId", "stock", "description", "imageUrl", "needsRepair"),
-    CATEGORIES: ("name", "description", "imageUrl"),
+    ARTICLES: ("name", "categoryId", "stock", "description", "imageUrl", "needsRepair", "location"),
+    CATEGORIES: ("name", "description", "imageUrl", "location"),
     NOTES: ("title", "description"),
 }

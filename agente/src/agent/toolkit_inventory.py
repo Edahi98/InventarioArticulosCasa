@@ -69,10 +69,12 @@ class AgentToolkit:
         description: str = "",
         image_url: str = "",
         needs_repair: bool = False,
+        location: str = "",
     ) -> dict | str:
-        """Crea un nuevo artículo. Usa el nombre de la categoría; el ID se resuelve automáticamente."""
+        """Crea un nuevo artículo. Usa el nombre de la categoría; location es dónde está guardado (estante, cajón...)."""
         return self._inventory.create(ARTICLES, name=name, categoryId=category_id, stock=stock,
-                                      description=description, imageUrl=image_url, needsRepair=needs_repair)
+                                      description=description, imageUrl=image_url, needsRepair=needs_repair,
+                                      location=location)
 
     @DtoValidator.tool(ArticleUpdateDto)
     @NameLookup.article()
@@ -85,10 +87,11 @@ class AgentToolkit:
         stock: int | None = None,
         description: str | None = None,
         image_url: str | None = None,
+        location: str | None = None,
     ) -> dict | str:
-        """Actualiza solo los campos indicados de un artículo. article_name identifica cuál actualizar."""
+        """Actualiza solo los campos indicados de un artículo (location es dónde está guardado)."""
         return self._inventory.update(ARTICLES, article_id, name=name, categoryId=category_id,
-                                      stock=stock, description=description, imageUrl=image_url)
+                                      stock=stock, description=description, imageUrl=image_url, location=location)
 
     @DtoValidator.tool(ArticleRefDto)
     @NameLookup.article()
@@ -132,9 +135,10 @@ class AgentToolkit:
         return self._inventory.get(CATEGORIES, category_id)
 
     @DtoValidator.tool(CategoryCreateDto)
-    def crear_categoria(self, name: str, description: str = "", image_url: str = "") -> dict | str:
-        """Crea una nueva categoría."""
-        return self._inventory.create(CATEGORIES, name=name, description=description, imageUrl=image_url)
+    def crear_categoria(self, name: str, description: str = "", image_url: str = "", location: str = "") -> dict | str:
+        """Crea una nueva categoría; location es dónde está guardada."""
+        return self._inventory.create(CATEGORIES, name=name, description=description, imageUrl=image_url,
+                                      location=location)
 
     @DtoValidator.tool(CategoryUpdateDto)
     @NameLookup.category()
@@ -144,9 +148,11 @@ class AgentToolkit:
         name: str | None = None,
         description: str | None = None,
         image_url: str | None = None,
+        location: str | None = None,
     ) -> dict | str:
-        """Actualiza solo los campos indicados de una categoría. Los campos omitidos conservan su valor actual."""
-        return self._inventory.update(CATEGORIES, category_id, name=name, description=description, imageUrl=image_url)
+        """Actualiza solo los campos indicados de una categoría (location es dónde está guardada)."""
+        return self._inventory.update(CATEGORIES, category_id, name=name, description=description,
+                                      imageUrl=image_url, location=location)
 
     @DtoValidator.tool(CategoryRefDto)
     @NameLookup.category()

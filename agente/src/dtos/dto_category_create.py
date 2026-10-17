@@ -1,5 +1,5 @@
 from src.dtos.dto_base import DtoBase
-from src.dtos.dto_campos import SafeName, SafeText, SafeUrl
+from src.dtos.dto_campos import SafeLocation, SafeName, SafeText, SafeUrl
 
 
 class CategoryCreateDto(DtoBase):
@@ -8,3 +8,4 @@ class CategoryCreateDto(DtoBase):
     name: SafeName
     description: SafeText = ""
     image_url: SafeUrl = ""
+    location: SafeLocation = ""
