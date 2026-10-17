@@ -5,6 +5,8 @@ import { listPeekBears } from "../core/usecases/listHomeBears.js";
 import { authenticatedHttpClient } from "../services/http/AuthenticatedHttpClient.js";
 import type { LoginMood } from "../infrastructure/three/LoginStage.js";
 import BearPeekScene from "../components/BearPeekScene.vue";
+import LoginSky from "../components/login/LoginSky.vue";
+import { useTheme } from "../utils/useTheme.js";
 import { loginForm } from "../validators/userValidators.js";
 import { validateInput } from "../validators/validateInput.js";
 
@@ -15,6 +17,8 @@ const router = useRouter();
 const route = useRoute();
 
 const bears = listPeekBears();
+const { isDark } = useTheme();
+const celebrations = ref(0);
 
 const form = reactive({
   username: "",
@@ -60,6 +64,7 @@ async function handleSubmit(): Promise<void> {
   try {
     await authenticatedHttpClient.login(checked.data.username, checked.data.password);
     const redirectTo = (route.query.redirect as string) || "/categories";
+    celebrations.value += 1;
     setMood("happy", () => router.push(redirectTo), HAPPY_MILLISECONDS);
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : "No se pudo iniciar sesión.";
@@ -74,23 +79,28 @@ onBeforeUnmount(() => clearTimeout(moodTimer));
 
 <template>
   <section
-    class="flex min-h-[calc(100dvh-4rem)] items-center justify-center bg-[var(--l-bg)] px-4 py-10 text-[var(--l-ink)]"
+    class="relative isolate -mt-16 flex min-h-[100dvh] items-center justify-center overflow-hidden px-4 pb-10 pt-24 text-[var(--l-ink)]"
     style="font-family: var(--l-font)"
   >
-    <div class="w-full max-w-lg">
-      <div class="-mb-[72px] h-[250px] w-full">
+    <LoginSky :dark="isDark" :celebrate="celebrations" class="absolute inset-0 z-0" />
+
+    <div class="relative z-[1] w-full max-w-md">
+      <div class="-mb-[72px] h-[220px] w-full">
         <BearPeekScene :bears="bears" :gaze-x="gazeX" :covering="covering" :mood="mood" />
       </div>
 
-      <div class="ui-toy ui-stitch relative bg-[var(--l-surface)] p-6 sm:p-9">
-        <h1 class="ui-sign text-4xl">¡Hola de nuevo!</h1>
-        <p class="mt-2 text-base leading-relaxed text-[var(--l-muted)]">
+      <div class="menu-panel !pt-8">
+        <header class="menu-title">
+          <h1 class="ui-sign text-4xl leading-none md:text-5xl">Guardacosas</h1>
+        </header>
+        <p class="menu-label text-center">Menú principal</p>
+        <p class="mt-2 text-center font-semibold text-[var(--l-muted)]">
           Los ositos dejaron todo en su lugar. Inicia sesión para verlo.
         </p>
 
-        <form class="mt-6 flex flex-col gap-5" @submit.prevent="handleSubmit">
+        <form class="mt-6 flex flex-col gap-4" @submit.prevent="handleSubmit">
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold" for="username">Usuario</label>
+            <label class="menu-label" for="username">Usuario</label>
             <input
               id="username"
               v-model="form.username"
@@ -107,10 +117,10 @@ onBeforeUnmount(() => clearTimeout(moodTimer));
 
           <div class="flex flex-col gap-2">
             <div class="flex items-center justify-between">
-              <label class="text-sm font-semibold" for="password">Contraseña</label>
+              <label class="menu-label" for="password">Contraseña</label>
               <button
                 type="button"
-                class="rounded-[var(--l-radius)] px-2 py-1 text-sm font-semibold text-[var(--l-muted)] hover:text-[var(--l-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--l-accent)]"
+                class="rounded-[var(--l-radius)] px-2 py-1 text-sm font-extrabold text-[var(--l-muted)] hover:text-[var(--l-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--l-accent)]"
                 :aria-pressed="showPassword"
                 @click="showPassword = !showPassword"
               >
@@ -135,7 +145,7 @@ onBeforeUnmount(() => clearTimeout(moodTimer));
             {{ errorMessage }}
           </p>
 
-          <button type="submit" :disabled="isSubmitting" class="ui-btn ui-btn-primary w-full disabled:opacity-60">
+          <button type="submit" :disabled="isSubmitting" class="ui-btn ui-btn-primary mt-1 w-full justify-center disabled:opacity-60">
             {{ isSubmitting ? "Entrando..." : "Entrar" }}
           </button>
         </form>
@@ -147,13 +157,14 @@ onBeforeUnmount(() => clearTimeout(moodTimer));
 <style scoped>
 .login-input {
   width: 100%;
-  border-radius: var(--l-radius);
-  border: 2px solid var(--l-surface-2);
+  border-radius: 18px;
+  border: 3px solid var(--l-toy-edge);
   background: var(--l-bg);
   color: var(--l-ink);
+  font-weight: 700;
   padding: 0.8rem 1rem;
   outline: none;
-  transition: border-color 160ms ease;
+  transition: border-color 160ms ease, transform 160ms ease;
 }
 
 .login-input::placeholder {
@@ -162,5 +173,11 @@ onBeforeUnmount(() => clearTimeout(moodTimer));
 
 .login-input:focus {
   border-color: var(--l-accent);
+  transform: translateX(6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-input { transition: none; }
+  .login-input:focus { transform: none; }
 }
 </style>
