@@ -7,6 +7,7 @@ export default class ArticleBuilder {
   private categoryId = 0;
   private stock = 0;
   private needsRepair = false;
+  private location = "";
 
   /**
    * @param name - Nombre del artículo; se recortan los espacios.
@@ -63,6 +64,15 @@ export default class ArticleBuilder {
   }
 
   /**
+   * @param location - Dónde está guardado el artículo; se recortan los espacios.
+   * @returns El mismo builder.
+   */
+  setLocation(location: string): this {
+    this.location = location?.trim() ?? "";
+    return this;
+  }
+
+  /**
    * Valida los datos y construye el artículo.
    *
    * @returns El artículo listo para insertar.
@@ -88,6 +98,7 @@ export default class ArticleBuilder {
       categoryId: this.categoryId,
       stock: this.stock,
       needsRepair: this.needsRepair,
+      location: this.location,
     };
   }
 }

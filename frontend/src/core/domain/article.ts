@@ -6,6 +6,7 @@ export interface Article {
   categoryId: number;
   stock: number;
   needsRepair: boolean;
+  location: string;
   createdAt: string;
 }
 
@@ -16,6 +17,7 @@ export interface NewArticleInput {
   categoryId: number;
   stock: number;
   needsRepair: boolean;
+  location: string;
 }
 
 export interface UploadedImage {
@@ -23,7 +25,19 @@ export interface UploadedImage {
   url: string;
 }
 
+export interface CategoryArticleCount {
+  categoryId: number;
+  categoryName: string;
+  total: number;
+}
+
+export interface ArticleCountReport {
+  total: number;
+  categories: CategoryArticleCount[];
+}
+
 export interface ArticleRepository {
+  countByCategory(): Promise<ArticleCountReport>;
   create(input: NewArticleInput): Promise<Article>;
   uploadImage(file: File): Promise<UploadedImage>;
   findById(id: number): Promise<Article>;

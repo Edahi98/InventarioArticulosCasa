@@ -31,7 +31,7 @@ export class CategoryService {
   /**
    * Crea una categoría e invalida el índice de búsqueda.
    *
-   * @param input - Nombre (obligatorio), descripción e imagen opcionales.
+   * @param input - Nombre (obligatorio), descripción, imagen y ubicación opcionales.
    * @returns La categoría creada.
    * @throws Error si el nombre está vacío.
    */
@@ -39,11 +39,13 @@ export class CategoryService {
     name: string;
     description?: string;
     imageUrl?: string;
+    location?: string;
   }): Promise<Category> {
     const newCategory = new CategoryBuilder()
       .setName(input.name)
       .setDescription(input.description ?? "")
       .setImageUrl(input.imageUrl ?? "")
+      .setLocation(input.location ?? "")
       .build();
 
     const [created] = await db
@@ -64,12 +66,13 @@ export class CategoryService {
    */
   async update(
     id: number,
-    input: { name: string; description?: string; imageUrl?: string },
+    input: { name: string; description?: string; imageUrl?: string; location?: string },
   ): Promise<Category | undefined> {
     const updatedCategory = new CategoryBuilder()
       .setName(input.name)
       .setDescription(input.description ?? "")
       .setImageUrl(input.imageUrl ?? "")
+      .setLocation(input.location ?? "")
       .build();
 
     const [updated] = await db

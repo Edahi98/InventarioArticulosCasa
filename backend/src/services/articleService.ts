@@ -66,7 +66,7 @@ export default class ArticleService {
   /**
    * Crea un artículo e invalida el índice de búsqueda.
    *
-   * @param input - Datos del artículo; `description` y `needsRepair` son opcionales.
+   * @param input - Datos del artículo; `description`, `needsRepair` y `location` son opcionales.
    * @returns El artículo creado.
    * @throws Error si el builder rechaza los datos (nombre, categoría, imagen o stock inválidos).
    */
@@ -77,6 +77,7 @@ export default class ArticleService {
     categoryId: number;
     stock: number;
     needsRepair?: boolean;
+    location?: string;
   }): Promise<Article> {
     const newArticle = new ArticleBuilder()
       .setName(input.name)
@@ -85,6 +86,7 @@ export default class ArticleService {
       .setCategoryId(input.categoryId)
       .setStock(input.stock)
       .setNeedsRepair(input.needsRepair ?? false)
+      .setLocation(input.location ?? "")
       .build();
 
     const [created] = await db.insert(articles).values(newArticle).returning();
@@ -102,7 +104,7 @@ export default class ArticleService {
    */
   async update(
     id: number,
-    input: { name: string; description?: string; imageUrl: string; categoryId: number; stock: number; needsRepair?: boolean },
+    input: { name: string; description?: string; imageUrl: string; categoryId: number; stock: number; needsRepair?: boolean; location?: string },
   ): Promise<Article | undefined> {
     const updatedArticle = new ArticleBuilder()
       .setName(input.name)
@@ -111,6 +113,7 @@ export default class ArticleService {
       .setCategoryId(input.categoryId)
       .setStock(input.stock)
       .setNeedsRepair(input.needsRepair ?? false)
+      .setLocation(input.location ?? "")
       .build();
 
     const [updated] = await db

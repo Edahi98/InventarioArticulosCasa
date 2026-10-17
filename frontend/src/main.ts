@@ -26,6 +26,8 @@ import {
   faMoon,
   faSun,
   faPaperPlane,
+  faLocationDot,
+  faMap,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -45,6 +47,8 @@ library.add(
   faMoon,
   faSun,
   faPaperPlane,
+  faLocationDot,
+  faMap,
 );
 
 useTheme();

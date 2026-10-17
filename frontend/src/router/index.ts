@@ -19,6 +19,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: "/map",
+    name: "map",
+    component: () => import("../views/MapView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/categories/new",
     name: "category-form",
     component: () => import("../views/CategoryFormView.vue"),

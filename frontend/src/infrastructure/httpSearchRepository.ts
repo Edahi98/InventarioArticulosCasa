@@ -7,6 +7,7 @@ export interface SearchResult {
   imageUrl: string;
   stock: number;
   needsRepair: boolean;
+  location: string;
   categoryId: number;
   categoryName: string;
   createdAt: string;

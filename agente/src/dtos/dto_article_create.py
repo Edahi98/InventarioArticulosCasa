@@ -1,5 +1,5 @@
 from src.dtos.dto_base import DtoBase
-from src.dtos.dto_campos import SafeName, SafeStock, SafeText, SafeUrl
+from src.dtos.dto_campos import SafeLocation, SafeName, SafeStock, SafeText, SafeUrl
 
 
 class ArticleCreateDto(DtoBase):
@@ -11,3 +11,4 @@ class ArticleCreateDto(DtoBase):
     description: SafeText = ""
     image_url: SafeUrl = ""
     needs_repair: bool = False
+    location: SafeLocation = ""

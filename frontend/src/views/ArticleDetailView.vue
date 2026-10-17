@@ -7,6 +7,7 @@ import { FALLBACK_IMAGE, handleImageError } from "../utils/fallbackImage.js";
 import NoteList from "../components/NoteList.vue";
 import ArticleStockBadge from "../components/articles/ArticleStockBadge.vue";
 import ArticleActions from "../components/articles/ArticleActions.vue";
+import LocationStreetPanel from "../components/location/LocationStreetPanel.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -72,6 +73,7 @@ onMounted(async () => {
           <p class="max-w-[52ch] text-lg leading-relaxed text-[var(--l-muted)]">
             {{ article.description || "Nadie le escribió una descripción todavía." }}
           </p>
+          <LocationStreetPanel v-if="article.location" :location="article.location" eyebrow="Se guarda en" />
           <ArticleActions :article="article" @deleted="handleArticleDeleted" />
         </div>
       </div>

@@ -4,6 +4,7 @@ export default class CategoryBuilder {
   private name = "";
   private description = "";
   private imageUrl = "";
+  private location = "";
 
   /**
    * @param name - Nombre de la categoría; se recortan los espacios.
@@ -33,6 +34,15 @@ export default class CategoryBuilder {
   }
 
   /**
+   * @param location - Dónde está guardada la categoría; se recortan los espacios.
+   * @returns El mismo builder.
+   */
+  setLocation(location: string): this {
+    this.location = location?.trim() ?? "";
+    return this;
+  }
+
+  /**
    * Valida los datos y construye la categoría.
    *
    * @returns La categoría lista para insertar.
@@ -46,6 +56,7 @@ export default class CategoryBuilder {
       name: this.name,
       description: this.description,
       imageUrl: this.imageUrl,
+      location: this.location,
     };
   }
 }

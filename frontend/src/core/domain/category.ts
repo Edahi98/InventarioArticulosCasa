@@ -3,6 +3,7 @@ export interface Category {
   name: string;
   description: string;
   imageUrl: string;
+  location: string;
   createdAt: string;
 }
 
@@ -10,6 +11,7 @@ export interface NewCategoryInput {
   name: string;
   description: string;
   imageUrl: string;
+  location: string;
 }
 
 export interface CategoryRepository {

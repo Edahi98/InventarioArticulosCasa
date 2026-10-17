@@ -1,5 +1,6 @@
 import type {
   Article,
+  ArticleCountReport,
   ArticleRepository,
   NewArticleInput,
   UploadedImage,
@@ -9,6 +10,10 @@ import { authenticatedHttpClient } from "../services/http/AuthenticatedHttpClien
 const API_BASE_URL = "/articles";
 
 export class HttpArticleRepository implements ArticleRepository {
+  async countByCategory(): Promise<ArticleCountReport> {
+    return authenticatedHttpClient.request<ArticleCountReport>(`${API_BASE_URL}/count`);
+  }
+
   async create(input: NewArticleInput): Promise<Article> {
     return authenticatedHttpClient.request<Article>(API_BASE_URL, {
       method: "POST",
