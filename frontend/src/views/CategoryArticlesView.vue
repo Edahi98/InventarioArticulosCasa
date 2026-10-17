@@ -8,6 +8,7 @@ import { listArticlesByCategoryUseCase } from "../core/usecases/listArticlesByCa
 import ArticleRow from "../components/articles/ArticleRow.vue";
 import ArticleActions from "../components/articles/ArticleActions.vue";
 import PageHeader from "../components/ui/PageHeader.vue";
+import LocationStreetPanel from "../components/location/LocationStreetPanel.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -56,6 +57,8 @@ function handleArticleDeleted(id: number): void {
           Guardar algo aquí
         </router-link>
       </PageHeader>
+
+      <LocationStreetPanel v-if="category?.location" class="mb-8" :location="category.location" eyebrow="Este cuarto queda en" />
 
       <p v-if="articles.length === 0" class="mb-8 max-w-[52ch] leading-relaxed text-[var(--l-muted)]">
         Este cuarto está vacío. Su guardián espera el primer artículo.
