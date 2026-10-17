@@ -76,6 +76,7 @@ export const idSchema = z.coerce
 export const nameSchema = safeText(LIMITS.name, NAME_PATTERN, 1);
 export const titleSchema = safeText(LIMITS.title, TEXT_PATTERN, 1);
 export const descriptionSchema = safeText(LIMITS.text, TEXT_PATTERN).default("");
+export const locationSchema = safeText(LIMITS.name, TEXT_PATTERN).default("");
 export const searchTextSchema = safeText(LIMITS.query, TEXT_PATTERN).default("");
 
 export const imageUrlSchema = z

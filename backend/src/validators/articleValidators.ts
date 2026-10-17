@@ -4,6 +4,7 @@ import {
   hasImageSignature,
   idSchema,
   imageUrlSchema,
+  locationSchema,
   nameSchema,
   stockSchema,
 } from "./commonValidators.js";
@@ -20,6 +21,7 @@ export const articleBody = z.object({
   categoryId: idSchema,
   stock: stockSchema,
   needsRepair: z.boolean({ error: "debe ser verdadero o falso" }).default(false),
+  location: locationSchema,
 });
 
 export const articleNotesParams = z.object({ articleId: idSchema });

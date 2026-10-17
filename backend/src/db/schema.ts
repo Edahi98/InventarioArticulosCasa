@@ -8,6 +8,7 @@ export const categories = pgTable("categories", {
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
   imageUrl: text("image_url").notNull().default(""),
+  location: text("location").notNull().default(""),
   createdAt: text("created_at").notNull().default(utcNow),
 });
 
@@ -21,6 +22,7 @@ export const articles = pgTable("articles", {
   imageUrl: text("image_url").notNull().default(""),
   stock: integer("stock").default(0).notNull(),
   needsRepair: boolean("needs_repair").default(false).notNull(),
+  location: text("location").notNull().default(""),
   categoryId: integer("category_id")
     .notNull()
     .references(() => categories.id),

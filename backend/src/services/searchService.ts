@@ -9,6 +9,7 @@ interface SearchDocument {
   imageUrl: string;
   stock: number;
   needsRepair: boolean;
+  location: string;
   categoryId: number;
   categoryName: string;
   createdAt: string;
@@ -27,8 +28,8 @@ class SearchService {
    */
   private buildIndex(docs: SearchDocument[]): MiniSearch<SearchDocument> {
     const ms = new MiniSearch<SearchDocument>({
-      fields: ["name", "description"],
-      storeFields: ["id", "name", "description", "imageUrl", "stock", "needsRepair", "categoryId", "categoryName", "createdAt"],
+      fields: ["name", "description", "location"],
+      storeFields: ["id", "name", "description", "imageUrl", "stock", "needsRepair", "location", "categoryId", "categoryName", "createdAt"],
       searchOptions: { prefix: true, fuzzy: 0.2 },
     });
     ms.addAll(docs);
@@ -54,6 +55,7 @@ class SearchService {
         imageUrl: articles.imageUrl,
         stock: articles.stock,
         needsRepair: articles.needsRepair,
+        location: articles.location,
         categoryId: articles.categoryId,
         categoryName: categories.name,
         createdAt: articles.createdAt,
@@ -68,6 +70,7 @@ class SearchService {
       imageUrl: r.imageUrl,
       stock: r.stock,
       needsRepair: r.needsRepair,
+      location: r.location,
       categoryId: r.categoryId,
       categoryName: r.categoryName,
       createdAt: r.createdAt,
