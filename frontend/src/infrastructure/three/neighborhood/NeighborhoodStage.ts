@@ -22,6 +22,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { SkyTexture } from "../SkyTexture.js";
+import type { Backdrop } from "./Backdrop.js";
 import type { DayLife } from "./DayLife.js";
 import { NeighborhoodBuilder, type HouseEntry, type MapCategory } from "./NeighborhoodBuilder.js";
 import type { Traffic } from "./Traffic.js";
@@ -34,10 +35,12 @@ export interface NeighborhoodHover {
   count: number;
   x: number;
   y: number;
+  selected: boolean;
 }
 
 export interface NeighborhoodCallbacks {
   onHover(hover: NeighborhoodHover | null): void;
+  onPick(id: number | null): void;
   onEnter(id: number): void;
   onSelect(id: number): void;
   onHour(hour: number): void;
@@ -49,6 +52,7 @@ export interface NeighborhoodOptions {
 
 interface Flight {
   id: number;
+  enter: boolean;
   start: number;
   fromPosition: Vector3;
   fromTarget: Vector3;
@@ -62,6 +66,7 @@ const LIFT = 0.2;
 const GROW = 0.07;
 const GLOW = 1.1;
 const FLIGHT_MS = 1350;
+const FOCUS_MS = 950;
 const DOOR_OPEN = -1.75;
 
 export class NeighborhoodStage {
@@ -86,10 +91,13 @@ export class NeighborhoodStage {
   private readonly nightSky: NightSky;
   private readonly traffic: Traffic;
   private readonly dayLife: DayLife;
+  private readonly backdrop: Backdrop;
   private hourOverride: number | null = null;
   private state: SkyState;
   private hoverId: number | null = null;
   private pinnedId: number | null = null;
+  private selectedId: number | null = null;
+  private lastSelected = false;
   private flight: Flight | null = null;
   private lastHover = { x: -1, y: -1 };
   private lastHour = -1;
@@ -121,7 +129,8 @@ export class NeighborhoodStage {
     this.scene.background = this.sky;
     this.scene.fog = this.fog;
 
-    const { world, houses, swaying, lamps, traffic, dayLife, radius } = new NeighborhoodBuilder(categories).build();
+    const { world, houses, swaying, lamps, traffic, dayLife, backdrop, radius } = new NeighborhoodBuilder(categories).build();
+    this.backdrop = backdrop;
     this.traffic = traffic;
     this.dayLife = dayLife;
     this.houses = houses;
@@ -166,7 +175,7 @@ export class NeighborhoodStage {
     this.controls.target.set(0, 0.4, 0);
     this.camera.position.set(Math.sin(yaw) * distance * 0.8, distance * 0.6, Math.cos(yaw) * distance * 0.8);
     this.fog.near = distance * 0.9;
-    this.fog.far = distance * 3.2;
+    this.fog.far = distance * 2.7;
     this.controls.update();
     this.renderOnce();
   }
@@ -189,6 +198,48 @@ export class NeighborhoodStage {
   highlight(id: number | null): void {
     this.pinnedId = id;
     this.setHover(id ?? this.hoverId);
+  }
+
+  /**
+   * Selecciona una casa: la cámara vuela suave hasta enfrentarla y se avisa su posición en pantalla
+   * para anclarle una tarjeta. Con `null` se quita la selección.
+   *
+   * @param id - Identificador de la categoría, o `null` para deseleccionar.
+   */
+  focus(id: number | null): void {
+    this.selectedId = id;
+    this.callbacks.onPick(id);
+    window.clearTimeout(this.idleTimer);
+    const house = this.houses.find((entry) => entry.id === id);
+    if (!house) {
+      this.idleTimer = window.setTimeout(() => {
+        this.controls.autoRotate = !this.options.reducedMotion;
+      }, 4000);
+      this.announce();
+      this.renderOnce();
+      return;
+    }
+    this.controls.autoRotate = false;
+    const target = house.group.position.clone().add(new Vector3(0, 0.9, 0));
+    const position = house.group.position.clone().addScaledVector(house.group.getWorldDirection(new Vector3()), 12.5).add(new Vector3(0, 7.4, 0));
+    if (this.options.reducedMotion || !this.running) {
+      this.camera.position.copy(position);
+      this.controls.target.copy(target);
+      this.controls.update();
+      this.announce();
+      this.renderOnce();
+      return;
+    }
+    this.flight = {
+      id: house.id,
+      enter: false,
+      start: performance.now(),
+      fromPosition: this.camera.position.clone(),
+      fromTarget: this.controls.target.clone(),
+      toPosition: position,
+      toTarget: target,
+    };
+    this.controls.enabled = false;
   }
 
   /**
@@ -264,11 +315,16 @@ export class NeighborhoodStage {
     this.canvas.style.cursor = this.hoverId === null ? "grab" : "pointer";
     const moved = Math.hypot(event.clientX - this.down.x, event.clientY - this.down.y);
     if (moved > TAP_DISTANCE || performance.now() - this.down.time > TAP_TIME) return;
-    const id = this.pick(event);
-    if (id !== null) this.enter(id);
+    this.focus(this.pick(event));
   };
 
-  private enter(id: number): void {
+  /**
+   * Entra a una casa: la cámara vuela a su puerta, la puerta se abre y se avisa al terminar.
+   * Con movimiento reducido se avisa de inmediato.
+   *
+   * @param id - Identificador de la categoría.
+   */
+  enterHouse(id: number): void {
     const house = this.houses.find((entry) => entry.id === id);
     if (!house || this.options.reducedMotion || !this.running) {
       this.callbacks.onSelect(id);
@@ -280,6 +336,7 @@ export class NeighborhoodStage {
     this.controls.autoRotate = false;
     this.flight = {
       id,
+      enter: true,
       start: performance.now(),
       fromPosition: this.camera.position.clone(),
       fromTarget: this.controls.target.clone(),
@@ -287,6 +344,7 @@ export class NeighborhoodStage {
       toTarget,
     };
     this.controls.enabled = false;
+    this.selectedId = id;
     this.hoverId = id;
     this.canvas.style.cursor = "wait";
     this.callbacks.onEnter(id);
@@ -295,19 +353,24 @@ export class NeighborhoodStage {
   private flyCamera(now: number): void {
     const flight = this.flight;
     if (!flight) return;
-    const progress = Math.min((now - flight.start) / FLIGHT_MS, 1);
+    const progress = Math.min((now - flight.start) / (flight.enter ? FLIGHT_MS : FOCUS_MS), 1);
     const eased = NeighborhoodStage.easeInOut(progress);
     this.camera.position.lerpVectors(flight.fromPosition, flight.toPosition, eased);
     this.controls.target.lerpVectors(flight.fromTarget, flight.toTarget, eased);
     this.camera.lookAt(this.controls.target);
     const house = this.houses.find((entry) => entry.id === flight.id);
-    if (house) {
+    if (house && flight.enter) {
       const opening = NeighborhoodStage.easeOut(MathUtils.clamp((progress - 0.35) / 0.45, 0, 1));
       house.door.rotation.y = DOOR_OPEN * opening;
     }
     if (progress < 1) return;
     this.flight = null;
-    this.callbacks.onSelect(flight.id);
+    if (flight.enter) {
+      this.callbacks.onSelect(flight.id);
+      return;
+    }
+    this.controls.enabled = true;
+    this.controls.update();
   }
 
   private static easeInOut(t: number): number {
@@ -393,19 +456,21 @@ export class NeighborhoodStage {
   }
 
   private announce(): void {
-    const house = this.houses.find((entry) => entry.id === this.hoverId);
-    if (!house || this.flight) {
+    const house = this.houses.find((entry) => entry.id === (this.selectedId ?? this.hoverId));
+    if (!house || this.flight?.enter) {
       this.lastHover = { x: -1, y: -1 };
       this.callbacks.onHover(null);
       return;
     }
+    const selected = this.selectedId !== null;
     const top = house.group.position.clone().add(new Vector3(0, house.height + 0.35, 0)).project(this.camera);
     const box = this.canvas.getBoundingClientRect();
     const x = ((top.x + 1) / 2) * box.width;
     const y = ((1 - top.y) / 2) * box.height;
-    if (Math.abs(x - this.lastHover.x) < 0.5 && Math.abs(y - this.lastHover.y) < 0.5) return;
+    if (selected === this.lastSelected && Math.abs(x - this.lastHover.x) < 0.5 && Math.abs(y - this.lastHover.y) < 0.5) return;
     this.lastHover = { x, y };
-    this.callbacks.onHover({ id: house.id, name: house.name, count: house.count, x, y });
+    this.lastSelected = selected;
+    this.callbacks.onHover({ id: house.id, name: house.name, count: house.count, x, y, selected });
   }
 
   private stop(): void {
@@ -429,7 +494,7 @@ export class NeighborhoodStage {
     this.animateHouses(t);
     this.traffic.update(t, this.state.night, !this.options.reducedMotion);
     this.dayLife.update(t, this.state.night, !this.options.reducedMotion);
-    this.swaying.forEach((tree, index) => {
+    this.backdrop.update(t, this.state.night, !this.options.reducedMotion);    this.swaying.forEach((tree, index) => {
       tree.rotation.z = Math.sin(t * 1.1 + index) * 0.025;
     });
     this.flyCamera(now);
@@ -466,7 +531,7 @@ export class NeighborhoodStage {
   private animateHouses(t: number): void {
     const night = this.state.night;
     this.houses.forEach((house) => {
-      const target = house.id === this.hoverId ? 1 : 0;
+      const target = house.id === (this.selectedId ?? this.hoverId) ? 1 : 0;
       const current = this.levels.get(house.id) ?? 0;
       const level = this.options.reducedMotion ? target : current + (target - current) * 0.18;
       this.levels.set(house.id, level);
@@ -475,6 +540,13 @@ export class NeighborhoodStage {
       const resting = house.count > 0 ? 0.12 + night * 1.5 : 0.02;
       house.glass.emissiveIntensity = resting + level * GLOW;
       if (this.flight?.id !== house.id) house.door.rotation.y = 0;
+      house.bear.update(t, level, !this.options.reducedMotion);
+      house.stars.forEach((star) => {
+        const { angle, radius, height, phase } = star.userData as { angle: number; radius: number; height: number; phase: number };
+        const turn = angle + t * 0.6;
+        star.position.set(Math.cos(turn) * radius, height + Math.sin(t * 2 + phase) * 0.08, Math.sin(turn) * radius);
+        star.rotation.y = t * 1.6 + phase;
+      });
       house.smoke.forEach((puff) => {
         const p = this.options.reducedMotion ? puff.phase % 1 : (t * puff.speed + puff.phase) % 1;
         const [ox, oy, oz] = puff.origin;
