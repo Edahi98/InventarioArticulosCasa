@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import { authenticatedHttpClient } from "../services/http/AuthenticatedHttpClient.js";
-import { useTheme } from "../utils/useTheme.js";
+import { useTheme } from "../composables/useTheme.js";
 import AppLogoBadge from "./AppLogoBadge.vue";
 
 const router = useRouter();

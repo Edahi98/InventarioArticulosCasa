@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { listPeekBears } from "../core/usecases/listHomeBears.js";
+import { LOGIN_HAPPY_MS, LOGIN_SAD_MS } from "../constantes/ui_constantes.js";
 import { authenticatedHttpClient } from "../services/http/AuthenticatedHttpClient.js";
-import type { LoginMood } from "../infrastructure/three/LoginStage.js";
+import { useFormSubmit } from "../composables/useFormSubmit.js";
+import { useTimedMood } from "../composables/useTimedMood.js";
 import BearPeekScene from "../components/BearPeekScene.vue";
 import MenuBackdrop from "../components/ui/MenuBackdrop.vue";
 import { loginForm } from "../validators/userValidators.js";
-import { validateInput } from "../validators/validateInput.js";
-
-const SAD_MILLISECONDS = 2600;
-const HAPPY_MILLISECONDS = 900;
 
 const router = useRouter();
 const route = useRoute();
@@ -23,15 +21,12 @@ const form = reactive({
   password: "",
 });
 
-const isSubmitting = ref(false);
-const errorMessage = ref("");
-const fieldErrors = ref<Record<string, string>>({});
 const usernameFocused = ref(false);
 const passwordFocused = ref(false);
 const showPassword = ref(false);
-const mood = ref<LoginMood>("idle");
 
-let moodTimer: ReturnType<typeof setTimeout> | undefined;
+const { isSubmitting, errorMessage, fieldErrors, validate, submit } = useFormSubmit();
+const { mood, setMood } = useTimedMood();
 
 const gazeX = computed(() => {
   if (!usernameFocused.value) return 0;
@@ -39,40 +34,25 @@ const gazeX = computed(() => {
 });
 const covering = computed(() => passwordFocused.value && !showPassword.value);
 
-function setMood(next: LoginMood, after: () => void = () => undefined, delay = 0): void {
-  clearTimeout(moodTimer);
-  mood.value = next;
-  if (delay === 0) return;
-  moodTimer = setTimeout(after, delay);
-}
-
 async function handleSubmit(): Promise<void> {
-  errorMessage.value = "";
-  fieldErrors.value = {};
-
-  const checked = validateInput(loginForm, { username: form.username, password: form.password });
-  if (!checked.ok) {
-    fieldErrors.value = checked.failure.fields;
-    errorMessage.value = checked.failure.message;
-    setMood("sad", () => setMood("idle"), SAD_MILLISECONDS);
+  const data = validate(loginForm, { username: form.username, password: form.password });
+  if (!data) {
+    setMood("sad", () => setMood("idle"), LOGIN_SAD_MS);
     return;
   }
 
-  isSubmitting.value = true;
-  try {
-    await authenticatedHttpClient.login(checked.data.username, checked.data.password);
-    const redirectTo = (route.query.redirect as string) || "/categories";
-    celebrations.value += 1;
-    setMood("happy", () => router.push(redirectTo), HAPPY_MILLISECONDS);
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : "No se pudo iniciar sesión.";
-    setMood("sad", () => setMood("idle"), SAD_MILLISECONDS);
-  } finally {
-    isSubmitting.value = false;
+  const loggedIn = await submit(async () => {
+    await authenticatedHttpClient.login(data.username, data.password);
+  }, "No se pudo iniciar sesión.");
+  if (!loggedIn) {
+    setMood("sad", () => setMood("idle"), LOGIN_SAD_MS);
+    return;
   }
-}
 
-onBeforeUnmount(() => clearTimeout(moodTimer));
+  const redirectTo = (route.query.redirect as string) || "/categories";
+  celebrations.value += 1;
+  setMood("happy", () => router.push(redirectTo), LOGIN_HAPPY_MS);
+}
 </script>
 
 <template>

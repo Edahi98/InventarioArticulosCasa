@@ -4,9 +4,9 @@ import { useRoute, useRouter } from "vue-router";
 import { createCategoryUseCase } from "../core/usecases/createCategory.js";
 import { updateCategoryUseCase } from "../core/usecases/updateCategory.js";
 import { getCategoryByIdUseCase } from "../core/usecases/getCategoryById.js";
-import { uploadArticleImageUseCase } from "../core/usecases/uploadArticleImage.js";
 import { categoryForm } from "../validators/categoryValidators.js";
-import { validateInput } from "../validators/validateInput.js";
+import { useFormSubmit } from "../composables/useFormSubmit.js";
+import { useImageUpload } from "../composables/useImageUpload.js";
 import CategoryCard from "../components/CategoryCard.vue";
 import ImageUploader from "../components/ImageUploader.vue";
 import FormField from "../components/ui/FormField.vue";
@@ -25,14 +25,9 @@ const form = reactive({
   imageUrl: "",
 });
 
-const pendingFile = ref<File | null>(null);
-const pendingPreview = ref("");
-
 const isLoading = ref(isEditMode.value);
-const isSubmitting = ref(false);
-const isUploading = ref(false);
-const errorMessage = ref("");
-const fieldErrors = ref<Record<string, string>>({});
+const { isSubmitting, errorMessage, fieldErrors, validate, submit, fail } = useFormSubmit();
+const { pendingPreview, isUploading, hasImage, select: handleImageSelected, resolveUrl } = useImageUpload(() => form.imageUrl);
 
 const preview = computed(() => ({
   id: categoryId ?? 0,
@@ -50,53 +45,22 @@ onMounted(async () => {
     form.location = category.location;
     form.imageUrl = category.imageUrl;
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "No se pudo cargar la categoría.";
+    fail(error instanceof Error ? error.message : "No se pudo cargar la categoría.");
   } finally {
     isLoading.value = false;
   }
 });
 
-function handleImageSelected(file: File, previewUrl: string): void {
-  pendingFile.value = file;
-  pendingPreview.value = previewUrl;
-}
-
-async function resolveImageUrl(): Promise<string> {
-  if (!pendingFile.value) return form.imageUrl;
-  isUploading.value = true;
-  try {
-    const uploaded = await uploadArticleImageUseCase.execute(pendingFile.value);
-    return uploaded.url;
-  } finally {
-    isUploading.value = false;
-  }
-}
-
 async function handleSubmit(): Promise<void> {
-  errorMessage.value = "";
-  fieldErrors.value = {};
-
-  const checked = validateInput(categoryForm, {
-    name: form.name,
-    description: form.description,
-    location: form.location,
-  });
-  if (!checked.ok) {
-    fieldErrors.value = checked.failure.fields;
-    errorMessage.value = checked.failure.message;
+  const data = validate(categoryForm, { name: form.name, description: form.description, location: form.location });
+  if (!data) return;
+  if (!hasImage.value) {
+    fail("Elige una foto del cuarto antes de guardarlo.");
     return;
   }
 
-  if (!form.imageUrl && !pendingFile.value) {
-    errorMessage.value = "Elige una foto del cuarto antes de guardarlo.";
-    return;
-  }
-
-  isSubmitting.value = true;
-  try {
-    const input = { ...checked.data, imageUrl: await resolveImageUrl() };
-
+  await submit(async () => {
+    const input = { ...data, imageUrl: await resolveUrl() };
     if (categoryId) {
       await updateCategoryUseCase.execute(categoryId, input);
       router.push(`/categories/${categoryId}/articles`);
@@ -104,12 +68,7 @@ async function handleSubmit(): Promise<void> {
       await createCategoryUseCase.execute(input);
       router.push("/categories");
     }
-  } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "No se pudo guardar la categoría.";
-  } finally {
-    isSubmitting.value = false;
-  }
+  }, "No se pudo guardar la categoría.");
 }
 </script>
 

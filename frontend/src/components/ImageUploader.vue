@@ -1,51 +1,13 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { validateImageFile } from "../validators/imageValidators.js";
+import { useImagePreview } from "../composables/useImagePreview.js";
 
 const props = defineProps<{ initialImageUrl?: string }>();
 const emit = defineEmits<{ selected: [file: File, previewUrl: string] }>();
 
-const previewUrl = ref(props.initialImageUrl ?? "");
-const errorMessage = ref("");
-
-watch(
+const { previewUrl, errorMessage, handleFileChange } = useImagePreview(
   () => props.initialImageUrl,
-  (value) => {
-    if (value && !previewUrl.value.startsWith("data:")) {
-      previewUrl.value = value;
-    }
-  },
+  (file, url) => emit("selected", file, url),
 );
-
-function readAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error ?? new Error("No se pudo leer la foto."));
-    reader.readAsDataURL(file);
-  });
-}
-
-async function handleFileChange(event: Event): Promise<void> {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
-
-  errorMessage.value = "";
-  const problem = await validateImageFile(file);
-  if (problem) {
-    errorMessage.value = problem;
-    input.value = "";
-    return;
-  }
-
-  try {
-    previewUrl.value = await readAsDataUrl(file);
-    emit("selected", file, previewUrl.value);
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : "No se pudo leer la foto.";
-  }
-}
 </script>
 
 <template>

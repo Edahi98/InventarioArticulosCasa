@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import type { Article } from "../core/domain/article.js";
 import { getArticleByIdUseCase } from "../core/usecases/getArticleById.js";
+import { useLoader } from "../composables/useLoader.js";
 import ItemFigure from "../components/articles/ItemFigure.vue";
 import NoteList from "../components/NoteList.vue";
 import ArticleStockBadge from "../components/articles/ArticleStockBadge.vue";
@@ -14,9 +14,7 @@ const route = useRoute();
 const router = useRouter();
 const articleId = Number(route.params.id);
 
-const article = ref<Article | null>(null);
-const isLoading = ref(true);
-const errorMessage = ref("");
+const { data: article, isLoading, errorMessage } = useLoader(() => getArticleByIdUseCase.execute(articleId), "Error al cargar el artículo.");
 const photoBroken = ref(false);
 
 function handleArticleDeleted(): void {
@@ -24,17 +22,6 @@ function handleArticleDeleted(): void {
     router.push(`/categories/${article.value.categoryId}/articles`);
   }
 }
-
-onMounted(async () => {
-  try {
-    article.value = await getArticleByIdUseCase.execute(articleId);
-  } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Error al cargar el artículo.";
-  } finally {
-    isLoading.value = false;
-  }
-});
 </script>
 
 <template>

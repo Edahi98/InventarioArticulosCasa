@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from "vue";
+import { reactive, watch } from "vue";
 import type { Category } from "../../core/domain/category.js";
 import { updateCategoryUseCase } from "../../core/usecases/updateCategory.js";
-import { uploadArticleImageUseCase } from "../../core/usecases/uploadArticleImage.js";
 import { categoryForm } from "../../validators/categoryValidators.js";
-import { validateInput } from "../../validators/validateInput.js";
+import { useFormSubmit } from "../../composables/useFormSubmit.js";
+import { useImageUpload } from "../../composables/useImageUpload.js";
 import ImageUploader from "../ImageUploader.vue";
 import FormField from "../ui/FormField.vue";
 import ModalShell from "../ui/ModalShell.vue";
@@ -19,11 +19,8 @@ const form = reactive({
   imageUrl: props.category.imageUrl,
 });
 
-const pendingFile = ref<File | null>(null);
-const isSubmitting = ref(false);
-const isUploading = ref(false);
-const errorMessage = ref("");
-const fieldErrors = ref<Record<string, string>>({});
+const { isSubmitting, errorMessage, fieldErrors, validate, submit } = useFormSubmit();
+const { isUploading, select: handleImageSelected, resolveUrl, reset: resetImage } = useImageUpload(() => form.imageUrl);
 
 watch(
   () => props.category,
@@ -32,53 +29,18 @@ watch(
     form.description = category.description;
     form.location = category.location;
     form.imageUrl = category.imageUrl;
-    pendingFile.value = null;
+    resetImage();
   },
 );
 
-function handleImageSelected(file: File): void {
-  pendingFile.value = file;
-}
-
-async function resolveImageUrl(): Promise<string> {
-  if (!pendingFile.value) return form.imageUrl;
-  isUploading.value = true;
-  try {
-    const uploaded = await uploadArticleImageUseCase.execute(pendingFile.value);
-    return uploaded.url;
-  } finally {
-    isUploading.value = false;
-  }
-}
-
 async function handleSubmit(): Promise<void> {
-  errorMessage.value = "";
-  fieldErrors.value = {};
+  const data = validate(categoryForm, { name: form.name, description: form.description, location: form.location });
+  if (!data) return;
 
-  const checked = validateInput(categoryForm, {
-    name: form.name,
-    description: form.description,
-    location: form.location,
-  });
-  if (!checked.ok) {
-    fieldErrors.value = checked.failure.fields;
-    errorMessage.value = checked.failure.message;
-    return;
-  }
-
-  isSubmitting.value = true;
-  try {
-    const updated = await updateCategoryUseCase.execute(props.category.id, {
-      ...checked.data,
-      imageUrl: await resolveImageUrl(),
-    });
+  await submit(async () => {
+    const updated = await updateCategoryUseCase.execute(props.category.id, { ...data, imageUrl: await resolveUrl() });
     emit("saved", updated);
-  } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "No se pudo actualizar la categoría.";
-  } finally {
-    isSubmitting.value = false;
-  }
+  }, "No se pudo actualizar la categoría.");
 }
 </script>
 

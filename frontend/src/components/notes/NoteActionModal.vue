@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from "vue";
+import { reactive, watch } from "vue";
 import type { Note } from "../../core/domain/note.js";
 import { updateNoteUseCase } from "../../core/usecases/updateNote.js";
 import { deleteNoteUseCase } from "../../core/usecases/deleteNote.js";
+import { useFormSubmit } from "../../composables/useFormSubmit.js";
 import { noteForm } from "../../validators/noteValidators.js";
-import { validateInput } from "../../validators/validateInput.js";
 import FormField from "../ui/FormField.vue";
 import ModalShell from "../ui/ModalShell.vue";
 
@@ -20,9 +20,7 @@ const form = reactive({
   description: props.note.description,
 });
 
-const isSubmitting = ref(false);
-const errorMessage = ref("");
-const fieldErrors = ref<Record<string, string>>({});
+const { isSubmitting, errorMessage, fieldErrors, validate, submit, reset } = useFormSubmit();
 
 watch(
   () => props.note,
@@ -33,40 +31,20 @@ watch(
 );
 
 async function handleConfirmEdit(): Promise<void> {
-  errorMessage.value = "";
-  fieldErrors.value = {};
+  const data = validate(noteForm, { title: form.title, description: form.description });
+  if (!data) return;
 
-  const checked = validateInput(noteForm, { title: form.title, description: form.description });
-  if (!checked.ok) {
-    fieldErrors.value = checked.failure.fields;
-    errorMessage.value = checked.failure.message;
-    return;
-  }
-
-  isSubmitting.value = true;
-  try {
-    const updated = await updateNoteUseCase.execute(props.note.id, checked.data);
-    emit("saved", updated);
-  } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "No se pudo actualizar la nota.";
-  } finally {
-    isSubmitting.value = false;
-  }
+  await submit(async () => {
+    emit("saved", await updateNoteUseCase.execute(props.note.id, data));
+  }, "No se pudo actualizar la nota.");
 }
 
 async function handleConfirmDelete(): Promise<void> {
-  errorMessage.value = "";
-  isSubmitting.value = true;
-  try {
+  reset();
+  await submit(async () => {
     await deleteNoteUseCase.execute(props.note.id);
     emit("deleted", props.note.id);
-  } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "No se pudo eliminar la nota.";
-  } finally {
-    isSubmitting.value = false;
-  }
+  }, "No se pudo eliminar la nota.");
 }
 </script>
 

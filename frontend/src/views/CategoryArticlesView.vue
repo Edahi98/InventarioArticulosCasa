@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import type { Category } from "../core/domain/category.js";
-import type { Article } from "../core/domain/article.js";
 import { getCategoryByIdUseCase } from "../core/usecases/getCategoryById.js";
 import { listArticlesByCategoryUseCase } from "../core/usecases/listArticlesByCategory.js";
+import { useLoader } from "../composables/useLoader.js";
 import ArticleRow from "../components/articles/ArticleRow.vue";
 import ArticleActions from "../components/articles/ArticleActions.vue";
 import ItemFigure from "../components/articles/ItemFigure.vue";
@@ -15,29 +14,16 @@ const route = useRoute();
 const router = useRouter();
 const categoryId = Number(route.params.id);
 
-const category = ref<Category | null>(null);
-const articles = ref<Article[]>([]);
-const isLoading = ref(true);
-const errorMessage = ref("");
+const { data, isLoading, errorMessage } = useLoader(async () => {
+  const [category, articles] = await Promise.all([getCategoryByIdUseCase.execute(categoryId), listArticlesByCategoryUseCase.execute(categoryId)]);
+  return { category, articles };
+}, "Error al cargar la categoría.");
 
-onMounted(async () => {
-  try {
-    const [categoryResult, articlesResult] = await Promise.all([
-      getCategoryByIdUseCase.execute(categoryId),
-      listArticlesByCategoryUseCase.execute(categoryId),
-    ]);
-    category.value = categoryResult;
-    articles.value = articlesResult;
-  } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : "Error al cargar la categoría.";
-  } finally {
-    isLoading.value = false;
-  }
-});
+const category = computed(() => data.value?.category ?? null);
+const articles = computed(() => data.value?.articles ?? []);
 
 function handleArticleDeleted(id: number): void {
-  articles.value = articles.value.filter((article) => article.id !== id);
+  if (data.value) data.value = { ...data.value, articles: data.value.articles.filter((article) => article.id !== id) };
 }
 </script>
 
