@@ -62,12 +62,35 @@ export class ScrapeService {
     const current = this.browser ? await this.browser : null;
     if (current?.connected) return current;
 
+    this.browser = process.env.VERCEL ? this.launchServerless() : this.launchLocal();
+    return this.browser;
+  }
+
+  /**
+   * Abre el Chromium instalado por Puppeteer. Con `PUPPETEER_NO_SANDBOX=true` lo abre sin sandbox.
+   *
+   * @returns El navegador de Chromium.
+   */
+  private launchLocal(): Promise<Browser> {
     const noSandbox = process.env.PUPPETEER_NO_SANDBOX === "true";
-    this.browser = puppeteer.launch({
+    return puppeteer.launch({
       headless: true,
       args: noSandbox ? ["--no-sandbox", "--disable-setuid-sandbox"] : [],
     });
-    return this.browser;
+  }
+
+  /**
+   * Abre el Chromium reducido de `@sparticuz/chromium`, el único que cabe en las funciones de Vercel.
+   *
+   * @returns El navegador de Chromium.
+   */
+  private async launchServerless(): Promise<Browser> {
+    const { default: chromium } = await import("@sparticuz/chromium");
+    return puppeteer.launch({
+      headless: "shell",
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+    });
   }
 
   /**
