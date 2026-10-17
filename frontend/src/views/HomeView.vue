@@ -21,7 +21,7 @@ function goToDashboard(): void {
 
 <template>
   <div class="landing">
-    <HomeHero :bears="bears" @enter="goToDashboard" />
+    <HomeHero @enter="goToDashboard" />
     <HomeCategoryBears :bears="bears" />
     <HomeFeatures />
     <HomeClosing :bears="bears.slice(0, 3)" @enter="goToDashboard" />

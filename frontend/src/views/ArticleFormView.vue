@@ -12,7 +12,6 @@ import { validateInput } from "../validators/validateInput.js";
 import ArticleRow from "../components/articles/ArticleRow.vue";
 import ImageUploader from "../components/ImageUploader.vue";
 import FormField from "../components/ui/FormField.vue";
-import PageHeader from "../components/ui/PageHeader.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -46,6 +45,7 @@ const preview = computed(() => ({
   imageUrl: pendingPreview.value || form.imageUrl,
   stock: form.stock,
   needsRepair: form.needsRepair,
+  location: form.location,
 }));
 
 onMounted(async () => {
@@ -128,19 +128,27 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-  <section class="mx-auto max-w-5xl px-4 py-12 md:px-8">
-    <PageHeader
-      :title="isEditMode ? 'Cambiar algo de este artículo' : 'Guardar algo nuevo'"
-      subtitle="Cuéntale al guardián qué es, cuántos hay y en qué cuarto vive."
-      back-to="/categories"
-      back-label="Todos los cuartos"
-    />
+  <section class="mx-auto max-w-5xl px-4 pb-12 pt-6 md:px-8">
+    <router-link to="/categories" class="ui-btn ui-btn-sm ui-btn-ghost mb-14">
+      <span aria-hidden="true">&larr;</span> Todos los cuartos
+    </router-link>
 
     <p v-if="isLoading" class="text-[var(--l-muted)]">Sacando el artículo de su estante...</p>
 
-    <div v-else class="grid grid-cols-1 gap-10 lg:grid-cols-12">
+    <div v-else class="menu-panel">
+      <header class="menu-title">
+        <h1 class="ui-sign text-3xl leading-none sm:text-4xl md:text-5xl">
+          {{ isEditMode ? "Cambiar algo" : "Guardar algo nuevo" }}
+        </h1>
+      </header>
+      <p class="menu-label text-center">Nuevo objeto</p>
+      <p class="mb-8 mt-2 text-center font-semibold text-[var(--l-muted)]">
+        Cuéntale al guardián qué es, cuántos hay y en qué cuarto vive.
+      </p>
+
+    <div class="grid grid-cols-1 gap-10 lg:grid-cols-12">
       <form
-        class="ui-notebook flex flex-col gap-6 py-8 pr-6 sm:pr-8 lg:col-span-7"
+        class="flex flex-col gap-6 lg:col-span-7"
         @submit.prevent="handleSubmit"
       >
         <FormField label="Nombre" for-id="name" :error="fieldErrors.name">
@@ -193,11 +201,12 @@ async function handleSubmit(): Promise<void> {
       </form>
 
       <aside class="lg:col-span-5">
-        <p class="mb-4 text-sm font-semibold text-[var(--l-muted)]">Así se verá en la casa</p>
-        <div class="mx-auto max-w-xs -rotate-2 lg:sticky lg:top-24">
+        <p class="menu-label mb-4 text-center">Así se verá en la casa</p>
+        <div class="mx-auto max-w-xs lg:sticky lg:top-24">
           <ArticleRow :article="preview" />
         </div>
       </aside>
+    </div>
     </div>
   </section>
 </template>
