@@ -28,6 +28,8 @@ import {
   faPaperPlane,
   faLocationDot,
   faMap,
+  faDoorOpen,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -49,6 +51,8 @@ library.add(
   faPaperPlane,
   faLocationDot,
   faMap,
+  faDoorOpen,
+  faXmark,
 );
 
 useTheme();
