@@ -15,6 +15,7 @@ const emit = defineEmits<{ close: []; saved: [category: Category] }>();
 const form = reactive({
   name: props.category.name,
   description: props.category.description,
+  location: props.category.location,
   imageUrl: props.category.imageUrl,
 });
 
@@ -29,6 +30,7 @@ watch(
   (category) => {
     form.name = category.name;
     form.description = category.description;
+    form.location = category.location;
     form.imageUrl = category.imageUrl;
     pendingFile.value = null;
   },
@@ -53,7 +55,11 @@ async function handleSubmit(): Promise<void> {
   errorMessage.value = "";
   fieldErrors.value = {};
 
-  const checked = validateInput(categoryForm, { name: form.name, description: form.description });
+  const checked = validateInput(categoryForm, {
+    name: form.name,
+    description: form.description,
+    location: form.location,
+  });
   if (!checked.ok) {
     fieldErrors.value = checked.failure.fields;
     errorMessage.value = checked.failure.message;
@@ -84,6 +90,9 @@ async function handleSubmit(): Promise<void> {
       </FormField>
       <FormField label="Descripción" for-id="category-description" :error="fieldErrors.description">
         <textarea id="category-description" v-model="form.description" rows="3" class="ui-input" />
+      </FormField>
+      <FormField label="Ubicación" for-id="category-location" :error="fieldErrors.location">
+        <input id="category-location" v-model="form.location" type="text" class="ui-input" />
       </FormField>
       <ImageUploader :initial-image-url="form.imageUrl" @selected="handleImageSelected" />
       <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>

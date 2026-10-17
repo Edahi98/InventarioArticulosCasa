@@ -21,6 +21,7 @@ const isEditMode = computed(() => categoryId !== null);
 const form = reactive({
   name: "",
   description: "",
+  location: "",
   imageUrl: "",
 });
 
@@ -46,6 +47,7 @@ onMounted(async () => {
     const category = await getCategoryByIdUseCase.execute(categoryId);
     form.name = category.name;
     form.description = category.description;
+    form.location = category.location;
     form.imageUrl = category.imageUrl;
   } catch (error) {
     errorMessage.value =
@@ -75,7 +77,11 @@ async function handleSubmit(): Promise<void> {
   errorMessage.value = "";
   fieldErrors.value = {};
 
-  const checked = validateInput(categoryForm, { name: form.name, description: form.description });
+  const checked = validateInput(categoryForm, {
+    name: form.name,
+    description: form.description,
+    location: form.location,
+  });
   if (!checked.ok) {
     fieldErrors.value = checked.failure.fields;
     errorMessage.value = checked.failure.message;
@@ -129,6 +135,10 @@ async function handleSubmit(): Promise<void> {
 
         <FormField label="Descripción" for-id="description" :error="fieldErrors.description">
           <textarea id="description" v-model="form.description" rows="3" class="ui-input" placeholder="¿Qué se guarda aquí?" />
+        </FormField>
+
+        <FormField label="Ubicación" for-id="location" :error="fieldErrors.location">
+          <input id="location" v-model="form.location" type="text" class="ui-input" placeholder="Planta alta, junto a la escalera..." />
         </FormField>
 
         <ImageUploader :initial-image-url="form.imageUrl" @selected="handleImageSelected" />

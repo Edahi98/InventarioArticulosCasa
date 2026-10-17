@@ -6,6 +6,7 @@ export interface Article {
   categoryId: number;
   stock: number;
   needsRepair: boolean;
+  location: string;
   createdAt: string;
 }
 
@@ -16,6 +17,7 @@ export interface NewArticleInput {
   categoryId: number;
   stock: number;
   needsRepair: boolean;
+  location: string;
 }
 
 export interface UploadedImage {

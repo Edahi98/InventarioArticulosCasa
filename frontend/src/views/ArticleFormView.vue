@@ -24,6 +24,7 @@ const categories = ref<Category[]>([]);
 const form = reactive({
   name: "",
   description: "",
+  location: "",
   imageUrl: "",
   categoryId: Number(route.query.categoryId) || 0,
   stock: 0,
@@ -55,6 +56,7 @@ onMounted(async () => {
     const article = await getArticleByIdUseCase.execute(articleId);
     form.name = article.name;
     form.description = article.description;
+    form.location = article.location;
     form.imageUrl = article.imageUrl;
     form.categoryId = article.categoryId;
     form.stock = article.stock;
@@ -90,6 +92,7 @@ async function handleSubmit(): Promise<void> {
   const checked = validateInput(articleForm, {
     name: form.name,
     description: form.description,
+    location: form.location,
     categoryId: form.categoryId,
     stock: form.stock,
     needsRepair: form.needsRepair,
@@ -146,6 +149,10 @@ async function handleSubmit(): Promise<void> {
 
         <FormField label="Descripción" for-id="description" :error="fieldErrors.description">
           <textarea id="description" v-model="form.description" rows="3" class="ui-input" placeholder="Marca, color, dónde lo compraste..." />
+        </FormField>
+
+        <FormField label="Ubicación" for-id="location" :error="fieldErrors.location">
+          <input id="location" v-model="form.location" type="text" class="ui-input" placeholder="Estante de arriba, cajón de la cocina..." />
         </FormField>
 
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
