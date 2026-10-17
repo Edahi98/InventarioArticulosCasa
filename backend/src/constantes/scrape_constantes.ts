@@ -1,6 +1,6 @@
 export const MAX_URL_LENGTH = 2048;
 
-export const NAVIGATION_TIMEOUT_MS = 20_000;
+export const NAVIGATION_TIMEOUT_MS = 45_000;
 export const USER_AGENT = "Mozilla/5.0 (compatible; InventarioBot/1.0)";
 export const LOCAL_SCHEMES = ["data:", "blob:", "about:"];
 
