@@ -7,7 +7,7 @@ class ArticleCreateDto(DtoBase):
 
     name: SafeName
     category_name: SafeName
-    stock: SafeStock = 0
+    stock: SafeStock = 1
     description: SafeText = ""
     image_url: SafeUrl = ""
     needs_repair: bool = False
