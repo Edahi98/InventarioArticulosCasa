@@ -34,18 +34,17 @@ export class ToyHelicopter {
    */
   static build(color: number, kind: HelicopterKind, tone: BearTone): BuiltHelicopter {
     const group = new Group();
-    const body = new Mesh(new RoundedBoxGeometry(0.78, 0.4, 0.46, 3, 0.16), this.material(color));
-    body.position.y = 0.3;
-    const belly = this.part(new BoxGeometry(0.78, 0.05, 0.47), WHITE, [0, 0.14, 0]);
-    const nose = new Mesh(new SphereGeometry(0.24, 16, 12), new MeshStandardMaterial({ color: 0xfff6dc, roughness: 0.2, transparent: true, opacity: 0.5 }));
-    nose.position.set(0.3, 0.34, 0);
-    nose.scale.set(1.1, 0.95, 1.05);
+    const body = new Mesh(new RoundedBoxGeometry(0.56, 0.4, 0.46, 3, 0.16), this.material(color));
+    body.position.set(-0.12, 0.3, 0);
+    const belly = this.part(new BoxGeometry(0.9, 0.05, 0.47), WHITE, [0.05, 0.14, 0]);
+    const nose = new Mesh(new SphereGeometry(0.3, 16, 12), new MeshStandardMaterial({ color: 0xfff6dc, roughness: 0.2, transparent: true, opacity: 0.4 }));
+    nose.position.set(0.2, 0.36, 0);
+    nose.scale.set(1.15, 1, 1.1);
     group.add(body, belly, nose);
 
-    const head = VehicleDriver.head(tone, HATS[kind]);
-    head.position.set(0.3, 0.34, 0);
-    head.scale.multiplyScalar(0.95);
-    group.add(head);
+    const pilot = VehicleDriver.bear(tone, HATS[kind], 0.17);
+    pilot.group.position.set(0.2, 0.25, 0);
+    group.add(pilot.group);
 
     const boom = new Mesh(new CylinderGeometry(0.035, 0.09, 0.85, 10), this.material(color));
     boom.rotation.z = Math.PI / 2;

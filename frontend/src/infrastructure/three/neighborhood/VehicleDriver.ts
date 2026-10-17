@@ -1,31 +1,38 @@
-import { type BufferGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial, SphereGeometry, TorusGeometry } from "three";
+import { type BufferGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial, SphereGeometry, TorusGeometry, Vector3 } from "three";
 import type { BearTone } from "../../../core/domain/inventoryBear.js";
+import { listHomeBears } from "../../../core/usecases/listHomeBears.js";
 import { BearBuilder } from "../BearBuilder.js";
 
 export type DriverHat = "gorra" | "marinero" | "capitan" | "lentes" | "ninguno";
 
-const HEAD_SCALE = 0.3;
+const BEAR_SCALE = 0.18;
+const UP = new Vector3(0, 1, 0);
 
 export class VehicleDriver {
   private static readonly builder = new BearBuilder();
   private static readonly materials = new Map<number, MeshStandardMaterial>();
 
   /**
-   * Osito conductor: la cabeza de los guardianes, a escala de juguete y mirando hacia +x, con su sombrero.
+   * Osito conductor completo, sentado y mirando hacia +x: torso, panza con su símbolo, patas y brazos estirados hacia el
+   * volante, con su sombrero. Se acomoda con el origen en la cintura, así que la parte baja queda dentro de la carrocería.
    *
    * @param tone - Color del pelaje.
    * @param hat - Qué lleva puesto.
-   * @returns La cabeza lista para ponerla en la cabina; se le puede inclinar para que cabecee.
+   * @param scale - Tamaño del osito.
+   * @returns El osito completo y su cabeza (para que cabecee).
    */
-  static head(tone: BearTone, hat: DriverHat = "ninguno"): Group {
-    const holder = new Group();
-    const head = this.builder.buildHead(tone);
+  static bear(tone: BearTone, hat: DriverHat = "ninguno", scale = BEAR_SCALE): { group: Group; head: Group } {
+    const bear = listHomeBears().find((item) => item.tone === tone) ?? listHomeBears()[0];
+    if (!bear) throw new Error("No hay ositos guardianes definidos.");
+    const rig = this.builder.rig(bear);
     const accessories = this.hat(hat);
-    if (accessories.length > 0) head.add(...accessories);
-    head.rotation.y = Math.PI / 2;
-    holder.add(head);
-    holder.scale.setScalar(HEAD_SCALE);
-    return holder;
+    if (accessories.length > 0) rig.head.add(...accessories);
+    rig.arms.forEach((arm, index) => arm.quaternion.setFromUnitVectors(UP, new Vector3((index === 0 ? -1 : 1) * 0.12, -0.3, 0.95).normalize()));
+    rig.root.rotation.y = Math.PI / 2;
+    const group = new Group();
+    group.add(rig.root);
+    group.scale.setScalar(scale);
+    return { group, head: rig.head };
   }
 
   /**

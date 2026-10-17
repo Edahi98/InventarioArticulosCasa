@@ -45,15 +45,18 @@ export class ToyCar {
 
     const cabin = new Mesh(new BoxGeometry(parts.cabinLength, parts.cabinHeight, 0.44), glass);
     cabin.position.set(parts.cabinX, 0.38 + parts.cabinHeight / 2, 0);
-    const roof = new Mesh(new BoxGeometry(parts.cabinLength + 0.04, 0.03, 0.46), body);
-    roof.position.set(parts.cabinX, 0.38 + parts.cabinHeight, 0);
-    car.add(cabin, roof);
+    car.add(cabin);
+    if (kind === "camioneta") {
+      const roof = new Mesh(new BoxGeometry(parts.cabinLength + 0.04, 0.03, 0.46), body);
+      roof.position.set(parts.cabinX, 0.38 + parts.cabinHeight, 0);
+      car.add(roof);
+    }
 
-    const head = VehicleDriver.head(tone, HATS[kind]);
-    head.position.set(parts.cabinX + 0.04, 0.38 + parts.cabinHeight * 0.95, 0);
+    const driver = VehicleDriver.bear(tone, HATS[kind], parts.driverScale);
+    driver.group.position.set(parts.cabinX + 0.02, 0.44, 0);
     const wheel = VehicleDriver.wheel();
-    wheel.position.set(parts.cabinX + 0.17, 0.43, 0);
-    car.add(head, wheel);
+    wheel.position.set(parts.cabinX + 0.02 + parts.driverScale * 1.25, 0.5, 0);
+    car.add(driver.group, wheel);
 
     [-0.3, 0.3].forEach((x) =>
       [-0.25, 0.25].forEach((z) => {
@@ -84,14 +87,14 @@ export class ToyCar {
     car.traverse((part) => {
       part.castShadow = true;
     });
-    return { group: car, headlights, head };
+    return { group: car, headlights, head: driver.head };
   }
 
-  private static layout(kind: CarKind): { length: number; chassisX: number; cabinX: number; cabinLength: number; cabinHeight: number } {
+  private static layout(kind: CarKind): { length: number; chassisX: number; cabinX: number; cabinLength: number; cabinHeight: number; driverScale: number } {
     const layouts = {
-      pickup: { length: 1.05, chassisX: 0, cabinX: 0.2, cabinLength: 0.38, cabinHeight: 0.26 },
-      camioneta: { length: 1.05, chassisX: 0, cabinX: 0.05, cabinLength: 0.85, cabinHeight: 0.36 },
-      sedan: { length: 0.95, chassisX: 0, cabinX: -0.05, cabinLength: 0.5, cabinHeight: 0.28 },
+      pickup: { length: 1.05, chassisX: 0, cabinX: 0.2, cabinLength: 0.38, cabinHeight: 0.26, driverScale: 0.18 },
+      camioneta: { length: 1.05, chassisX: 0, cabinX: 0.05, cabinLength: 0.85, cabinHeight: 0.36, driverScale: 0.16 },
+      sedan: { length: 0.95, chassisX: 0, cabinX: -0.05, cabinLength: 0.5, cabinHeight: 0.28, driverScale: 0.18 },
     } as const;
     return layouts[kind];
   }
