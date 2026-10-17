@@ -11,3 +11,7 @@ export const MAX_LISTS = 50;
 export const MAX_LIST_ITEMS = 300;
 export const MAX_LINKS = 300;
 export const MAX_PARAGRAPHS = 150;
+
+export const CHROME_SELECTOR =
+  "nav, header, footer, aside, [role=navigation], [role=banner], [role=contentinfo], [class*=cookie], [id*=cookie], [class*=consent], [id*=consent], [class*=menu], [id*=menu]";
+export const CONTENT_SELECTOR = "main, article, [role=main]";

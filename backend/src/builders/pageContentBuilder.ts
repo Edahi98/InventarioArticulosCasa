@@ -1,6 +1,8 @@
 import { load, type CheerioAPI } from "cheerio";
 import type { AnyNode } from "domhandler";
 import {
+  CHROME_SELECTOR,
+  CONTENT_SELECTOR,
   MAX_HEADINGS,
   MAX_LINKS,
   MAX_LIST_ITEMS,
@@ -129,15 +131,19 @@ export class PageContentBuilder {
   }
 
   /**
-   * Lee las listas `ul` y `ol` de primer nivel (las anidadas no se incluyen y el texto de cada elemento excluye la sublista).
+   * Lee las listas `ul` y `ol` de primer nivel: las anidadas dentro de un `li` no se incluyen (y el texto de cada elemento
+   * excluye la sublista), y se descartan las de menús, pies de página y avisos de cookies. Una lista envuelta en otra sin `li`
+   * (HTML mal formado) sí se lee. Si hay listas dentro del contenido principal (`main`, `article`), solo se leen esas.
    *
    * @param $ - Documento cargado en Cheerio.
    * @returns Las listas con elementos, indicando si son ordenadas.
    */
   private lists($: CheerioAPI): PageList[] {
-    return $("ul, ol")
+    const candidates = $("ul, ol")
       .toArray()
-      .filter((list) => $(list).parents("ul, ol").length === 0)
+      .filter((list) => $(list).parents("li").length === 0 && $(list).parents(CHROME_SELECTOR).length === 0);
+    const inContent = candidates.filter((list) => $(list).parents(CONTENT_SELECTOR).length > 0);
+    return (inContent.length > 0 ? inContent : candidates)
       .slice(0, MAX_LISTS)
       .map((list) => ({
         ordered: $(list).prop("tagName") === "OL",
