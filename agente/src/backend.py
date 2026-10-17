@@ -30,8 +30,8 @@ class Backend:
     def get(self, path: str, params: dict | None = None):
         return self._request("GET", path, params=params)
 
-    def post(self, path: str, json: dict):
-        return self._request("POST", path, json=json)
+    def post(self, path: str, json: dict, **kwargs):
+        return self._request("POST", path, json=json, **kwargs)
 
     def put(self, path: str, json: dict):
         return self._request("PUT", path, json=json)

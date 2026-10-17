@@ -121,7 +121,7 @@ export class MatchService {
   /**
    * Puntúa cada pareja texto–artículo que comparte alguna palabra.
    * `exacta` (1): tienen las mismas palabras. `contenida` (mínimo 0.7): todas las palabras de uno están en el otro.
-   * `parcial`: el coeficiente de Dice de las palabras compartidas, si llega a 0.5.
+   * Las parejas que solo comparten algunas palabras (`parcial`) se descartan: si no hay coincidencia exacta o contenida, el texto no devuelve nada.
    *
    * @param termWords - Tabla `indiceTexto`, `token` ya corregida.
    * @param articleWords - Tabla `idArticulo`, `token`.
@@ -153,7 +153,7 @@ export class MatchService {
           .when(pl.col("metodo").eq(pl.lit("contenida"))).then(pl.when(pl.col("dice").ltEq(pl.lit(CONTAINED_MIN_SCORE))).then(pl.lit(CONTAINED_MIN_SCORE)).otherwise(pl.col("dice")))
           .otherwise(pl.col("dice")).round(2).alias("puntaje"),
       )
-      .filter(pl.col("puntaje").gtEq(pl.lit(MIN_SCORE)));
+      .filter(pl.col("metodo").neq(pl.lit("parcial")).and(pl.col("puntaje").gtEq(pl.lit(MIN_SCORE))));
   }
 
   /**

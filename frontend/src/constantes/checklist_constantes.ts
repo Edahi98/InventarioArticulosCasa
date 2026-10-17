@@ -5,6 +5,7 @@ export const MAX_LINE_LENGTH = 200;
 export const MAX_PAGE_URL_LENGTH = 2048;
 export const MIN_USEFUL_LIST_ITEMS = 2;
 export const MAX_SHOWN_LISTS = 6;
+export const FALLBACK_SOURCES = 2;
 export const MAX_ITEM_LENGTH = 90;
 export const MAX_ITEMS_PER_LIST = 60;
 export const MIN_FALLBACK_HEADING_LEVEL = 2;
@@ -12,7 +13,7 @@ export const MIN_FALLBACK_HEADING_LEVEL = 2;
 export const CHECKLIST_FIELD_LABELS: Record<string, string> = { title: "El nombre del plan", lines: "La lista", url: "La dirección" };
 
 export const BULLET_PATTERN = /^[-*•·]\s*/;
-export const QUANTITY_PATTERN = /^\s*(\d+([./]\d+)?|[½¼¾⅓⅔])\s/;
+export const QUANTITY_PATTERN = /^\s*(\d+([./,]\d+)?|[½¼¾⅓⅔])(\s|[a-záéíóúñ])/i;
 export const PAGE_TITLE_SEPARATOR = /\s*[|·–—]\s*/;
 
 export const SOURCE_LABELS: Record<ListSource, string> = {

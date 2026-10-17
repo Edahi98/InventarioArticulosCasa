@@ -2,6 +2,7 @@ import type { ListSource, ScrapedPage, SourceList } from "../domain/checklist.js
 import {
   MAX_ITEM_LENGTH,
   MAX_ITEMS_PER_LIST,
+  FALLBACK_SOURCES,
   MAX_SHOWN_LISTS,
   MIN_FALLBACK_HEADING_LEVEL,
   MIN_USEFUL_LIST_ITEMS,
@@ -10,8 +11,9 @@ import {
 
 export class RecipeSourceSelector {
   /**
-   * Elige de dónde sacar las cosas de una página. Primero van las listas y las tablas; solo si no hay
-   * ninguna utilizable se recurre a los encabezados y a los párrafos. En todos los casos se descartan los
+   * Elige de dónde sacar las cosas de una página. Primero van las listas y las tablas que empiezan con una cantidad o un número
+   * (`2 tazas`, `200 g`); si ninguna las tiene se siguen buscando fuentes: las demás listas y tablas y, después, los encabezados
+   * y los párrafos. En todos los casos se descartan los
    * textos largos y se limita la cantidad de elementos.
    *
    * @param page - Contenido de la página leído por el servidor.
@@ -19,7 +21,8 @@ export class RecipeSourceSelector {
    */
   select(page: ScrapedPage): SourceList[] {
     const structured = this.rank(this.structured(page));
-    return structured.length > 0 ? structured : this.fallback(page);
+    const withMeasures = structured.some((source) => this.quantityShare(source) > 0);
+    return withMeasures ? structured : [...structured.slice(0, MAX_SHOWN_LISTS - FALLBACK_SOURCES), ...this.fallback(page)];
   }
 
   /**
@@ -46,8 +49,8 @@ export class RecipeSourceSelector {
   }
 
   /**
-   * Ordena las fuentes: primero las que más elementos empiezan con una cantidad (`2 tazas`, `1/2 kg`),
-   * señal de lista de ingredientes, y a igualdad las más largas.
+   * Ordena las fuentes: primero las que más elementos empiezan con una cantidad o un número
+   * (`2 tazas`, `1/2 kg`), señal de lista de ingredientes, y a igualdad las más largas.
    *
    * @param sources - Fuentes de listas y tablas.
    * @returns Hasta 6 fuentes ordenadas.

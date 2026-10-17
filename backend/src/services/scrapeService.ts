@@ -14,7 +14,7 @@ export class ScrapeService {
    * @param rawUrl - Dirección pública `http` o `https` de la página.
    * @returns Título, descripción, encabezados, tablas, listas y enlaces de la página.
    * @throws AppError 400 si la URL no es pública.
-   * @throws AppError 502 si la página no carga, responde con error o tarda más de 20 segundos.
+   * @throws AppError 502 si la página no carga, responde con error o tarda más de 45 segundos.
    * @throws AppError 503 si Chromium no se puede abrir.
    */
   async scrape(rawUrl: string): Promise<PageContent> {

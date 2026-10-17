@@ -20,6 +20,8 @@ QUESTION = {
         "forma informal o coloquial por lo que se tiene guardado, dónde está o cómo está organizado o repartido en categorías, "
         "aunque no mencione palabras como inventario, artículo o categoría, y aunque empiece con "
         "muletillas, saludos o frases como si la persona le hablara a alguien que ya conoce sus cosas. "
+        "También lo es preguntar si se tiene todo lo necesario para una receta, una actividad o una lista, "
+        "escrita o de una página web, comparándola con lo que hay guardado. "
         "Son del inventario las preguntas sobre las pertenencias de la casa: si se tiene algo, cuántas "
         "hay, dónde quedó, en qué estado está, cómo se organizó, qué falta o qué se agregó, y los "
         "pedidos de recordar, repasar, resumir o confirmar lo que hay guardado. Una referencia a las "
