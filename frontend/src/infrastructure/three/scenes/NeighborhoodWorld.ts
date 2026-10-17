@@ -48,7 +48,7 @@ export class NeighborhoodWorld implements ScenicWorld {
     const factory = new HouseFactory();
     const trees = new TreeFactory(this.rng);
     this.group.position.y = GROUND;
-    this.group.add(Landscape.meadow(toy), Landscape.hills(toy, "barrio-colinas", 70), this.confetti.mesh);
+    this.group.add(Landscape.meadow(toy), Landscape.vegetation("barrio-pasto"), Landscape.hills(toy, "barrio-colinas", 70), this.confetti.mesh);
 
     const road = toy.box([160, 0.12, 6], 0x6b5a73, [0, 0.06, 5.5], 0.05);
     const walk = toy.box([160, 0.16, 2], 0xfff0d6, [0, 0.08, 0.6], 0.05);

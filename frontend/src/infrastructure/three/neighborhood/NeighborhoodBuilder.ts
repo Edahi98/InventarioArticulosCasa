@@ -6,6 +6,7 @@ import {
   SphereGeometry,
   Vector3,
 } from "three";
+import { SurfaceTextures } from "../SurfaceTextures.js";
 import { BearBuilder } from "../BearBuilder.js";
 import { Backdrop } from "./Backdrop.js";
 import { DayLife } from "./DayLife.js";
@@ -13,7 +14,8 @@ import { GuardianBear } from "./GuardianBear.js";
 import { HouseFactory } from "./HouseFactory.js";
 import { HouseLife, type SmokePuff } from "./HouseLife.js";
 import { IslandBuilder } from "./IslandBuilder.js";
-import { RingLayout, type LotSlot } from "./RingLayout.js";
+import { GrassField } from "../GrassField.js";
+import { RingLayout, type LotSlot, type RingPlan } from "./RingLayout.js";
 import { RoadBuilder } from "./RoadBuilder.js";
 import { SeededRandom } from "./SeededRandom.js";
 import { StreetFurniture } from "./StreetFurniture.js";
@@ -57,6 +59,7 @@ export const ROAD_WIDTH = 1.6;
 const PAD_RADIUS = 1.85;
 const POST = 0x6b4a6a;
 const GROUND = 0.06;
+const LOT_CLEARANCE = 2.5;
 
 export class NeighborhoodBuilder {
   private readonly rng = new SeededRandom("barrio");
@@ -87,6 +90,7 @@ export class NeighborhoodBuilder {
     const world = new Group();
     const island = new IslandBuilder(this.rng, this.trees).build(plan.islandRadius, plan.plazaRadius);
     const swaying = [...island.swaying];
+    world.add(this.grass(plan).group);
     const crossings = [0.12, 0.62].map((at) => at + this.rng.between(-0.04, 0.04));
 
     world.add(island.group, new RoadBuilder().build(plan.curve, ROAD_WIDTH, crossings), new StreetFurniture().build(plan.curve, ROAD_WIDTH, crossings), this.lamps(plan.curve, plan.curve.getLength()));
@@ -103,10 +107,26 @@ export class NeighborhoodBuilder {
     return { world, houses, swaying, lamps: this.lampGlass, traffic, dayLife, backdrop, radius: plan.islandRadius };
   }
 
+  private grass(plan: RingPlan): GrassField {
+    const road = plan.curve.getSpacedPoints(180);
+    const clearRoad = (ROAD_WIDTH / 2 + 1.1) ** 2;
+    const clearLot = LOT_CLEARANCE ** 2;
+    const clearPlaza = (plan.plazaRadius + 0.3) ** 2;
+    return new GrassField({
+      seed: "barrio-pasto",
+      radius: plan.islandRadius - 0.6,
+      y: GROUND - 0.01,
+      accept: (x, z) =>
+        x * x + z * z > clearPlaza &&
+        plan.slots.every((slot) => (slot.x - x) ** 2 + (slot.z - z) ** 2 > clearLot) &&
+        road.every((point) => (point.x - x) ** 2 + (point.z - z) ** 2 > clearRoad),
+    });
+  }
+
   private pad(color: number): MeshStandardMaterial {
     const cached = this.padMaterials.get(color);
     if (cached) return cached;
-    const created = new MeshStandardMaterial({ color, roughness: 0.8 });
+    const created = new MeshStandardMaterial({ color, roughness: 0.8, map: SurfaceTextures.clay(), bumpMap: SurfaceTextures.clay(), bumpScale: 0.35 });
     this.padMaterials.set(color, created);
     return created;
   }

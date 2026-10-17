@@ -39,7 +39,7 @@ export class HouseFrontWorld implements ScenicWorld {
     const toy = new Toy(clay);
     const bears = new BearBuilder();
     this.group.position.y = GROUND;
-    this.group.add(Landscape.meadow(toy), Landscape.hills(toy, "casa-colinas"), this.confetti.mesh);
+    this.group.add(Landscape.meadow(toy), Landscape.vegetation("casa-pasto"), Landscape.hills(toy, "casa-colinas"), this.confetti.mesh);
 
     const built = new HouseFactory().create(7);
     this.glass = built.glass;
