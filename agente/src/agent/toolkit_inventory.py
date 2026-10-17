@@ -65,7 +65,7 @@ class AgentToolkit:
         self,
         name: str,
         category_id: int,
-        stock: int = 0,
+        stock: int = 1,
         description: str = "",
         image_url: str = "",
         needs_repair: bool = False,
