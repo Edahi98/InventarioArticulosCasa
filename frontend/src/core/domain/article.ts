@@ -25,7 +25,19 @@ export interface UploadedImage {
   url: string;
 }
 
+export interface CategoryArticleCount {
+  categoryId: number;
+  categoryName: string;
+  total: number;
+}
+
+export interface ArticleCountReport {
+  total: number;
+  categories: CategoryArticleCount[];
+}
+
 export interface ArticleRepository {
+  countByCategory(): Promise<ArticleCountReport>;
   create(input: NewArticleInput): Promise<Article>;
   uploadImage(file: File): Promise<UploadedImage>;
   findById(id: number): Promise<Article>;
