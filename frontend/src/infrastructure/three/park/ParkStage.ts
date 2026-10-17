@@ -29,6 +29,7 @@ import { ParkBuilder } from "./ParkBuilder.js";
 
 export interface ParkOptions {
   reducedMotion: boolean;
+  centered?: boolean;
 }
 
 const TAP_DISTANCE = 6;
@@ -125,7 +126,7 @@ export class ParkStage {
     this.renderer.setSize(width, height, false);
     const aspect = width / height;
     this.camera.aspect = aspect;
-    const shiftX = aspect > 1.15 ? -width * 0.18 : 0;
+    const shiftX = aspect > 1.15 && !this.options.centered ? -width * 0.18 : 0;
     const shiftY = aspect < 0.95 ? -height * 0.2 : 0;
     this.camera.setViewOffset(width, height, shiftX, shiftY, width, height);
     this.camera.updateProjectionMatrix();

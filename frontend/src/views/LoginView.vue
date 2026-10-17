@@ -5,8 +5,7 @@ import { listPeekBears } from "../core/usecases/listHomeBears.js";
 import { authenticatedHttpClient } from "../services/http/AuthenticatedHttpClient.js";
 import type { LoginMood } from "../infrastructure/three/LoginStage.js";
 import BearPeekScene from "../components/BearPeekScene.vue";
-import LoginSky from "../components/login/LoginSky.vue";
-import { useTheme } from "../utils/useTheme.js";
+import MenuBackdrop from "../components/ui/MenuBackdrop.vue";
 import { loginForm } from "../validators/userValidators.js";
 import { validateInput } from "../validators/validateInput.js";
 
@@ -17,7 +16,6 @@ const router = useRouter();
 const route = useRoute();
 
 const bears = listPeekBears();
-const { isDark } = useTheme();
 const celebrations = ref(0);
 
 const form = reactive({
@@ -82,7 +80,7 @@ onBeforeUnmount(() => clearTimeout(moodTimer));
     class="relative isolate -mt-16 flex min-h-[100dvh] items-center justify-center overflow-hidden px-4 pb-10 pt-24 text-[var(--l-ink)]"
     style="font-family: var(--l-font)"
   >
-    <LoginSky :dark="isDark" :celebrate="celebrations" class="absolute inset-0 z-0" />
+    <MenuBackdrop scene="cielo" :celebrate="celebrations" class="absolute inset-0 z-0" />
 
     <div class="relative z-[1] w-full max-w-md">
       <div class="-mb-[72px] h-[220px] w-full">

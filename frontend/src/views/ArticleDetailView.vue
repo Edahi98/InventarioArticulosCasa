@@ -8,6 +8,7 @@ import NoteList from "../components/NoteList.vue";
 import ArticleStockBadge from "../components/articles/ArticleStockBadge.vue";
 import ArticleActions from "../components/articles/ArticleActions.vue";
 import LocationStreetPanel from "../components/location/LocationStreetPanel.vue";
+import MenuBackdrop from "../components/ui/MenuBackdrop.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -37,7 +38,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="mx-auto max-w-5xl px-4 pb-12 pt-6 md:px-8">
+  <section class="isolate mx-auto max-w-5xl px-4 pb-12 pt-6 md:px-8">
+    <MenuBackdrop scene="puerto" class="pointer-events-none fixed inset-0 -z-10" />
     <p v-if="isLoading" class="text-[var(--l-muted)]">Buscando el artículo en la casa...</p>
     <p v-else-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
 
@@ -109,7 +111,9 @@ onMounted(async () => {
         </div>
       </div>
 
-      <NoteList :article-id="article.id" />
+      <div class="menu-panel !pt-6">
+        <NoteList :article-id="article.id" />
+      </div>
     </template>
   </section>
 </template>

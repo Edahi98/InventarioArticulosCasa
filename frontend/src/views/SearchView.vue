@@ -8,6 +8,7 @@ import { listPeekBears } from "../core/usecases/listHomeBears.js";
 import type { LoginMood } from "../infrastructure/three/LoginStage.js";
 import ArticleRow from "../components/articles/ArticleRow.vue";
 import BearPeekScene from "../components/BearPeekScene.vue";
+import MenuBackdrop from "../components/ui/MenuBackdrop.vue";
 
 const router = useRouter();
 const bears = listPeekBears();
@@ -62,7 +63,8 @@ function goToArticle(id: number): void {
 </script>
 
 <template>
-  <section class="mx-auto max-w-5xl px-4 py-10 md:px-8">
+  <section class="isolate mx-auto max-w-5xl px-4 py-10 md:px-8">
+    <MenuBackdrop scene="parque" class="pointer-events-none fixed inset-0 -z-10" />
     <div class="mx-auto max-w-2xl">
       <div class="-mb-[72px] h-[230px] w-full">
         <BearPeekScene :bears="bears" :gaze-x="gazeX" :covering="false" :mood="mood" />
@@ -101,7 +103,7 @@ function goToArticle(id: number): void {
       </div>
     </div>
 
-    <div class="mt-12">
+    <div class="menu-panel mt-12 !pt-6">
       <p v-if="queryError" role="alert" class="ui-error text-center">{{ queryError }}</p>
 
       <p v-else-if="isLoading" class="text-center text-[var(--l-muted)]">Los guardianes están revisando los cuartos...</p>

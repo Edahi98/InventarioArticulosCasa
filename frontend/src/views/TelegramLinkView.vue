@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref } from "vue";
 import type { TelegramLinkCode } from "../core/domain/telegramLink.js";
 import { createTelegramLinkCodeUseCase } from "../core/usecases/createTelegramLinkCode.js";
+import MenuBackdrop from "../components/ui/MenuBackdrop.vue";
 
 const link = ref<TelegramLinkCode | null>(null);
 const isLoading = ref(false);
@@ -58,7 +59,8 @@ onBeforeUnmount(() => clearInterval(ticker));
 </script>
 
 <template>
-  <section class="mx-auto flex min-h-[calc(100dvh-8rem)] max-w-xl flex-col justify-center px-4 py-10">
+  <section class="isolate mx-auto flex min-h-[calc(100dvh-8rem)] max-w-xl flex-col justify-center px-4 py-10">
+    <MenuBackdrop scene="correo" class="pointer-events-none fixed inset-0 -z-10" />
     <div class="menu-panel">
       <header class="menu-title">
         <h1 class="ui-sign text-4xl leading-none text-[var(--l-ink)] md:text-5xl">Presenta a tu bot</h1>
