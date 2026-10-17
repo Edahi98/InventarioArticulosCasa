@@ -10,6 +10,7 @@ import { authMiddleware } from "./middleware/authMiddleware.js";
 import { downloadInventoryReport } from "./controllers/reportController.js";
 import { userManagementRoutes } from "./routes/userManagementRoutes.js";
 import { searchRoutes } from "./routes/searchRoutes.js";
+import { scrapeRoutes } from "./routes/scrapeRoutes.js";
 import { jwksRoutes } from "./routes/jwksRoutes.js";
 import { telegramLinkRoutes } from "./routes/telegramLinkRoutes.js";
 import { generalLimiter } from "./middleware/rateLimiters.js";
@@ -37,6 +38,7 @@ app.use("/notes", authMiddleware, noteRoutes);
 app.use("/users", authMiddleware, userManagementRoutes);
 app.get("/reports/inventory", authMiddleware, downloadInventoryReport);
 app.use("/search", authMiddleware, searchRoutes);
+app.use("/scrape", authMiddleware, scrapeRoutes);
 
 /**
  * GET / — comprobación de salud del servicio.

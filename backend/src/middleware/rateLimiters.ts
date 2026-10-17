@@ -39,6 +39,11 @@ export const claimLimiter = createLimiter(
   { skipSuccessfulRequests: true },
 );
 
+export const scrapeLimiter = createLimiter(
+  20,
+  "Demasiados scrapings seguidos. Espera unos minutos e inténtalo de nuevo.",
+);
+
 export const uploadLimiter = createLimiter(
   30,
   "Demasiadas imágenes subidas. Espera unos minutos e inténtalo de nuevo.",
