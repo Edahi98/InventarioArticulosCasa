@@ -14,6 +14,10 @@ import {
   TorusGeometry,
   Vector3,
 } from "three";
+import type { BearTone } from "../../../core/domain/inventoryBear.js";
+import { SurfaceTextures } from "../SurfaceTextures.js";
+import { ToyBoat, type BoatKind } from "./ToyBoat.js";
+import { ToyHelicopter, type HelicopterKind } from "./ToyHelicopter.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { HueSequence } from "./HueSequence.js";
 import { SeededRandom } from "./SeededRandom.js";
@@ -42,12 +46,18 @@ const HILLS = [0xa9ddc5, 0xcfc3e6, 0xffd9c7, 0xc7e3b2, 0xb7d2f0] as const;
 const RAINBOW = [0xff8fb7, 0xffb066, 0xffe35c, 0x86d6a8, 0x7fd0ea, 0xb89cf2] as const;
 const UP = new Vector3(0, 1, 0);
 const WATER_Y = -1.35;
+const HELI_KINDS: HelicopterKind[] = ["carguero", "rescate", "reparto"];
+const HELI_COLORS = [0xff6b6b, 0xfffaf2, 0x7fd0ea] as const;
+const HELI_TONES: BearTone[] = ["sun", "rose", "lilac"];
+const BOAT_KINDS: BoatKind[] = ["velero", "carguero", "pesquero", "lancha", "velero"];
+const BOAT_TONES: BearTone[] = ["sky", "rose", "sun", "lilac", "rose"];
 
 export class Backdrop {
   readonly group = new Group();
   private readonly floaters: Floater[] = [];
   private readonly balloons: Orbiter[] = [];
   private readonly boats: Orbiter[] = [];
+  private readonly helicopters: { orbiter: Orbiter; rotor: Group; tailRotor: Group; sling: Group | null }[] = [];
   private readonly rainbow = new Group();
   private readonly rainbowMaterials: MeshBasicMaterial[] = [];
   private readonly blades = new Group();
@@ -67,7 +77,7 @@ export class Backdrop {
     categoryIds: number[],
     private readonly trees: TreeFactory,
   ) {
-    this.group.add(this.water(), ...this.hills(), ...this.islets(), ...this.makeBalloons(categoryIds), ...this.makeBoats(), this.makeRainbow());
+    this.group.add(this.water(), ...this.hills(), ...this.islets(), ...this.makeBalloons(categoryIds), ...this.makeBoats(), ...this.makeHelicopters(), this.makeRainbow());
   }
 
   /**
@@ -89,6 +99,13 @@ export class Backdrop {
       this.orbit(boat, t, Math.sin(t * 1.3 + boat.phase) * 0.06);
       boat.group.rotation.z = Math.sin(t * 1.1 + boat.phase) * 0.05;
     });
+    this.helicopters.forEach((heli) => {
+      this.orbit(heli.orbiter, t, Math.sin(t * 0.9 + heli.orbiter.phase) * 0.35);
+      heli.orbiter.group.rotation.z = Math.sin(t * 0.7 + heli.orbiter.phase) * 0.05;
+      heli.rotor.rotation.y = t * 20;
+      heli.tailRotor.rotation.z = t * 26;
+      if (heli.sling) heli.sling.rotation.z = Math.sin(t * 1.3 + heli.orbiter.phase) * 0.14;
+    });
     this.blades.rotation.z = t * 0.9;
     const visible = (1 - night) * 0.6;
     this.rainbowMaterials.forEach((material) => {
@@ -100,7 +117,7 @@ export class Backdrop {
   private material(color: number): MeshStandardMaterial {
     const cached = this.materials.get(color);
     if (cached) return cached;
-    const created = new MeshStandardMaterial({ color, roughness: 0.75 });
+    const created = new MeshStandardMaterial({ color, roughness: 0.75, map: SurfaceTextures.clay(), bumpMap: SurfaceTextures.clay(), bumpScale: 0.35 });
     this.materials.set(color, created);
     return created;
   }
@@ -112,7 +129,7 @@ export class Backdrop {
   }
 
   private water(): Mesh {
-    const plane = new Mesh(new CircleGeometry(this.radius * 12, 72), new MeshStandardMaterial({ color: WATER, roughness: 0.55 }));
+    const plane = new Mesh(new CircleGeometry(this.radius * 12, 72), new MeshStandardMaterial({ color: WATER, roughness: 0.55, map: SurfaceTextures.ripples(), bumpMap: SurfaceTextures.ripples(), bumpScale: 0.5 }));
     plane.rotation.x = -Math.PI / 2;
     plane.position.y = WATER_Y;
     return plane;
@@ -251,22 +268,10 @@ export class Backdrop {
   }
 
   private makeBoats(): Group[] {
-    const size = Math.max(this.radius * 0.1, 1.2);
+    const size = Math.max(this.radius * 0.14, 1.6);
     const colors = [0xff8fb7, 0x7fd0ea, 0xffe35c, 0xb89cf2, 0x86d6a8] as const;
     return colors.map((color, index) => {
-      const boat = new Group();
-      const hull = new Mesh(new RoundedBoxGeometry(1.1, 0.24, 0.46, 3, 0.1), this.material(color));
-      hull.position.y = 0.1;
-      const mast = new Mesh(new CylinderGeometry(0.025, 0.025, 1.1, 8), this.material(0x6b4a6a));
-      mast.position.y = 0.75;
-      const outline = new Shape();
-      outline.moveTo(0, 0);
-      outline.lineTo(0, 0.95);
-      outline.lineTo(0.55, 0.05);
-      outline.closePath();
-      const sail = new Mesh(new ExtrudeGeometry(outline, { depth: 0.03, bevelEnabled: false }), this.material(0xfffaf2));
-      sail.position.set(0.05, 0.3, -0.015);
-      boat.add(hull, mast, sail);
+      const boat = ToyBoat.build(color, BOAT_KINDS[index % BOAT_KINDS.length] as BoatKind, BOAT_TONES[index % BOAT_TONES.length] as BearTone, index);
       boat.scale.setScalar(size);
       const item: Orbiter = {
         group: boat,
@@ -278,6 +283,24 @@ export class Backdrop {
       };
       this.boats.push(item);
       return boat;
+    });
+  }
+
+  private makeHelicopters(): Group[] {
+    const size = Math.max(this.radius * 0.17, 1.9);
+    return HELI_KINDS.map((kind, index) => {
+      const built = ToyHelicopter.build(HELI_COLORS[index] as number, kind, HELI_TONES[index] as BearTone);
+      built.group.scale.setScalar(size);
+      const orbiter: Orbiter = {
+        group: built.group,
+        distance: this.radius * this.rng.between(0.9, 1.3),
+        height: this.radius * this.rng.between(0.5, 0.8),
+        speed: this.rng.between(0.06, 0.1) * (index % 2 === 0 ? 1 : -1),
+        phase: (index / HELI_KINDS.length) * Math.PI * 2 + this.rng.between(0, 0.8),
+        facing: index % 2 === 0 ? 0 : Math.PI,
+      };
+      this.helicopters.push({ orbiter, rotor: built.rotor, tailRotor: built.tailRotor, sling: built.sling });
+      return built.group;
     });
   }
 
