@@ -26,7 +26,7 @@ export class TowerTemplate implements HouseTemplate {
 
     group.add(
       parts.box([width, height, width], style.wall, [0, height / 2, 0]),
-      parts.cone(width * 0.78, roofHeight, 8, height, style.roof),
+      parts.cone(width * 0.78, roofHeight, height, style.roof),
       door.group,
       parts.box([0.22, 0.5, 0.22], style.trim, [annexX + annexSide * 0.2, annexHeight + 0.42, -0.05]),
       parts.window(0.3, 0.34, [0, height * 0.7, front]),

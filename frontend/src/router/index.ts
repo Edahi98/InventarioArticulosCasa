@@ -20,9 +20,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: "/map",
-    name: "map",
-    component: () => import("../views/MapView.vue"),
-    meta: { requiresAuth: true },
+    redirect: "/categories",
   },
   {
     path: "/categories/new",

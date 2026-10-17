@@ -1,5 +1,4 @@
 import {
-  BoxGeometry,
   CylinderGeometry,
   Group,
   Mesh,
@@ -10,9 +9,13 @@ import {
 import { DayLife } from "./DayLife.js";
 import { HouseFactory } from "./HouseFactory.js";
 import { HouseLife, type SmokePuff } from "./HouseLife.js";
+import { IslandBuilder } from "./IslandBuilder.js";
+import { RingLayout, type LotSlot } from "./RingLayout.js";
+import { RoadBuilder } from "./RoadBuilder.js";
 import { SeededRandom } from "./SeededRandom.js";
 import { StreetFurniture } from "./StreetFurniture.js";
 import { Traffic } from "./Traffic.js";
+import { TreeFactory } from "./TreeFactory.js";
 import { YardDetails } from "./YardDetails.js";
 
 export interface MapCategory {
@@ -41,29 +44,20 @@ export interface NeighborhoodWorld {
   lamps: MeshStandardMaterial[];
   traffic: Traffic;
   dayLife: DayLife;
-  width: number;
-  depth: number;
+  radius: number;
 }
 
-const LOT_WIDTH = 4.2;
-const LOT_DEPTH = 3.6;
-const ROAD = 1.5;
-const MARGIN = 2.2;
-
-const GRASS = 0xbfe9d5;
-const SLAB = 0x8a6384;
-const ASPHALT = 0x5b4a66;
-const SIDEWALK = 0xf3dfe9;
-const LINE = 0xfff0d6;
-const TRUNK = 0x8a5a44;
-const POST = 0x5a3d57;
-const FOLIAGE = [0x7fd0a0, 0x9bdc8a, 0xffa8c8, 0xb7e08a] as const;
+export const ROAD_WIDTH = 1.6;
+const PAD_RADIUS = 1.85;
+const POST = 0x6b4a6a;
+const GROUND = 0.06;
 
 export class NeighborhoodBuilder {
-  private readonly materials = new Map<number, MeshStandardMaterial>();
   private readonly rng = new SeededRandom("barrio");
+  private readonly trees = new TreeFactory(this.rng);
   private readonly life = new HouseLife(this.rng);
   private readonly lampGlass: MeshStandardMaterial[] = [];
+  private readonly padMaterials = new Map<number, MeshStandardMaterial>();
 
   /**
    * @param categories - Categorías del inventario; cada una se vuelve una casa.
@@ -75,167 +69,106 @@ export class NeighborhoodBuilder {
   ) {}
 
   /**
-   * Arma el barrio: una maqueta con calles en cuadrícula, una casa por categoría con su jardín,
-   * árboles y faroles.
+   * Arma el barrio como una isla de plastilina: una calle sinuosa en anillo con una casa por categoría
+   * a cada lado, jardines redondos, árboles, faroles, coches y una plaza al centro.
    *
-   * @returns El mundo 3D, las casas y las medidas del terreno.
+   * @returns El mundo 3D, las casas y el radio de la isla.
    */
   build(): NeighborhoodWorld {
     const count = Math.max(this.categories.length, 1);
-    const columns = Math.min(count, Math.ceil(Math.sqrt(count * 1.5)));
-    const rows = Math.ceil(count / columns);
-    const pitch = LOT_DEPTH + ROAD;
-    const width = columns * LOT_WIDTH;
-    const depth = rows * pitch;
-
+    const plan = RingLayout.plan(count, this.rng);
     const world = new Group();
-    const swaying: Group[] = [];
-    const houses: HouseEntry[] = [];
-    const roadsZ: number[] = [];
-    const yards = new YardDetails(this.rng, LOT_WIDTH, LOT_DEPTH);
-    world.add(...this.base(width, depth));
+    const island = new IslandBuilder(this.rng, this.trees).build(plan.islandRadius, plan.plazaRadius);
+    const swaying = [...island.swaying];
+    const crossings = [0.12, 0.62].map((at) => at + this.rng.between(-0.04, 0.04));
 
-    for (let row = 0; row < rows; row += 1) {
-      const z = (row - (rows - 1) / 2) * pitch;
-      const roadZ = z + LOT_DEPTH / 2 + ROAD / 2 - 0.05;
-      roadsZ.push(roadZ);
-      world.add(...this.road(width, roadZ));
-      world.add(...this.lamps(width, z + LOT_DEPTH / 2 + 0.1));
-    }
-    const traffic = new Traffic(roadsZ, width + MARGIN * 2, ROAD);
-    const dayLife = new DayLife(width, depth);
-    world.add(new StreetFurniture().build(roadsZ, width, ROAD), traffic.group, dayLife.group);
-    this.categories.forEach((category, index) => {
-      const column = index % columns;
-      const row = Math.floor(index / columns);
-      const inRow = Math.min(columns, count - row * columns);
-      const x = (column - (inRow - 1) / 2) * LOT_WIDTH;
-      const z = (row - (rows - 1) / 2) * pitch;
-      const entry = this.lot(category, x, z);
-      entry.house.group.updateMatrixWorld(true);
-      const door = entry.house.door.getWorldPosition(new Vector3());
-      const yard = yards.build(x, z, door.x + 0.19, door.z, HouseFactory.accentColor(category.id));
-      world.add(entry.garden, entry.flowers, yard, entry.house.group);
-      houses.push(entry.house);
-      this.lotTrees(x, z).forEach((tree) => {
-        world.add(tree);
-        swaying.push(tree);
-      });
-    });
-    this.borderTrees(width, depth).forEach((tree) => {
+    world.add(island.group, new RoadBuilder().build(plan.curve, ROAD_WIDTH, crossings), new StreetFurniture().build(plan.curve, ROAD_WIDTH, crossings), this.lamps(plan.curve, plan.curve.getLength()));
+    const houses = this.categories.map((category, index) => this.lot(world, category, plan.slots[index] as LotSlot));
+    this.looseTrees(plan.slots, plan.roadRadius).forEach((tree) => {
       world.add(tree);
       swaying.push(tree);
     });
-    return { world, houses, swaying, lamps: this.lampGlass, traffic, dayLife, width, depth };
+
+    const traffic = new Traffic(plan.curve, ROAD_WIDTH, Math.min(Math.max(Math.round(count / 3) + 1, 2), 6));
+    const dayLife = new DayLife(plan.islandRadius * 2, plan.islandRadius * 2);
+    world.add(traffic.group, dayLife.group);
+    return { world, houses, swaying, lamps: this.lampGlass, traffic, dayLife, radius: plan.islandRadius };
   }
 
-  private material(color: number): MeshStandardMaterial {
-    const cached = this.materials.get(color);
+  private pad(color: number): MeshStandardMaterial {
+    const cached = this.padMaterials.get(color);
     if (cached) return cached;
-    const created = new MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.02 });
-    this.materials.set(color, created);
+    const created = new MeshStandardMaterial({ color, roughness: 0.8 });
+    this.padMaterials.set(color, created);
     return created;
   }
 
-  private slab(size: [number, number, number], color: number, position: [number, number, number]): Mesh {
-    const mesh = new Mesh(new BoxGeometry(...size), this.material(color));
-    mesh.position.set(...position);
-    mesh.receiveShadow = true;
-    return mesh;
-  }
-
-  private base(width: number, depth: number): Mesh[] {
-    return [
-      this.slab([width + MARGIN * 2, 0.4, depth + MARGIN * 2], GRASS, [0, -0.2, 0]),
-      this.slab([width + MARGIN * 2 + 0.3, 0.3, depth + MARGIN * 2 + 0.3], SLAB, [0, -0.55, 0]),
-    ];
-  }
-
-  private road(width: number, z: number): Mesh[] {
-    const dashes = Array.from({ length: Math.floor((width + MARGIN) / 1.5) }, (_, index) =>
-      this.slab([0.6, 0.01, 0.08], LINE, [-width / 2 - MARGIN / 2 + 0.6 + index * 1.5, 0.045, z]),
-    );
-    return [
-      this.slab([width + MARGIN * 2, 0.04, ROAD], ASPHALT, [0, 0.02, z]),
-      this.slab([width + MARGIN * 2, 0.06, 0.3], SIDEWALK, [0, 0.03, z - ROAD / 2 - 0.1]),
-      this.slab([width + MARGIN * 2, 0.06, 0.3], SIDEWALK, [0, 0.03, z + ROAD / 2 + 0.1]),
-      ...dashes,
-    ];
-  }
-
-  private lamps(width: number, z: number): Group[] {
-    return [-1, 1].map((side) => {
-      const lamp = new Group();
-      const pole = new Mesh(new CylinderGeometry(0.035, 0.05, 1.4, 8), this.material(POST));
-      pole.position.y = 0.7;
-      pole.castShadow = true;
-      const glass = new MeshStandardMaterial({ color: 0xfff6dc, emissive: 0xffd37a, emissiveIntensity: 0.9 });
-      this.lampGlass.push(glass);
-      const bulb = new Mesh(new SphereGeometry(0.13, 12, 10), glass);
-      bulb.position.y = 1.45;
-      lamp.add(pole, bulb);
-      lamp.position.set(side * (width / 2 + MARGIN * 0.55), 0, z);
-      return lamp;
-    });
-  }
-
-  private lot(category: MapCategory, x: number, z: number): { house: HouseEntry; garden: Mesh; flowers: Group } {
+  private lot(world: Group, category: MapCategory, slot: LotSlot): HouseEntry {
     const built = this.factory.create(category.id);
-    const garden = this.slab([LOT_WIDTH - 0.5, 0.06, LOT_DEPTH - 0.3], HouseFactory.gardenColor(category.id), [x, 0.03, z]);
-    built.group.position.set(x + this.rng.between(-0.15, 0.15), 0.06, z - 0.15);
-    built.group.rotation.y = this.rng.between(-0.05, 0.05);
+    const forward = new Vector3(Math.sin(slot.yaw), 0, Math.cos(slot.yaw));
+
+    const decor = new Group();
+    decor.position.set(slot.x, 0, slot.z);
+    decor.rotation.y = slot.yaw;
+    const pad = new Mesh(new CylinderGeometry(PAD_RADIUS, PAD_RADIUS + 0.04, 0.06, 48), this.pad(HouseFactory.gardenColor(category.id)));
+    pad.position.y = GROUND / 2;
+    pad.receiveShadow = true;
+    decor.add(pad, this.life.garden(category.count, HouseFactory.accentColor(category.id)));
+
+    built.group.position.set(slot.x - forward.x * 0.2, GROUND, slot.z - forward.z * 0.2);
+    built.group.rotation.y = slot.yaw;
     built.group.userData.categoryId = category.id;
+    world.add(decor, built.group);
+    world.updateMatrixWorld(true);
+
+    const doorLocal = decor.worldToLocal(built.door.getWorldPosition(new Vector3()));
+    decor.add(new YardDetails(this.rng).build(doorLocal.x + 0.19, doorLocal.z, HouseFactory.accentColor(category.id)));
     return {
-      garden,
-      flowers: this.life.garden(x, z, category.count, HouseFactory.accentColor(category.id)),
-      house: {
-        id: category.id,
-        name: category.name,
-        count: category.count,
-        group: built.group,
-        glass: built.glass,
-        door: built.door,
-        smoke: this.life.smoke(built.group, built.chimney, category.count),
-        baseY: built.group.position.y,
-        height: built.height,
-        templateId: built.templateId,
-      },
+      id: category.id,
+      name: category.name,
+      count: category.count,
+      group: built.group,
+      glass: built.glass,
+      door: built.door,
+      smoke: this.life.smoke(built.group, built.chimney, category.count),
+      baseY: built.group.position.y,
+      height: built.height,
+      templateId: built.templateId,
     };
   }
 
-  private lotTrees(x: number, z: number): Group[] {
-    return [-1, 1]
-      .filter(() => this.rng.chance(0.55))
-      .map((side) => this.tree(x + side * (LOT_WIDTH / 2 - 0.42), z - LOT_DEPTH / 2 + 0.45, this.rng.between(0.5, 0.8)));
-  }
-
-  private borderTrees(width: number, depth: number): Group[] {
+  private looseTrees(slots: LotSlot[], road: number): Group[] {
     const trees: Group[] = [];
-    for (let x = -width / 2 - 0.6; x <= width / 2 + 0.6; x += this.rng.between(1.6, 2.6)) {
-      trees.push(this.tree(x, -depth / 2 - MARGIN * 0.5, this.rng.between(0.8, 1.2)));
-    }
-    for (let z = -depth / 2; z <= depth / 2; z += this.rng.between(2, 3.4)) {
-      trees.push(this.tree(-width / 2 - MARGIN * 0.55, z, this.rng.between(0.7, 1.1)));
-      trees.push(this.tree(width / 2 + MARGIN * 0.55, z, this.rng.between(0.7, 1.1)));
-    }
+    slots.forEach((slot) => {
+      if (!this.rng.chance(0.45)) return;
+      const angle = Math.atan2(slot.z, slot.x) + 0.17;
+      const radius = Math.hypot(slot.x, slot.z) + (Math.hypot(slot.x, slot.z) > road ? 0.5 : -0.5);
+      trees.push(this.trees.build(Math.cos(angle) * radius, Math.sin(angle) * radius, this.rng.between(0.55, 0.85)));
+    });
     return trees;
   }
 
-  private tree(x: number, z: number, scale: number): Group {
-    const tree = new Group();
-    const trunk = new Mesh(new CylinderGeometry(0.09, 0.14, 0.6, 8), this.material(TRUNK));
-    trunk.position.y = 0.3;
-    trunk.castShadow = true;
-    const color = this.rng.pick(FOLIAGE);
-    const lower = new Mesh(new SphereGeometry(0.58, 12, 10), this.material(color));
-    lower.position.y = 0.95;
-    const upper = new Mesh(new SphereGeometry(0.42, 12, 10), this.material(color));
-    upper.position.y = 1.5;
-    lower.castShadow = true;
-    upper.castShadow = true;
-    tree.add(trunk, lower, upper);
-    tree.position.set(x, 0, z);
-    tree.scale.setScalar(scale);
-    return tree;
+  private lamps(curve: { getPointAt(at: number): Vector3 }, length: number): Group {
+    const lamps = new Group();
+    const count = Math.max(Math.floor(length / 6.2), 4);
+    for (let index = 0; index < count; index += 1) {
+      const at = index / count;
+      const point = curve.getPointAt(at);
+      const next = curve.getPointAt((at + 0.002) % 1);
+      const tangent = next.clone().sub(point).setY(0).normalize();
+      const outward = new Vector3(tangent.z, 0, -tangent.x);
+      const lamp = new Group();
+      const pole = new Mesh(new CylinderGeometry(0.035, 0.05, 1.45, 10), new MeshStandardMaterial({ color: POST, roughness: 0.7 }));
+      pole.position.y = 0.72;
+      pole.castShadow = true;
+      const glass = new MeshStandardMaterial({ color: 0xfff6dc, emissive: 0xffd37a, emissiveIntensity: 0.9 });
+      this.lampGlass.push(glass);
+      const bulb = new Mesh(new SphereGeometry(0.14, 14, 10), glass);
+      bulb.position.y = 1.5;
+      lamp.add(pole, bulb);
+      lamp.position.set(point.x + outward.x * (ROAD_WIDTH / 2 + 0.25), GROUND, point.z + outward.z * (ROAD_WIDTH / 2 + 0.25));
+      lamps.add(lamp);
+    }
+    return lamps;
   }
 }

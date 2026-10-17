@@ -1,4 +1,5 @@
-import { BoxGeometry, CanvasTexture, Group, Mesh, MeshStandardMaterial, SRGBColorSpace, SphereGeometry } from "three";
+import { CanvasTexture, Group, Mesh, MeshStandardMaterial, SRGBColorSpace, SphereGeometry, Vector3 } from "three";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import type { HouseParts } from "./HouseParts.js";
 import type { HouseStyle } from "./HouseTemplate.js";
 
@@ -26,24 +27,26 @@ export class HouseDetails {
    */
   decorate(house: Group, door: Group, number: number): void {
     const leaf = door.children[0] as Mesh | undefined;
-    const size = (leaf?.geometry as BoxGeometry | undefined)?.parameters;
+    if (!leaf) return;
+    leaf.geometry.computeBoundingBox();
+    const size = leaf.geometry.boundingBox?.getSize(new Vector3());
     if (!size) return;
-    const centerX = door.position.x + size.width / 2;
+    const centerX = door.position.x + size.x / 2;
     const frontZ = door.position.z;
 
-    const plate = new Mesh(new BoxGeometry(0.2, 0.12, 0.02), new MeshStandardMaterial({ map: HouseDetails.plateTexture(number), roughness: 0.6 }));
-    plate.position.set(centerX, door.position.y + size.height / 2 + 0.15, frontZ + 0.015);
+    const plate = new Mesh(new RoundedBoxGeometry(0.22, 0.13, 0.03, 2, 0.04), new MeshStandardMaterial({ map: HouseDetails.plateTexture(number), roughness: 0.6 }));
+    plate.position.set(centerX, door.position.y + size.y / 2 + 0.16, frontZ + 0.02);
 
-    const mat = this.parts.box([size.width * 1.15, 0.015, 0.2], this.style.door, [centerX, 0.012, frontZ + 0.17]);
+    const mat = this.parts.box([size.x * 1.15, 0.02, 0.2], this.style.door, [centerX, 0.012, frontZ + 0.17], 0.009);
     mat.castShadow = false;
 
     const knob = new Mesh(new SphereGeometry(0.024, 10, 8), new MeshStandardMaterial({ color: BRASS, metalness: 0.5, roughness: 0.35 }));
-    knob.position.set(size.width * 0.82, 0, 0.04);
+    knob.position.set(size.x * 0.82, 0, 0.05);
     door.add(knob);
 
-    const bracket = this.parts.box([0.03, 0.03, 0.07], this.style.trim, [centerX + size.width / 2 + 0.2, door.position.y + 0.26, frontZ + 0.03]);
-    const lamp = new Mesh(new SphereGeometry(0.05, 10, 8), this.glass);
-    lamp.position.set(centerX + size.width / 2 + 0.2, door.position.y + 0.21, frontZ + 0.08);
+    const bracket = this.parts.box([0.03, 0.03, 0.07], this.style.trim, [centerX + size.x / 2 + 0.2, door.position.y + 0.26, frontZ + 0.03], 0.012);
+    const lamp = new Mesh(new SphereGeometry(0.055, 12, 10), this.glass);
+    lamp.position.set(centerX + size.x / 2 + 0.2, door.position.y + 0.21, frontZ + 0.08);
 
     house.add(plate, mat, bracket, lamp);
   }
