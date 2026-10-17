@@ -43,6 +43,10 @@ async function handleLogout(): Promise<void> {
             <font-awesome-icon icon="magnifying-glass" />
             <span class="hidden lg:inline">Buscar</span>
           </router-link>
+          <router-link to="/map" class="ui-btn ui-btn-sm ui-btn-ghost" aria-label="Mapa">
+            <font-awesome-icon icon="map" />
+            <span class="hidden lg:inline">Mapa</span>
+          </router-link>
           <router-link to="/telegram" class="ui-btn ui-btn-sm ui-btn-ghost" aria-label="Telegram">
             <font-awesome-icon icon="paper-plane" />
             <span class="hidden lg:inline">Telegram</span>
