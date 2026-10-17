@@ -57,15 +57,14 @@ export class HouseLife {
   }
 
   /**
-   * Jardín delantero: una flor por cada artículo (hasta 24), del color de la casa y otros alegres.
+   * Jardín delantero: una flor por cada artículo (hasta 24), del color de la casa y otros alegres,
+   * repartidas en un abanico al frente del lote. Se arma en el espacio del lote (+z es el frente).
    *
-   * @param x - Centro del lote.
-   * @param z - Centro del lote.
    * @param count - Artículos que guarda la casa.
    * @param accent - Color de la categoría, que lleva una de cada tres flores.
    * @returns Las flores, o un grupo vacío si la casa no guarda nada.
    */
-  garden(x: number, z: number, count: number, accent: number): Group {
+  garden(count: number, accent: number): Group {
     const garden = new Group();
     const total = Math.min(count, MAX_FLOWERS);
     if (total === 0) return garden;
@@ -75,8 +74,10 @@ export class HouseLife {
     const matrix = new Matrix4();
     const holder = new Object3D();
     for (let index = 0; index < total; index += 1) {
-      const px = x + this.rng.between(-1.7, 1.7);
-      const pz = z + this.rng.between(1.2, 1.62);
+      const fan = this.rng.between(-1.0, 1.0);
+      const reach = this.rng.between(1.0, 1.42);
+      const px = Math.sin(fan) * reach;
+      const pz = Math.cos(fan) * reach;
       const lift = this.rng.between(0.9, 1.25);
       holder.position.set(px, 0.06 + 0.11 * lift, pz);
       holder.scale.set(1, lift, 1);

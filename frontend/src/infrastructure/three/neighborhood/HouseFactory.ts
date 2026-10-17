@@ -58,14 +58,14 @@ export class HouseFactory {
    * @returns El color principal de la categoría, el mismo del techo.
    */
   static accentColor(categoryId: number): number {
-    return HouseFactory.hsl(HueSequence.hueOf(categoryId), 0.68, 0.52);
+    return HouseFactory.hsl(HueSequence.hueOf(categoryId), 0.58, 0.62);
   }
 
   private static styleFor(categoryId: number, rng: SeededRandom): HouseStyle {
     const hue = HueSequence.hueOf(categoryId);
     return {
-      wall: HouseFactory.hsl(hue, 0.6, 0.88),
-      roof: HouseFactory.hsl(hue, 0.68, 0.52),
+      wall: HouseFactory.hsl(hue, 0.6, 0.9),
+      roof: HouseFactory.hsl(hue, 0.58, 0.62),
       door: HouseFactory.hsl((hue + rng.pick(DOOR_SHIFTS)) % 1, 0.6, 0.45),
       trim: TRIM,
     };

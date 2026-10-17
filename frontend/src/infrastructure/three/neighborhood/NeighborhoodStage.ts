@@ -67,7 +67,7 @@ const DOOR_OPEN = -1.75;
 export class NeighborhoodStage {
   private readonly renderer: WebGLRenderer;
   private readonly scene = new Scene();
-  private readonly camera = new PerspectiveCamera(38, 1, 0.1, 200);
+  private readonly camera = new PerspectiveCamera(26, 1, 0.5, 600);
   private readonly controls: OrbitControls;
   private readonly sky: CanvasTexture;
   private readonly skyKey = { value: "" };
@@ -76,7 +76,8 @@ export class NeighborhoodStage {
   private readonly swaying: Object3D[];
   private readonly lamps: { emissiveIntensity: number }[];
   private readonly levels = new Map<number, number>();
-  private readonly extent: { width: number; depth: number };
+  private readonly radius: number;
+  private idleTimer = 0;
   private readonly down = { x: 0, y: 0, time: 0 };
   private readonly fog = new Fog(0xffe3d6, 32, 95);
   private readonly sun = new DirectionalLight(0xfff0d6, 2.3);
@@ -120,15 +121,15 @@ export class NeighborhoodStage {
     this.scene.background = this.sky;
     this.scene.fog = this.fog;
 
-    const { world, houses, swaying, lamps, traffic, dayLife, width, depth } = new NeighborhoodBuilder(categories).build();
+    const { world, houses, swaying, lamps, traffic, dayLife, radius } = new NeighborhoodBuilder(categories).build();
     this.traffic = traffic;
     this.dayLife = dayLife;
     this.houses = houses;
     this.swaying = swaying;
     this.lamps = lamps;
-    this.extent = { width, depth };
+    this.radius = radius;
     houses.forEach((house) => this.levels.set(house.id, 0));
-    this.nightSky = new NightSky(width, depth);
+    this.nightSky = new NightSky(radius * 2, radius * 2);
     this.scene.add(world, this.nightSky.group);
     this.addLights();
 
@@ -160,9 +161,12 @@ export class NeighborhoodStage {
    */
   resetView(): void {
     const distance = this.fitDistance();
-    this.controls.maxDistance = distance * 1.6;
-    this.controls.target.set(0, 0.6, 0);
-    this.camera.position.set(0, distance * 0.8, distance * 0.95);
+    const yaw = 0.42;
+    this.controls.maxDistance = distance * 1.5;
+    this.controls.target.set(0, 0.4, 0);
+    this.camera.position.set(Math.sin(yaw) * distance * 0.8, distance * 0.6, Math.cos(yaw) * distance * 0.8);
+    this.fog.near = distance * 0.9;
+    this.fog.far = distance * 3.2;
     this.controls.update();
     this.renderOnce();
   }
@@ -208,6 +212,7 @@ export class NeighborhoodStage {
    */
   dispose(): void {
     this.stop();
+    window.clearTimeout(this.idleTimer);
     this.canvas.removeEventListener("pointermove", this.handleMove);
     this.canvas.removeEventListener("pointerleave", this.handleLeave);
     this.canvas.removeEventListener("pointerdown", this.handleDown);
@@ -270,13 +275,15 @@ export class NeighborhoodStage {
       return;
     }
     const hinge = house.door.getWorldPosition(new Vector3());
-    const toTarget = hinge.clone().add(new Vector3(0.18, 0.1, 0));
+    const forward = house.group.getWorldDirection(new Vector3());
+    const toTarget = hinge.clone().add(new Vector3(0, 0.1, 0));
+    this.controls.autoRotate = false;
     this.flight = {
       id,
       start: performance.now(),
       fromPosition: this.camera.position.clone(),
       fromTarget: this.controls.target.clone(),
-      toPosition: toTarget.clone().add(new Vector3(0.1, 0.22, 1.7)),
+      toPosition: toTarget.clone().addScaledVector(forward, 1.7).add(new Vector3(0, 0.22, 0)),
       toTarget,
     };
     this.controls.enabled = false;
@@ -317,9 +324,21 @@ export class NeighborhoodStage {
     controls.dampingFactor = 0.08;
     controls.rotateSpeed = 0.7;
     controls.zoomSpeed = 0.8;
-    controls.minDistance = 5;
-    controls.minPolarAngle = 0.25;
-    controls.maxPolarAngle = 1.3;
+    controls.minDistance = 4.5;
+    controls.minPolarAngle = 0.3;
+    controls.maxPolarAngle = 1.38;
+    controls.autoRotate = !this.options.reducedMotion;
+    controls.autoRotateSpeed = 0.35;
+    controls.addEventListener("start", () => {
+      window.clearTimeout(this.idleTimer);
+      controls.autoRotate = false;
+    });
+    controls.addEventListener("end", () => {
+      window.clearTimeout(this.idleTimer);
+      this.idleTimer = window.setTimeout(() => {
+        controls.autoRotate = !this.options.reducedMotion;
+      }, 6000);
+    });
     controls.addEventListener("change", () => {
       if (this.flight) return;
       this.clampTarget();
@@ -331,15 +350,19 @@ export class NeighborhoodStage {
 
   private clampTarget(): void {
     const target = this.controls.target;
-    target.x = MathUtils.clamp(target.x, -this.extent.width / 2, this.extent.width / 2);
-    target.z = MathUtils.clamp(target.z, -this.extent.depth / 2, this.extent.depth / 2);
-    target.y = 0.6;
+    const limit = this.radius * 0.8;
+    const reach = Math.hypot(target.x, target.z);
+    if (reach > limit) {
+      target.x *= limit / reach;
+      target.z *= limit / reach;
+    }
+    target.y = MathUtils.clamp(target.y, 0, 3);
   }
 
   private fitDistance(): number {
-    const { width, depth } = this.extent;
-    const aspect = Math.max(this.camera.aspect, 0.5);
-    return Math.max(depth * 0.95, (width * 0.64) / aspect) + 5;
+    const half = MathUtils.degToRad(this.camera.fov / 2);
+    const aspect = Math.max(Math.min(this.camera.aspect, 1.4), 0.45);
+    return (this.radius * 1.08) / (Math.tan(half) * aspect);
   }
 
   private pick(event: PointerEvent): number | null {
@@ -425,7 +448,7 @@ export class NeighborhoodStage {
     this.fog.color.setHex(this.state.fog);
     this.sun.color.setHex(this.state.light);
     this.sun.intensity = this.state.lightIntensity;
-    const reach = Math.max(this.extent.width, this.extent.depth) / 2 + 6;
+    const reach = this.radius + 8;
     this.sun.position.set(-Math.cos(arc) * reach, Math.max(Math.sin(arc), 0.22) * reach, reach * 0.6);
     this.ambient.intensity = this.state.ambientIntensity;
     this.hemisphere.color.setHex(this.state.hemiSky);
@@ -463,7 +486,7 @@ export class NeighborhoodStage {
   }
 
   private addLights(): void {
-    const reach = Math.max(this.extent.width, this.extent.depth) / 2 + 6;
+    const reach = this.radius + 8;
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     this.sun.shadow.camera.left = -reach;

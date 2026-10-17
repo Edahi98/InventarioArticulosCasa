@@ -34,10 +34,10 @@ export class TownhouseTemplate implements HouseTemplate {
       );
     }
     if (rng.chance(0.55)) {
-      const y = 0.35 + 0.78 - 0.28;
+      const y = 0.35 + 0.78 - 0.42;
       group.add(
-        parts.box([width * 0.9, 0.06, 0.34], style.trim, [0, y, front + 0.16]),
-        parts.box([width * 0.9, 0.2, 0.04], style.roof, [0, y + 0.13, front + 0.32]),
+        parts.box([width * 0.9, 0.06, 0.32], style.trim, [0, y, front + 0.15]),
+        parts.box([width * 0.9, 0.13, 0.04], style.roof, [0, y + 0.09, front + 0.3]),
       );
     }
     return {

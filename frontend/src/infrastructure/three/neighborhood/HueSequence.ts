@@ -18,6 +18,6 @@ export class HueSequence {
    * @returns El color de la casa como valor CSS, para las etiquetas fuera del 3D.
    */
   static cssOf(id: number): string {
-    return `hsl(${Math.round(HueSequence.hueOf(id) * 360)} 68% 52%)`;
+    return `hsl(${Math.round(HueSequence.hueOf(id) * 360)} 58% 62%)`;
   }
 }

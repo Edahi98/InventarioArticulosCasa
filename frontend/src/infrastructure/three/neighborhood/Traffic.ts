@@ -1,4 +1,5 @@
-import { Group, MathUtils, MeshStandardMaterial } from "three";
+import { Group, MathUtils, MeshStandardMaterial, type Curve, type Vector3 } from "three";
+import { RoadBuilder } from "./RoadBuilder.js";
 import { SeededRandom } from "./SeededRandom.js";
 import { ToyCar } from "./ToyCar.js";
 
@@ -15,30 +16,30 @@ export class Traffic {
   readonly group = new Group();
   private readonly drivers: Driver[] = [];
   private readonly lights: MeshStandardMaterial[] = [];
-  private readonly span: number;
+  private readonly length: number;
 
   /**
-   * @param roadsZ - Posición en z del centro de cada calle.
-   * @param width - Largo de las calles.
+   * @param curve - Curva cerrada de la calle.
    * @param roadWidth - Ancho de la calle, para repartir los dos carriles.
+   * @param cars - Cuántos coches circulan; la mitad va en sentido contrario.
    */
-  constructor(roadsZ: number[], width: number, roadWidth: number) {
+  constructor(
+    private readonly curve: Curve<Vector3>,
+    private readonly roadWidth: number,
+    cars: number,
+  ) {
     const rng = new SeededRandom("trafico");
-    this.span = width + 8;
-    roadsZ.forEach((z) => {
-      ([1, -1] as const).forEach((direction) => {
-        const { group, headlights } = ToyCar.build(rng.pick(COLORS));
-        group.position.set(0, 0.05, z + direction * roadWidth * 0.22);
-        group.rotation.y = direction === 1 ? 0 : Math.PI;
-        this.group.add(group);
-        this.lights.push(headlights);
-        this.drivers.push({ group, direction, speed: rng.between(0.9, 1.7), start: rng.between(0, this.span) });
-      });
-    });
+    this.length = curve.getLength();
+    for (let index = 0; index < cars; index += 1) {
+      const { group, headlights } = ToyCar.build(rng.pick(COLORS));
+      this.group.add(group);
+      this.lights.push(headlights);
+      this.drivers.push({ group, direction: index % 2 === 0 ? 1 : -1, speed: rng.between(0.8, 1.5), start: (index / cars + rng.between(0, 0.05)) % 1 });
+    }
   }
 
   /**
-   * Avanza los coches por su carril, dan la vuelta al salir del mapa y prenden los faros de noche.
+   * Hace avanzar a los coches por su carril, siguiendo la curva de la calle, y enciende los faros de noche.
    *
    * @param elapsed - Segundos transcurridos.
    * @param night - Qué tan de noche es, entre 0 y 1.
@@ -46,8 +47,11 @@ export class Traffic {
    */
   update(elapsed: number, night: number, moving: boolean): void {
     this.drivers.forEach((driver) => {
-      const travelled = moving ? (driver.start + elapsed * driver.speed) % this.span : driver.start % this.span;
-      driver.group.position.x = driver.direction * (travelled - this.span / 2);
+      const progress = driver.start + (moving ? (driver.direction * elapsed * driver.speed) / this.length : 0);
+      const { point, tangent, normal } = RoadBuilder.frame(this.curve, progress);
+      const lane = driver.direction * -this.roadWidth * 0.22;
+      driver.group.position.set(point.x + normal.x * lane, 0.08, point.z + normal.z * lane);
+      driver.group.rotation.y = Math.atan2(-tangent.z * driver.direction, tangent.x * driver.direction);
     });
     const glow = 0.3 + MathUtils.clamp(night, 0, 1) * 2.2;
     this.lights.forEach((light) => {
