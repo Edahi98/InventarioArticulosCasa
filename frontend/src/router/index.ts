@@ -65,6 +65,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: "/checklist",
+    name: "checklist",
+    component: () => import("../views/ChecklistView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/telegram",
     name: "telegram-link",
     component: () => import("../views/TelegramLinkView.vue"),
