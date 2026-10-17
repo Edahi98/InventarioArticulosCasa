@@ -68,11 +68,16 @@ function goToArticle(id: number): void {
         <BearPeekScene :bears="bears" :gaze-x="gazeX" :covering="false" :mood="mood" />
       </div>
 
-      <div class="ui-toy ui-stitch relative bg-[var(--l-surface)] px-7 pb-8 pt-9">
-        <h1 class="ui-sign text-4xl md:text-5xl">¿Qué se perdió?</h1>
-        <p class="mt-2 text-[var(--l-muted)]">Escribe un pedazo del nombre. Los guardianes lo buscan, aunque lo escribas mal.</p>
+      <div class="menu-panel">
+        <header class="menu-title">
+          <h1 class="ui-sign text-4xl leading-none md:text-5xl">¿Qué se perdió?</h1>
+        </header>
+        <p class="menu-label text-center">Misión: encontrar una cosa</p>
+        <p class="mt-2 text-center font-semibold text-[var(--l-muted)]">
+          Escribe un pedazo del nombre. Los guardianes lo buscan, aunque lo escribas mal.
+        </p>
 
-        <div class="relative mt-6">
+        <div class="relative mt-5">
           <label for="search" class="sr-only">Buscar un artículo</label>
           <input
             id="search"
@@ -112,8 +117,9 @@ function goToArticle(id: number): void {
       </div>
 
       <div v-else>
-        <p class="mb-6 text-sm font-semibold text-[var(--l-muted)]">
-          {{ results.length }} {{ results.length === 1 ? "cosa encontrada" : "cosas encontradas" }}
+        <p class="menu-slot mb-6 inline-flex !py-1.5 text-sm font-extrabold">
+          <span class="menu-badge menu-badge-sun !h-8 !w-8">{{ results.length }}</span>
+          {{ results.length === 1 ? "cosa encontrada" : "cosas encontradas" }}
         </p>
         <div class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
           <div v-for="item in results" :key="item.id" class="flex flex-col gap-3">
