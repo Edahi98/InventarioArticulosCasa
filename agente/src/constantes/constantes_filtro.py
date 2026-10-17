@@ -20,8 +20,6 @@ QUESTION = {
         "forma informal o coloquial por lo que se tiene guardado, dónde está o cómo está organizado o repartido en categorías, "
         "aunque no mencione palabras como inventario, artículo o categoría, y aunque empiece con "
         "muletillas, saludos o frases como si la persona le hablara a alguien que ya conoce sus cosas. "
-        "También lo es preguntar si se tiene todo lo necesario para una receta, una actividad o una lista, "
-        "escrita o de una página web, comparándola con lo que hay guardado. "
         "Son del inventario las preguntas sobre las pertenencias de la casa: si se tiene algo, cuántas "
         "hay, dónde quedó, en qué estado está, cómo se organizó, qué falta o qué se agregó, y los "
         "pedidos de recordar, repasar, resumir o confirmar lo que hay guardado. Una referencia a las "
@@ -48,7 +46,9 @@ QUESTION = {
     "criteria": {
         "true": (
             "Todo el mensaje es una solicitud, directa, implícita o dicha de manera coloquial o con modismos mexicanos, de consultar o modificar artículos, categorías, notas "
-            "o imágenes del inventario de la casa, sin ninguna otra solicitud dentro."
+            "o imágenes del inventario de la casa, sin ninguna otra solicitud dentro. También lo es preguntar qué se tiene, si se tiene todo "
+            "o qué falta para hacer una receta, actividad, manualidad, proyecto o lista de cosas, ya sea escrita o con un enlace a una página web: "
+            "el enlace, con su título o vista previa, es parte de esa pregunta y no otra solicitud."
         ),
         "false": (
             "El mensaje es conversación general, trata de un tema ajeno al inventario, pide escribir "
