@@ -12,6 +12,7 @@ import { validateInput } from "../validators/validateInput.js";
 import ArticleRow from "../components/articles/ArticleRow.vue";
 import ImageUploader from "../components/ImageUploader.vue";
 import FormField from "../components/ui/FormField.vue";
+import MenuBackdrop from "../components/ui/MenuBackdrop.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -128,7 +129,8 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-  <section class="mx-auto max-w-5xl px-4 pb-12 pt-6 md:px-8">
+  <section class="isolate mx-auto max-w-5xl px-4 pb-12 pt-6 md:px-8">
+    <MenuBackdrop scene="correo" class="pointer-events-none fixed inset-0 -z-10" />
     <router-link to="/categories" class="ui-btn ui-btn-sm ui-btn-ghost mb-14">
       <span aria-hidden="true">&larr;</span> Todos los cuartos
     </router-link>

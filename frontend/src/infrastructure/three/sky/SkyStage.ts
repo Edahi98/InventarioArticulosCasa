@@ -24,10 +24,11 @@ import { NightSky } from "../neighborhood/NightSky.js";
 import { SkyCycle, type SkyState } from "../neighborhood/SkyCycle.js";
 import type { Interactive } from "../park/ParkInteraction.js";
 import { SkyTexture } from "../SkyTexture.js";
-import { SkyBuilder } from "./SkyBuilder.js";
+import { SkyBuilder, type SkyVariant } from "./SkyBuilder.js";
 
 export interface SkyOptions {
   reducedMotion: boolean;
+  variant?: SkyVariant;
 }
 
 const TAP_DISTANCE = 6;
@@ -46,7 +47,7 @@ export class SkyStage {
   private readonly sun = new DirectionalLight(0xfff0d6, 2.2);
   private readonly ambient = new AmbientLight(0xfff0f6, 0.8);
   private readonly hemisphere = new HemisphereLight(0xcdbaf7, 0xbfe9d5, 0.9);
-  private readonly world = new SkyBuilder();
+  private readonly world: SkyBuilder;
   private readonly nightSky = new NightSky(80, 40);
   private readonly dayLife = new DayLife(80, 40);
   private readonly raycaster = new Raycaster();
@@ -69,6 +70,7 @@ export class SkyStage {
     private readonly canvas: HTMLCanvasElement,
     private readonly options: SkyOptions,
   ) {
+    this.world = new SkyBuilder(options.variant);
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.state = SkyCycle.at(this.hour);
