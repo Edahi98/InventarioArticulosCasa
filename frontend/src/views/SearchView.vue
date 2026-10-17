@@ -64,7 +64,7 @@ function goToArticle(id: number): void {
 
 <template>
   <section class="isolate mx-auto max-w-5xl px-4 py-10 md:px-8">
-    <MenuBackdrop scene="parque" class="pointer-events-none fixed inset-0 -z-10" />
+    <MenuBackdrop scene="busqueda" class="pointer-events-none fixed inset-0 -z-10" />
     <div class="mx-auto max-w-2xl">
       <div class="-mb-[72px] h-[230px] w-full">
         <BearPeekScene :bears="bears" :gaze-x="gazeX" :covering="false" :mood="mood" />

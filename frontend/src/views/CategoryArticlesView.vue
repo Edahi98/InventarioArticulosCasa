@@ -43,7 +43,7 @@ function handleArticleDeleted(id: number): void {
 
 <template>
   <section class="isolate mx-auto max-w-6xl px-4 pb-12 pt-6 md:px-8">
-    <MenuBackdrop scene="puerto" class="pointer-events-none fixed inset-0 -z-10" />
+    <MenuBackdrop scene="almacen" class="pointer-events-none fixed inset-0 -z-10" />
     <p v-if="isLoading" class="text-[var(--l-muted)]">El guardián está abriendo la puerta...</p>
     <p v-else-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
 

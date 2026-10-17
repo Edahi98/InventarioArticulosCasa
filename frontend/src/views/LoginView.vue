@@ -80,7 +80,7 @@ onBeforeUnmount(() => clearTimeout(moodTimer));
     class="relative isolate -mt-16 flex min-h-[100dvh] items-center justify-center overflow-hidden px-4 pb-10 pt-24 text-[var(--l-ink)]"
     style="font-family: var(--l-font)"
   >
-    <MenuBackdrop scene="cielo" :celebrate="celebrations" class="absolute inset-0 z-0" />
+    <MenuBackdrop scene="casa" :celebrate="celebrations" class="absolute inset-0 z-0" />
 
     <div class="relative z-[1] w-full max-w-md">
       <div class="-mb-[72px] h-[220px] w-full">

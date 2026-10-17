@@ -24,11 +24,11 @@ import { NightSky } from "../neighborhood/NightSky.js";
 import { SkyCycle, type SkyState } from "../neighborhood/SkyCycle.js";
 import type { Interactive } from "../park/ParkInteraction.js";
 import { SkyTexture } from "../SkyTexture.js";
-import { SkyBuilder, type SkyVariant } from "./SkyBuilder.js";
+import type { ScenicWorld } from "./ScenicWorld.js";
 
-export interface SkyOptions {
+export interface ScenicOptions {
   reducedMotion: boolean;
-  variant?: SkyVariant;
+  world: ScenicWorld;
 }
 
 const TAP_DISTANCE = 6;
@@ -38,7 +38,7 @@ const TARGET = new Vector3(0, 0.5, 0);
 const DAY = 14.5;
 const NIGHT = 22;
 
-export class SkyStage {
+export class ScenicStage {
   private readonly renderer: WebGLRenderer;
   private readonly scene = new Scene();
   private readonly camera = new PerspectiveCamera(28, 1, 0.5, 700);
@@ -47,7 +47,7 @@ export class SkyStage {
   private readonly sun = new DirectionalLight(0xfff0d6, 2.2);
   private readonly ambient = new AmbientLight(0xfff0f6, 0.8);
   private readonly hemisphere = new HemisphereLight(0xcdbaf7, 0xbfe9d5, 0.9);
-  private readonly world: SkyBuilder;
+  private readonly world: ScenicWorld;
   private readonly nightSky = new NightSky(80, 40);
   private readonly dayLife = new DayLife(80, 40);
   private readonly raycaster = new Raycaster();
@@ -68,9 +68,9 @@ export class SkyStage {
    */
   constructor(
     private readonly canvas: HTMLCanvasElement,
-    private readonly options: SkyOptions,
+    private readonly options: ScenicOptions,
   ) {
-    this.world = new SkyBuilder(options.variant);
+    this.world = options.world;
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.state = SkyCycle.at(this.hour);
@@ -78,6 +78,8 @@ export class SkyStage {
     this.scene.background = this.sky;
     this.scene.fog = this.fog;
     this.sun.position.set(-18, 26, 24);
+    this.nightSky.group.visible = this.world.outdoor;
+    this.dayLife.group.visible = this.world.outdoor;
     this.scene.add(this.world.group, this.nightSky.group, this.dayLife.group, this.ambient, this.hemisphere, this.sun);
     this.camera.position.copy(HOME);
     this.camera.lookAt(TARGET);
@@ -216,7 +218,7 @@ export class SkyStage {
   private nearest(): { interactive: Interactive; point: Vector3 } | null {
     const hit = this.raycaster.intersectObjects(this.world.interactives.map((item) => item.object), true)[0];
     if (!hit) return null;
-    const id = SkyStage.interactiveId(hit.object);
+    const id = ScenicStage.interactiveId(hit.object);
     const interactive = this.world.interactives.find((item) => item.id === id);
     return interactive ? { interactive, point: hit.point } : null;
   }
@@ -229,7 +231,7 @@ export class SkyStage {
   private static interactiveId(object: Object3D | null): string | null {
     if (!object) return null;
     const id = object.userData.interactiveId as string | undefined;
-    return id ?? SkyStage.interactiveId(object.parent);
+    return id ?? ScenicStage.interactiveId(object.parent);
   }
 
   private stop(): void {
