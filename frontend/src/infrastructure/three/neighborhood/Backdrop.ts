@@ -15,6 +15,7 @@ import {
   Vector3,
 } from "three";
 import type { BearTone } from "../../../core/domain/inventoryBear.js";
+import { GrassField } from "../GrassField.js";
 import { SurfaceTextures } from "../SurfaceTextures.js";
 import { ToyBoat, type BoatKind } from "./ToyBoat.js";
 import { ToyHelicopter, type HelicopterKind } from "./ToyHelicopter.js";
@@ -154,12 +155,25 @@ export class Backdrop {
         planted.position.y = lift;
         hill.add(planted);
       }
+      hill.add(this.hillGrass(width, height, index));
       hill.position.set(Math.cos(angle) * distance, WATER_Y, Math.sin(angle) * distance);
       hill.rotation.y = this.rng.between(0, Math.PI * 2);
       hills.push(hill);
       if (index === 3) hill.add(this.windmill(width, height));
     }
     return hills;
+  }
+
+  private hillGrass(width: number, height: number, index: number): Group {
+    const depth = width * 0.85;
+    const inside = (x: number, z: number): number => 1 - (x / width) ** 2 - (z / depth) ** 2;
+    return new GrassField({
+      seed: `loma-${index}`,
+      radius: width * 0.95,
+      density: 4,
+      accept: (x, z) => inside(x, z) > 0.1,
+      ground: (x, z) => height * Math.sqrt(Math.max(inside(x, z), 0)),
+    }).group;
   }
 
   private windmill(hillWidth: number, hillHeight: number): Group {
@@ -198,7 +212,7 @@ export class Backdrop {
       const soil = new Mesh(new ConeGeometry(size * 0.96, size * 1.6, 20), this.material(SOIL));
       soil.rotation.x = Math.PI;
       soil.position.y = -0.16 - size * 0.8;
-      islet.add(top, soil);
+      islet.add(top, soil, new GrassField({ seed: `islote-${index}`, radius: size * 0.92, y: 0.16, scale: 0.8, density: 6 }).group);
       const planted = Math.floor(this.rng.between(1, 3.99));
       for (let tree = 0; tree < planted; tree += 1) {
         const spot = (tree / planted) * Math.PI * 2 + this.rng.between(0, 1);

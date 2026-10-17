@@ -22,10 +22,12 @@ export interface GrassFieldOptions {
   density?: number;
   center?: [number, number];
   accept?: (x: number, z: number) => boolean;
+  ground?: (x: number, z: number) => number;
 }
 
 interface Spot {
   x: number;
+  y: number;
   z: number;
 }
 
@@ -52,7 +54,8 @@ export class GrassField {
    *
    * @param options - `seed` (azar repetible), `radius` del disco a cubrir, `y` (altura del suelo), `scale` (tamaño del
    * mundo: 1 para el mapa y unos 3.4 para las escenas grandes), `density` (matitas por unidad cuadrada del mapa),
-   * `center` del disco y `accept`, que decide si un punto está libre (para esquivar calles, casas y plazas).
+   * `center` del disco, `accept` (decide si un punto está libre, para esquivar calles, casas y plazas) y `ground`
+   * (altura del suelo en cada punto, para cubrir lomas y otras superficies curvas).
    */
   constructor(private readonly options: GrassFieldOptions) {
     this.rng = new SeededRandom(options.seed);
@@ -78,7 +81,7 @@ export class GrassField {
       const angle = this.rng.between(0, Math.PI * 2);
       const x = this.center[0] + Math.cos(angle) * radius;
       const z = this.center[1] + Math.sin(angle) * radius;
-      if (this.options.accept?.(x, z) ?? true) spots.push({ x, z });
+      if (this.options.accept?.(x, z) ?? true) spots.push({ x, y: this.y + (this.options.ground?.(x, z) ?? 0), z });
     }
     return spots;
   }
@@ -135,7 +138,7 @@ export class GrassField {
     const mesh = new InstancedMesh(this.tuftGeometry(), material, spots.length);
     spots.forEach((spot, index) => {
       const width = this.scale * this.rng.between(0.8, 1.4);
-      this.put(mesh, index, [spot.x, this.y, spot.z], [width, this.scale * this.rng.between(0.35, 0.8), width], this.rng.between(0, Math.PI));
+      this.put(mesh, index, [spot.x, spot.y, spot.z], [width, this.scale * this.rng.between(0.35, 0.8), width], this.rng.between(0, Math.PI));
       mesh.setColorAt(index, new Color(this.rng.pick(GREENS)));
     });
     if (!this.reducedMotion) mesh.onBeforeRender = () => (uniform.value = performance.now() / 1000);
@@ -148,9 +151,9 @@ export class GrassField {
     const blooms = new InstancedMesh(new SphereGeometry(0.5, 10, 8), new MeshStandardMaterial({ roughness: 0.6 }), spots.length);
     spots.forEach((spot, index) => {
       const height = this.scale * this.rng.between(0.45, 1);
-      this.put(stems, index, [spot.x, this.y, spot.z], [this.scale, height, this.scale]);
+      this.put(stems, index, [spot.x, spot.y, spot.z], [this.scale, height, this.scale]);
       const size = this.scale * this.rng.between(0.12, 0.2);
-      this.put(blooms, index, [spot.x, this.y + height, spot.z], [size, size * 0.7, size]);
+      this.put(blooms, index, [spot.x, spot.y + height, spot.z], [size, size * 0.7, size]);
       blooms.setColorAt(index, new Color(this.rng.pick(BLOOMS)));
     });
     return [this.finish(stems), this.finish(blooms)];
@@ -164,7 +167,7 @@ export class GrassField {
       const tint = new Color(this.rng.pick(GREENS)).multiplyScalar(0.85);
       for (let puff = 0; puff < 3; puff += 1) {
         const size = this.scale * this.rng.between(0.22, 0.38);
-        this.put(puffs, index * 3 + puff, [spot.x + this.rng.between(-0.3, 0.3) * this.scale, this.y + size * 0.6, spot.z + this.rng.between(-0.3, 0.3) * this.scale], [size, size * 0.75, size]);
+        this.put(puffs, index * 3 + puff, [spot.x + this.rng.between(-0.3, 0.3) * this.scale, spot.y + size * 0.6, spot.z + this.rng.between(-0.3, 0.3) * this.scale], [size, size * 0.75, size]);
         puffs.setColorAt(index * 3 + puff, tint);
       }
     });
@@ -178,8 +181,8 @@ export class GrassField {
     spots.forEach((spot, index) => {
       const height = this.scale * this.rng.between(0.12, 0.24);
       const cap = this.scale * this.rng.between(0.2, 0.34);
-      this.put(stems, index, [spot.x, this.y, spot.z], [this.scale, height, this.scale]);
-      this.put(caps, index, [spot.x, this.y + height, spot.z], [cap, cap * 0.8, cap]);
+      this.put(stems, index, [spot.x, spot.y, spot.z], [this.scale, height, this.scale]);
+      this.put(caps, index, [spot.x, spot.y + height, spot.z], [cap, cap * 0.8, cap]);
       caps.setColorAt(index, new Color(this.rng.pick(CAPS)));
     });
     return [this.finish(stems), this.finish(caps)];
@@ -205,7 +208,7 @@ export class GrassField {
     const mesh = new InstancedMesh(this.rockGeometry(), material, spots.length);
     spots.forEach((spot, index) => {
       const size = this.scale * this.rng.between(0.12, 0.42);
-      this.put(mesh, index, [spot.x, this.y + size * 0.25, spot.z], [size * this.rng.between(0.9, 1.4), size, size * this.rng.between(0.9, 1.4)], this.rng.between(0, Math.PI * 2));
+      this.put(mesh, index, [spot.x, spot.y + size * 0.25, spot.z], [size * this.rng.between(0.9, 1.4), size, size * this.rng.between(0.9, 1.4)], this.rng.between(0, Math.PI * 2));
       mesh.setColorAt(index, new Color(this.rng.pick(STONES)));
     });
     return this.finish(mesh);
