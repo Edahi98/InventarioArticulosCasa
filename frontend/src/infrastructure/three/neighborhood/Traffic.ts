@@ -14,7 +14,8 @@ interface Driver {
 }
 
 const COLORS = [0xff4f8b, 0x7fd0ea, 0xffe35c, 0xb89cf2, 0x7fd0a0, 0xffb066] as const;
-const KINDS: CarKind[] = ["pickup", "camioneta", "sedan"];
+const KINDS: CarKind[] = ["vocho", "pickup", "vocho", "camioneta", "vocho", "sedan"];
+const VOCHO_COLORS = [0xe8502d, 0x2a2233, 0xffe35c, 0x7fd0ea, 0xff8fb7] as const;
 const TONES: BearTone[] = ["rose", "sky", "sun", "lilac"];
 
 export class Traffic {
@@ -36,7 +37,7 @@ export class Traffic {
     const rng = new SeededRandom("trafico");
     this.length = curve.getLength();
     for (let index = 0; index < cars; index += 1) {
-      const { group, headlights, head } = ToyCar.build(rng.pick(COLORS), KINDS[index % KINDS.length], TONES[index % TONES.length], index);
+      const { group, headlights, head } = ToyCar.build(KINDS[index % KINDS.length] === "vocho" ? (VOCHO_COLORS[index % VOCHO_COLORS.length] as number) : rng.pick(COLORS), KINDS[index % KINDS.length], TONES[index % TONES.length], index);
       this.group.add(group);
       this.lights.push(headlights);
       this.drivers.push({ group, head, bob: rng.between(0, 6), direction: index % 2 === 0 ? 1 : -1, speed: rng.between(0.8, 1.5), start: (index / cars + rng.between(0, 0.05)) % 1 });

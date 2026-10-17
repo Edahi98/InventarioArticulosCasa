@@ -52,12 +52,12 @@ export class ToyBoat {
     boat.add(hull, stripe, waterline, bow);
   }
 
-  private static helm(boat: Group, tone: BearTone, hat: "marinero" | "capitan" | "gorra" | "lentes", x: number, y: number): void {
-    const head = VehicleDriver.head(tone, hat);
-    head.position.set(x, y, 0);
+  private static helm(boat: Group, tone: BearTone, hat: "marinero" | "capitan" | "gorra" | "lentes", x: number): void {
+    const driver = VehicleDriver.bear(tone, hat, 0.2);
+    driver.group.position.set(x, 0.34, 0);
     const wheel = VehicleDriver.wheel();
-    wheel.position.set(x + 0.19, y - 0.1, 0);
-    boat.add(head, wheel);
+    wheel.position.set(x + 0.25, 0.42, 0);
+    boat.add(driver.group, wheel);
   }
 
   private static sailboat(boat: Group, color: number, tone: BearTone): void {
@@ -73,12 +73,12 @@ export class ToyBoat {
     const buoy = new Mesh(new TorusGeometry(0.07, 0.025, 8, 16), this.material(0xff4f6d));
     buoy.position.set(-0.1, 0.22, 0.235);
     boat.add(this.part(new CylinderGeometry(0.025, 0.025, 1.1, 8), 0x6b4a6a, [0.05, 0.75, 0]), sail, flag, buoy);
-    this.helm(boat, tone, "marinero", -0.4, 0.42);
+    this.helm(boat, tone, "marinero", -0.4);
     const laptop = VehicleCargo.laptop();
-    laptop.position.set(-0.5, 0.23, 0.14);
+    laptop.position.set(-0.16, 0.23, 0.15);
     laptop.scale.setScalar(0.8);
     const crate = VehicleCargo.crate(0x7fd0ea);
-    crate.position.set(-0.05, 0.23, -0.12);
+    crate.position.set(0.28, 0.23, -0.12);
     crate.scale.setScalar(0.85);
     boat.add(laptop, crate);
   }
@@ -91,8 +91,8 @@ export class ToyBoat {
     const chimney = this.part(new CylinderGeometry(0.05, 0.06, 0.24, 12), 0xff6b6b, [-0.62, 0.65, 0]);
     const band = this.part(new CylinderGeometry(0.056, 0.056, 0.05, 12), 0x2a2233, [-0.62, 0.7, 0]);
     boat.add(cabin, windows, chimney, band);
-    this.helm(boat, tone, "capitan", -0.5, 0.52);
-    [[0.0, 0x7fd0ea], [0.34, 0xffb066]].forEach(([x, tint], index) => {
+    this.helm(boat, tone, "capitan", -0.2);
+    [[0.12, 0x7fd0ea], [0.44, 0xffb066]].forEach(([x, tint], index) => {
       boat.add(this.part(new BoxGeometry(0.3, 0.2, 0.28), tint as number, [x as number, 0.34, 0]));
       const load = index === 0 ? VehicleCargo.computer() : VehicleCargo.crate(0xffe35c);
       load.position.set(x as number, 0.44, 0);
@@ -100,7 +100,7 @@ export class ToyBoat {
       boat.add(load);
     });
     const barrel = VehicleCargo.barrel();
-    barrel.position.set(0.62 + (seed % 2) * 0.0, 0.23, 0.14);
+    barrel.position.set(0.67 + (seed % 2) * 0.0, 0.23, 0.14);
     barrel.scale.setScalar(0.85);
     boat.add(barrel);
   }
@@ -108,7 +108,7 @@ export class ToyBoat {
   private static trawler(boat: Group, color: number, tone: BearTone): void {
     this.hull(boat, 1.1, 0.5, color);
     boat.add(this.part(new BoxGeometry(0.3, 0.26, 0.36), WHITE, [-0.28, 0.36, 0]), this.part(new CylinderGeometry(0.02, 0.02, 0.85, 8), WOOD, [0.12, 0.62, 0]));
-    this.helm(boat, tone, "gorra", -0.28, 0.52);
+    this.helm(boat, tone, "gorra", -0.02);
     const net = new Mesh(new TorusGeometry(0.2, 0.012, 6, 18, Math.PI), this.material(0xfff6dc));
     net.position.set(0.12, 0.62, 0);
     net.rotation.set(0, Math.PI / 2, Math.PI);
@@ -116,7 +116,7 @@ export class ToyBoat {
     rod.rotation.z = -0.9;
     const line = this.part(new CylinderGeometry(0.003, 0.003, 0.45, 4), WHITE, [0.86, 0.45, 0]);
     boat.add(net, rod, line);
-    [0.05, 0.4].forEach((x, index) => {
+    [0.26, 0.54].forEach((x, index) => {
       const crate = VehicleCargo.fishCrate();
       crate.position.set(x, 0.23, index === 0 ? 0.14 : -0.14);
       crate.scale.setScalar(0.9);
@@ -132,9 +132,9 @@ export class ToyBoat {
     const motor = this.part(new BoxGeometry(0.1, 0.2, 0.12), DARK, [-0.54, 0.16, 0]);
     const shaft = this.part(new CylinderGeometry(0.02, 0.02, 0.2, 8), DARK, [-0.56, -0.05, 0]);
     boat.add(windshield, motor, shaft, this.part(new BoxGeometry(0.5, 0.025, 0.1), 0xffe35c, [0, 0.215, 0.14]));
-    this.helm(boat, tone, "lentes", -0.02, 0.42);
+    this.helm(boat, tone, "lentes", -0.14);
     const pile = VehicleCargo.pile(seed + 2);
-    pile.position.set(-0.32, 0.23, 0);
+    pile.position.set(-0.4, 0.23, 0);
     pile.scale.setScalar(0.7);
     boat.add(pile);
   }

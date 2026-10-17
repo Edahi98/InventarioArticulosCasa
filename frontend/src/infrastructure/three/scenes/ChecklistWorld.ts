@@ -6,6 +6,7 @@ import { TreeFactory } from "../neighborhood/TreeFactory.js";
 import { ClayMaterials } from "../park/ClayMaterials.js";
 import { Confetti } from "../park/Confetti.js";
 import type { Interactive } from "../park/ParkInteraction.js";
+import { GrassField } from "../GrassField.js";
 import { StarGeometry } from "../StarGeometry.js";
 import { HelicopterFleet } from "../neighborhood/HelicopterFleet.js";
 import { SeaTextures } from "./SeaTextures.js";
@@ -354,7 +355,7 @@ export class ChecklistWorld implements ScenicWorld {
     const top = toy.cylinder(radius, radius, 0.9, grass);
     this.speckle(top);
     this.speckle(beach);
-    island.add(top, beach, rock);
+    island.add(top, beach, rock, new GrassField({ seed: `isla-${x}-${z}`, radius: radius - 0.5, y: TOP, scale: 1.1, density: 5 }).group);
     island.position.set(x, y, z);
     this.group.add(island, foam);
     return island;
