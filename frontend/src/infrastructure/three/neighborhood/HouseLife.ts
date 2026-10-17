@@ -1,7 +1,6 @@
 import {
   Color,
   CylinderGeometry,
-  ExtrudeGeometry,
   Group,
   InstancedMesh,
   Matrix4,
@@ -9,9 +8,9 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
-  Shape,
   SphereGeometry,
 } from "three";
+import { StarGeometry } from "../StarGeometry.js";
 import { SeededRandom } from "./SeededRandom.js";
 
 export interface SmokePuff {
@@ -27,24 +26,8 @@ const BLOOMS = [0xff8fb7, 0xffe35c, 0xffffff, 0xb89cf2] as const;
 
 export class HouseLife {
   private readonly puffGeometry = new SphereGeometry(1, 10, 8);
-  private readonly starGeometry = HouseLife.starShape();
+  private readonly starGeometry = StarGeometry.build();
   private readonly starMaterial = new MeshStandardMaterial({ color: 0xffd43b, emissive: 0xffb300, emissiveIntensity: 0.55, roughness: 0.35, metalness: 0.2 });
-
-  private static starShape(): ExtrudeGeometry {
-    const outline = new Shape();
-    for (let point = 0; point < 10; point += 1) {
-      const radius = point % 2 === 0 ? 1 : 0.46;
-      const angle = (point / 10) * Math.PI * 2 + Math.PI / 2;
-      const x = Math.cos(angle) * radius;
-      const y = Math.sin(angle) * radius;
-      if (point === 0) outline.moveTo(x, y);
-      else outline.lineTo(x, y);
-    }
-    outline.closePath();
-    const geometry = new ExtrudeGeometry(outline, { depth: 0.35, bevelEnabled: true, bevelSize: 0.12, bevelThickness: 0.12, bevelSegments: 3 });
-    geometry.center();
-    return geometry;
-  }
 
   /**
    * @param rng - Azar con semilla, para que el jardín de una casa siempre sea el mismo.
