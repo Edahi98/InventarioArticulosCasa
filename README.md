@@ -3,7 +3,9 @@
 Sistema integral para la gestión y seguimiento del inventario de artículos del hogar. Diseñado con una arquitectura de microservicios, permite administrar el inventario a través de una interfaz web intuitiva o interactuar mediante lenguaje natural con un Agente de IA que también atiende por Telegram.
 
 ## 🌟 Características Principales
-- **Dashboard Web**: Interfaz construida con Vue y Tailwind CSS para administrar artículos, categorías, notas y stock.
+- **Una web que es un juguete**: todo se ve como un mundo de plastilina con osos «guardianes». La página de inicio es un parque con rueda de la fortuna, carrusel y trencito, y un osito que baja una escalera mientras haces scroll. Al iniciar sesión llegas a la entrada de una casita, y cada pantalla (buscar, habitantes, vincular el bot, guardar algo) es un menú de juego con su propio escenario de fondo.
+- **Tu casa como un barrio**: cada categoría es un cuarto y se ve como una casita de su propio color en una isla. Puedes girar la isla, elegir una casa y entrar a su cuarto, o caminar en primera persona, abrir puertas, manejar los carros y cruzar puentes a otras islitas.
+- **Cada cosa con su lugar**: los artículos se guardan con foto, cantidad, notas y una ubicación (por ejemplo, «estante de arriba»), y se ven como las casillas de un inventario de juego.
 - **Asistente de IA (Agente)**: Un agente inteligente (Python) que permite hacer consultas por coincidencia aproximada y operaciones con lenguaje natural, desde la terminal, una API HTTP o un bot de Telegram integrado, accesible desde cualquier lugar.
 - **Persistencia**: Base de datos en Supabase (PostgreSQL) e imágenes en Cloudinary.
 - **Gestión de Reportes**: Descarga y exportación de reportes de inventario a Excel.
@@ -45,7 +47,7 @@ graph TD
 
 ## 🛠 Stack Tecnológico
 
-*   **Frontend**: Vue 3, Vite, Tailwind CSS, TypeScript.
+*   **Frontend**: Vue 3, Vite, Tailwind CSS, TypeScript, three.js para las escenas 3D (con física de Rapier) y Pinia para el estado del paseo.
 *   **Backend**: Node.js, Express, Drizzle ORM, TypeScript.
 *   **Inteligencia Artificial**: Python, LangChain/LangGraph, OpenRouter.
 *   **Infraestructura**: Docker, Docker Compose, Nginx.
