@@ -23,6 +23,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { SkyTexture } from "../SkyTexture.js";
+import type { WalkGap, WalkZone } from "../walk/WalkArea.js";
 import type { DoorPrompt, WalkMode } from "../walk/WalkMode.js";
 import type { Backdrop } from "./Backdrop.js";
 import type { DayLife } from "./DayLife.js";
@@ -48,6 +49,7 @@ export interface NeighborhoodCallbacks {
   onHour(hour: number): void;
   onWalkPrompt(prompt: DoorPrompt | null): void;
   onWalkLock(locked: boolean): void;
+  onWalkDrive(driving: boolean): void;
 }
 
 export interface NeighborhoodOptions {
@@ -87,6 +89,8 @@ export class NeighborhoodStage {
   private readonly levels = new Map<number, number>();
   private readonly radius: number;
   private readonly world: Group;
+  private readonly zones: WalkZone[];
+  private readonly gaps: WalkGap[];
   private walker: WalkMode | null = null;
   private walkPending = false;
   private idleTimer = 0;
@@ -136,7 +140,7 @@ export class NeighborhoodStage {
     this.scene.background = this.sky;
     this.scene.fog = this.fog;
 
-    const { world, houses, swaying, lamps, traffic, dayLife, backdrop, radius } = new NeighborhoodBuilder(categories).build();
+    const { world, houses, swaying, lamps, traffic, dayLife, backdrop, radius, zones, gaps } = new NeighborhoodBuilder(categories).build();
     this.backdrop = backdrop;
     this.traffic = traffic;
     this.dayLife = dayLife;
@@ -145,6 +149,8 @@ export class NeighborhoodStage {
     this.lamps = lamps;
     this.radius = radius;
     this.world = world;
+    this.zones = zones;
+    this.gaps = gaps;
     houses.forEach((house) => this.levels.set(house.id, 0));
     this.nightSky = new NightSky(radius * 2, radius * 2);
     this.scene.add(world, this.nightSky.group);
@@ -379,7 +385,10 @@ export class NeighborhoodStage {
         canvas: this.canvas,
         world: this.world,
         houses: this.houses,
+        traffic: this.traffic,
         radius: this.radius,
+        zones: this.zones,
+        gaps: this.gaps,
         houseId,
         fromDoor,
         callbacks: {
@@ -387,6 +396,7 @@ export class NeighborhoodStage {
           onLock: (locked) => this.callbacks.onWalkLock(locked),
           onEnter: (id) => this.callbacks.onEnter(id),
           onSelect: (id) => this.callbacks.onSelect(id),
+          onDrive: (driving) => this.callbacks.onWalkDrive(driving),
         },
       });
     } finally {
@@ -520,7 +530,7 @@ export class NeighborhoodStage {
 
   private clampTarget(): void {
     const target = this.controls.target;
-    const limit = this.radius * 0.8;
+    const limit = this.radius * 1.9;
     const reach = Math.hypot(target.x, target.z);
     if (reach > limit) {
       target.x *= limit / reach;
@@ -532,7 +542,7 @@ export class NeighborhoodStage {
   private fitDistance(): number {
     const half = MathUtils.degToRad(this.camera.fov / 2);
     const aspect = Math.max(Math.min(this.camera.aspect, 1.4), 0.45);
-    return (this.radius * 1.08) / (Math.tan(half) * aspect);
+    return (this.radius * 1.55) / (Math.tan(half) * aspect);
   }
 
   private pick(event: PointerEvent): number | null {

@@ -21,6 +21,7 @@ export class WalkInput {
   private readonly stick = { x: 0, y: 0 };
   private look = { x: 0, y: 0 };
   private jumpQueued = false;
+  private viewQueued = false;
   private dragging = false;
   private last = { x: 0, y: 0 };
 
@@ -98,6 +99,22 @@ export class WalkInput {
   }
 
   /**
+   * @returns Si se mantiene Espacio (el freno de mano al manejar).
+   */
+  get braking(): boolean {
+    return this.held.has("Space");
+  }
+
+  /**
+   * @returns Si se pidió cambiar de vista (tecla V) desde la última vez que se preguntó (se gasta al leerlo).
+   */
+  consumeView(): boolean {
+    const view = this.viewQueued;
+    this.viewQueued = false;
+    return view;
+  }
+
+  /**
    * @returns Si se pidió un salto desde la última vez que se preguntó (se gasta al leerlo).
    */
   consumeJump(): boolean {
@@ -138,8 +155,10 @@ export class WalkInput {
     }
     if (event.code === "Space") {
       this.jumpQueued = true;
+      this.held.add(event.code);
       event.preventDefault();
     }
+    if (event.code === "KeyV" && !event.repeat) this.viewQueued = true;
     if (MOVE_KEYS[event.code] || event.code.startsWith("Shift")) {
       this.held.add(event.code);
       if (event.code.startsWith("Arrow")) event.preventDefault();
