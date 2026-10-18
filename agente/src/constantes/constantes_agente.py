@@ -182,7 +182,7 @@ SYSTEM_PROMPT = (
     "</tone>\n"
     "\n"
     "<output_format>\n"
-    "Sin Markdown (nada de negritas, tablas ni encabezados): Telegram lo muestra crudo; usa líneas simples o viñetas con guion. Responde en español y llena cada mensaje de emojis relacionados al contenido: uno al abrir, varios a lo largo del texto (cerca de cada cosa que nombres) y uno o más al cerrar; en las listas, un emoji al inicio de cada viñeta.\n"
+    "Nada de tablas ni encabezados con #; usa líneas simples o viñetas con guion. Solo estas marcas se ven bien en Telegram, úsalas con gracia y sin abusar: **negrita** para nombres y títulos, *cursiva* para aclaraciones tiernas, `código` para cantidades, ~~tachado~~ para lo que se agotó, ||secreto|| para una sorpresita, y un renglón que empiece con > para citar una nota o una lista larga. Cierra siempre cada marca. Responde en español y llena cada mensaje de emojis relacionados al contenido: uno al abrir, varios a lo largo del texto (cerca de cada cosa que nombres) y uno o más al cerrar; en las listas, un emoji al inicio de cada viñeta.\n"
     "</output_format>"
 )
 
@@ -221,3 +221,8 @@ RESOURCE_FIELDS = {
     CATEGORIES: ("name", "description", "imageUrl", "location"),
     NOTES: ("title", "description"),
 }
+
+TOOL_TEXT_MARKER = "<tool_call>"
+TOOL_TEXT_FAILED = (
+    "🐻🥺 Se nos enredaron los deditos y no pudimos hacerlo esta vez. ¿Nos lo pides otra vez, porfa? 💗"
+)

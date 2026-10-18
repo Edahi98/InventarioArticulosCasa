@@ -1,11 +1,14 @@
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage
 from langgraph.graph import MessagesState
 
-from src.constantes.constantes_agente import SYSTEM_PROMPT
+from src.constantes.constantes_agente import SYSTEM_PROMPT, TOOL_TEXT_FAILED, TOOL_TEXT_MARKER
 
 
 class ModelNode:
-    """Nodo del grafo: le pasa la conversación al modelo y agrega su respuesta (texto o llamadas a tools)."""
+    """
+    Nodo del grafo: le pasa la conversación al modelo y agrega su respuesta (texto o llamadas a tools). Si el
+    modelo escribe una tool como texto en vez de llamarla, no reintenta y responde con un aviso tierno.
+    """
 
     def __init__(self, model, hint: str = "") -> None:
         self._model = model
@@ -13,4 +16,11 @@ class ModelNode:
 
     def __call__(self, state: MessagesState) -> dict:
         response = self._model.invoke([self._prompt, *state["messages"]])
+        if self._leaked(response):
+            response = AIMessage(content=TOOL_TEXT_FAILED)
         return {"messages": [response]}
+
+    @staticmethod
+    def _leaked(response) -> bool:
+        """True si la respuesta trae una tool escrita como texto y ninguna llamada real."""
+        return not response.tool_calls and TOOL_TEXT_MARKER in str(response.content)

@@ -6,6 +6,7 @@ import time
 import requests
 from pydantic import ValidationError
 from telegram import InputMediaPhoto, Update
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from src.agent.chat_agent import AgentChat
@@ -44,6 +45,7 @@ from src.services.context_auth import AuthContext
 from src.services.gate_instruction import InstructionGate
 from src.services.memory_choice import ChoiceMemory
 from src.services.session_bot import BotSessions
+from src.utilerias.util_codec import Codec
 
 logger = logging.getLogger(__name__)
 
@@ -219,13 +221,16 @@ class BotHandlers:
         logger.info("reply=%r  images=%d", reply[:80], len(images))
         options = self._choices.options(key)
         if options:
-            await thinking.edit_text(reply or CHOICE_PROMPT, reply_markup=ChoiceKeyboard.build(options))
+            await thinking.edit_text(
+                Codec.telegram_html(reply or CHOICE_PROMPT), reply_markup=ChoiceKeyboard.build(options), parse_mode=ParseMode.HTML
+            )
             return
         pictures = images or ([self._bear] if reply else [])
         captioned = bool(pictures) and 0 < len(reply) <= CAPTION_LIMIT
-        await (thinking.delete() if captioned or not reply else thinking.edit_text(reply))
+        formatted = Codec.telegram_html(reply)
+        await (thinking.delete() if captioned or not reply else thinking.edit_text(formatted, parse_mode=ParseMode.HTML))
         for i in range(0, len(pictures), MAX_ALBUM):
-            caption = reply if captioned and i == 0 else None
+            caption = formatted if captioned and i == 0 else None
             await self._send_album(update, pictures[i:i + MAX_ALBUM], caption)
 
     @staticmethod
@@ -233,7 +238,10 @@ class BotHandlers:
         """Envía la foto o el álbum; el texto de la IA va como pie de la primera imagen."""
         target = update.effective_message
         if len(images) == 1:
-            await target.reply_photo(photo=io.BytesIO(images[0]), caption=caption)
+            await target.reply_photo(photo=io.BytesIO(images[0]), caption=caption, parse_mode=ParseMode.HTML)
             return
-        media = [InputMediaPhoto(media=io.BytesIO(img), caption=caption if n == 0 else None) for n, img in enumerate(images)]
+        media = [
+            InputMediaPhoto(media=io.BytesIO(img), caption=caption if n == 0 else None, parse_mode=ParseMode.HTML)
+            for n, img in enumerate(images)
+        ]
         await target.reply_media_group(media=media)
