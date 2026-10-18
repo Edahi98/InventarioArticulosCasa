@@ -1,15 +1,10 @@
-from langchain_openrouter import ChatOpenRouter
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 
 from src.agent.edge_router import ToolRouter
 from src.agent.node_model import ModelNode
 from src.constantes.constantes_agente import (
-    DEFAULT_OPENROUTER_MODEL,
     FINAL_HINT,
-    LLM_MAX_RETRIES,
-    LLM_REASONING,
-    LLM_TIMEOUT_MS,
     NODE_FINAL,
     NODE_MODEL,
     NODE_TOOLS,
@@ -24,12 +19,11 @@ class AgentBuilder:
     """
 
     def __init__(self) -> None:
-        self._model = DEFAULT_OPENROUTER_MODEL
-        self._api_key = ""
+        self._llm = None
         self._tools: list = []
 
-    def with_model(self, model: str, api_key: str) -> "AgentBuilder":
-        self._model, self._api_key = model, api_key
+    def with_llm(self, llm) -> "AgentBuilder":
+        self._llm = llm
         return self
 
     def with_tools(self, tools: list) -> "AgentBuilder":
@@ -37,14 +31,7 @@ class AgentBuilder:
         return self
 
     def build(self):
-        llm = ChatOpenRouter(
-            model=self._model,
-            api_key=self._api_key,
-            request_timeout=LLM_TIMEOUT_MS,
-            max_retries=LLM_MAX_RETRIES,
-            reasoning=LLM_REASONING,
-        )
-        return self._graph(llm).compile()
+        return self._graph(self._llm).compile()
 
     def _graph(self, llm) -> StateGraph:
         router = ToolRouter()

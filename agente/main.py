@@ -13,9 +13,9 @@ from src.backend import Backend
 from src.bot.handlers_bot import BotHandlers
 from src.builders.builder_agent import AgentBuilder
 from src.builders.builder_telegram_bot import TelegramBotBuilder
-from src.constantes.constantes_agente import DEFAULT_OPENROUTER_MODEL
 from src.constantes.constantes_filtro import DEFAULT_DECISIONS_MODEL
 from src.errors.error_filtro import InstructionRejected
+from src.services.adapter_llm import LlmAdapter
 from src.services.client_decisions import DecisionsClient
 from src.services.gate_instruction import InstructionGate
 from src.services.memory_choice import ChoiceMemory
@@ -56,12 +56,12 @@ class InventoryAgentApp:
         ]
         agent = (
             AgentBuilder()
-            .with_model(os.getenv("OPENROUTER_MODEL", DEFAULT_OPENROUTER_MODEL), os.environ["OPENROUTER_API_KEY"])
+            .with_llm(LlmAdapter.from_env())
             .with_tools(tools)
             .build()
         )
         decisions = DecisionsClient(
-            os.environ["OPENROUTER_API_KEY"], os.getenv("DECISIONS_MODEL", DEFAULT_DECISIONS_MODEL)
+            os.getenv("OPENROUTER_API_KEY", ""), os.getenv("DECISIONS_MODEL", DEFAULT_DECISIONS_MODEL)
         )
         self._store = (
             StorePostgres(os.environ["STATE_DATABASE_URL"]) if os.getenv("STATE_DATABASE_URL") else StoreMemory()
