@@ -2,6 +2,7 @@ import {
   AmbientLight,
   DirectionalLight,
   Fog,
+  Group,
   HemisphereLight,
   InstancedMesh,
   Material,
@@ -22,6 +23,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { SkyTexture } from "../SkyTexture.js";
+import type { DoorPrompt, WalkMode } from "../walk/WalkMode.js";
 import type { Backdrop } from "./Backdrop.js";
 import type { DayLife } from "./DayLife.js";
 import { NeighborhoodBuilder, type HouseEntry, type MapCategory } from "./NeighborhoodBuilder.js";
@@ -44,6 +46,8 @@ export interface NeighborhoodCallbacks {
   onEnter(id: number): void;
   onSelect(id: number): void;
   onHour(hour: number): void;
+  onWalkPrompt(prompt: DoorPrompt | null): void;
+  onWalkLock(locked: boolean): void;
 }
 
 export interface NeighborhoodOptions {
@@ -82,6 +86,9 @@ export class NeighborhoodStage {
   private readonly lamps: { emissiveIntensity: number }[];
   private readonly levels = new Map<number, number>();
   private readonly radius: number;
+  private readonly world: Group;
+  private walker: WalkMode | null = null;
+  private walkPending = false;
   private idleTimer = 0;
   private readonly down = { x: 0, y: 0, time: 0 };
   private readonly fog = new Fog(0xffe3d6, 32, 95);
@@ -137,6 +144,7 @@ export class NeighborhoodStage {
     this.swaying = swaying;
     this.lamps = lamps;
     this.radius = radius;
+    this.world = world;
     houses.forEach((house) => this.levels.set(house.id, 0));
     this.nightSky = new NightSky(radius * 2, radius * 2);
     this.scene.add(world, this.nightSky.group);
@@ -268,6 +276,7 @@ export class NeighborhoodStage {
     this.canvas.removeEventListener("pointerleave", this.handleLeave);
     this.canvas.removeEventListener("pointerdown", this.handleDown);
     this.canvas.removeEventListener("pointerup", this.handleUp);
+    this.walker?.dispose();
     this.controls.dispose();
     this.scene.traverse((object) => {
       if (!(object instanceof Mesh || object instanceof Points)) return;
@@ -285,25 +294,28 @@ export class NeighborhoodStage {
 
   private readonly tick = (now: number): void => {
     if (!this.running) return;
-    this.elapsed += Math.min((now - this.lastTime) / 1000, 0.1);
+    const dt = Math.min((now - this.lastTime) / 1000, 0.1);
+    this.elapsed += dt;
     this.lastTime = now;
+    this.walker?.update(dt);
     this.animate(now);
-    if (!this.flight) this.controls.update();
+    if (!this.flight && !this.walker) this.controls.update();
     this.render();
     this.frame = requestAnimationFrame(this.tick);
   };
 
   private readonly handleMove = (event: PointerEvent): void => {
-    if (event.buttons !== 0 || this.flight) return;
+    if (event.buttons !== 0 || this.flight || this.walker) return;
     this.setHover(this.pinnedId ?? this.pick(event));
     this.canvas.style.cursor = this.hoverId === null ? "grab" : "pointer";
   };
 
   private readonly handleLeave = (): void => {
-    if (!this.flight) this.setHover(this.pinnedId);
+    if (!this.flight && !this.walker) this.setHover(this.pinnedId);
   };
 
   private readonly handleDown = (event: PointerEvent): void => {
+    if (this.walker) return;
     this.down.x = event.clientX;
     this.down.y = event.clientY;
     this.down.time = performance.now();
@@ -311,7 +323,7 @@ export class NeighborhoodStage {
   };
 
   private readonly handleUp = (event: PointerEvent): void => {
-    if (this.flight) return;
+    if (this.flight || this.walker) return;
     this.canvas.style.cursor = this.hoverId === null ? "grab" : "pointer";
     const moved = Math.hypot(event.clientX - this.down.x, event.clientY - this.down.y);
     if (moved > TAP_DISTANCE || performance.now() - this.down.time > TAP_TIME) return;
@@ -348,6 +360,101 @@ export class NeighborhoodStage {
     this.hoverId = id;
     this.canvas.style.cursor = "wait";
     this.callbacks.onEnter(id);
+  }
+
+/**
+   * Pasa a primera persona: carga la física, coloca al jugador frente a una casa y suelta la cámara orbital.
+   *
+   * @param houseId - Casa frente a la que aparece, o `null` para la primera.
+   * @param fromDoor - Si se viene de salir de su cuarto: su puerta empieza abierta y se cierra sola.
+   * @returns Una promesa que se cumple cuando el paseo está listo; falla si no se puede cargar el motor.
+   */
+  async startWalking(houseId: number | null, fromDoor: boolean): Promise<void> {
+    if (this.walker || this.walkPending) return;
+    this.walkPending = true;
+    try {
+      const { WalkMode } = await import("../walk/WalkMode.js");
+      this.walker = await WalkMode.begin({
+        camera: this.camera,
+        canvas: this.canvas,
+        world: this.world,
+        houses: this.houses,
+        radius: this.radius,
+        houseId,
+        fromDoor,
+        callbacks: {
+          onPrompt: (prompt) => this.callbacks.onWalkPrompt(prompt),
+          onLock: (locked) => this.callbacks.onWalkLock(locked),
+          onEnter: (id) => this.callbacks.onEnter(id),
+          onSelect: (id) => this.callbacks.onSelect(id),
+        },
+      });
+    } finally {
+      this.walkPending = false;
+    }
+    window.clearTimeout(this.idleTimer);
+    this.flight = null;
+    this.controls.enabled = false;
+    this.controls.autoRotate = false;
+    this.selectedId = null;
+    this.hoverId = null;
+    this.pinnedId = null;
+    this.camera.fov = 72;
+    this.camera.near = 0.03;
+    this.camera.updateProjectionMatrix();
+    this.fog.near = 3;
+    this.fog.far = this.radius * 1.6;
+    this.canvas.style.cursor = "";
+    this.callbacks.onHover(null);
+    this.callbacks.onPick(null);
+    this.ensureRunning();
+  }
+
+  /**
+   * Vuelve a la vista orbital de toda la isla.
+   */
+  stopWalking(): void {
+    if (!this.walker) return;
+    this.walker.dispose();
+    this.walker = null;
+    this.camera.fov = 26;
+    this.camera.near = 0.5;
+    this.camera.updateProjectionMatrix();
+    this.controls.enabled = true;
+    this.controls.autoRotate = !this.options.reducedMotion;
+    this.canvas.style.cursor = "grab";
+    this.resetView();
+  }
+
+  /**
+   * Pide capturar el puntero para mirar con el ratón durante el paseo.
+   */
+  lockWalk(): void {
+    this.walker?.lock();
+  }
+
+  /**
+   * Abre la puerta que se tiene enfrente y entra, como al pulsar E.
+   */
+  interactWalk(): void {
+    this.walker?.interact();
+  }
+
+  /**
+   * Joystick virtual del paseo.
+   *
+   * @param x - Lateral entre -1 y 1.
+   * @param y - Adelante (positivo) o atrás (negativo).
+   */
+  setWalkStick(x: number, y: number): void {
+    this.walker?.setStick(x, y);
+  }
+
+  private ensureRunning(): void {
+    if (this.running) return;
+    this.running = true;
+    this.lastTime = performance.now();
+    this.frame = requestAnimationFrame(this.tick);
   }
 
   private flyCamera(now: number): void {
@@ -539,7 +646,9 @@ export class NeighborhoodStage {
       house.group.scale.setScalar(1 + level * GROW);
       const resting = house.count > 0 ? 0.12 + night * 1.5 : 0.02;
       house.glass.emissiveIntensity = resting + level * GLOW;
-      if (this.flight?.id !== house.id) house.door.rotation.y = 0;
+      const walkAngle = this.walker?.doorAngle(house.id) ?? null;
+      if (walkAngle !== null) house.door.rotation.y = walkAngle;
+      else if (this.flight?.id !== house.id) house.door.rotation.y = 0;
       house.bear.update(t, level, !this.options.reducedMotion);
       house.stars.forEach((star) => {
         const { angle, radius, height, phase } = star.userData as { angle: number; radius: number; height: number; phase: number };

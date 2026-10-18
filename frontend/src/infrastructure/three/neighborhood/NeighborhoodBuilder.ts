@@ -22,6 +22,7 @@ import { StreetFurniture } from "./StreetFurniture.js";
 import { Traffic } from "./Traffic.js";
 import { TreeFactory } from "./TreeFactory.js";
 import { YardDetails } from "./YardDetails.js";
+import { Solid } from "../walk/Solid.js";
 
 export interface MapCategory {
   id: number;
@@ -146,6 +147,7 @@ export class NeighborhoodBuilder {
     built.group.position.set(slot.x - forward.x * 0.2, GROUND, slot.z - forward.z * 0.2);
     built.group.rotation.y = slot.yaw;
     built.group.userData.categoryId = category.id;
+    Solid.mark(built.group, { shape: "box", size: [built.width, built.height, built.depth], offset: [0, built.height / 2, 0] });
     world.add(decor, built.group);
     world.updateMatrixWorld(true);
 
@@ -156,6 +158,7 @@ export class NeighborhoodBuilder {
     const side = built.door.position.x >= 0 ? 1 : -1;
     bear.group.position.set(built.door.position.x + 0.19 + side * 0.95, 0, built.door.position.z + 0.9);
     bear.group.rotation.y = -side * 0.45;
+    Solid.mark(bear.group, { shape: "cylinder", radius: 0.17, height: 0.8, offset: [0, 0.4, 0] });
     built.group.add(bear.group);
     return {
       id: category.id,
@@ -202,6 +205,7 @@ export class NeighborhoodBuilder {
       const bulb = new Mesh(new SphereGeometry(0.14, 14, 10), glass);
       bulb.position.y = 1.5;
       lamp.add(pole, bulb);
+      Solid.mark(lamp, { shape: "cylinder", radius: 0.07, height: 1.5, offset: [0, 0.75, 0] });
       lamp.position.set(point.x + outward.x * (ROAD_WIDTH / 2 + 0.25), GROUND, point.z + outward.z * (ROAD_WIDTH / 2 + 0.25));
       lamps.add(lamp);
     }

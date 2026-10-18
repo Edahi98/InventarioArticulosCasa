@@ -13,6 +13,7 @@ import {
 import { SurfaceTextures } from "../SurfaceTextures.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { SeededRandom } from "./SeededRandom.js";
+import { Solid } from "../walk/Solid.js";
 
 const STONE = 0xf3dfe9;
 const FENCE = 0xfffaf2;
@@ -87,6 +88,7 @@ export class YardDetails {
     });
     pickets.instanceMatrix.needsUpdate = true;
     fence.add(pickets);
+    fence.add(...this.fenceWalls(spots));
     [-1, 1].forEach((side) => {
       const arc = spots.filter((spot) => Math.sign(spot.angle) === side);
       if (arc.length < 2) return;
@@ -99,6 +101,17 @@ export class YardDetails {
     return fence;
   }
 
+  private fenceWalls(spots: { x: number; z: number; angle: number }[]): Object3D[] {
+    return spots
+      .filter((_, index) => index % 3 === 1)
+      .map((spot) => {
+        const wall = Solid.mark(new Object3D(), { shape: "box", size: [0.47, 0.36, 0.07], offset: [0, 0, 0] });
+        wall.position.set(spot.x, GROUND_TOP + 0.18, spot.z);
+        wall.rotation.y = spot.angle;
+        return wall;
+      });
+  }
+
   private mailbox(doorX: number, accent: number): Group {
     const side = doorX > 0 ? -1 : 1;
     const mailbox = new Group();
@@ -109,6 +122,7 @@ export class YardDetails {
     const flag = new Mesh(new RoundedBoxGeometry(0.03, 0.11, 0.07, 2, 0.012), this.material(FLAG));
     flag.position.set(0.12, 0.7, 0.06);
     mailbox.add(post, box, flag);
+    Solid.mark(mailbox, { shape: "cylinder", radius: 0.05, height: 0.75, offset: [0, 0.37, 0] });
     const angle = side * (FENCE_SPAN + 0.12);
     mailbox.position.set(Math.sin(angle) * (FENCE_RADIUS + 0.3), GROUND_TOP, Math.cos(angle) * (FENCE_RADIUS + 0.3));
     mailbox.rotation.y = angle;
@@ -125,6 +139,7 @@ export class YardDetails {
         const shrub = new Mesh(new SphereGeometry(this.rng.between(0.17, 0.25), 14, 10), this.material(this.rng.pick(SHRUB)));
         shrub.position.set(doorX + side * this.rng.between(0.55, 0.75), GROUND_TOP + 0.14, doorZ + 0.14);
         shrub.scale.y = 0.85;
+        Solid.mark(shrub, { shape: "cylinder", radius: 0.2, height: 0.3, offset: [0, 0, 0] });
         shrub.castShadow = true;
         return shrub;
       });
