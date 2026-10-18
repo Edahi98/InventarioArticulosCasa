@@ -1,14 +1,26 @@
-# Inventario Inteligente para el Hogar 🏠📦
+# 🐻 Guardacosas: el inventario de tu hogar 🏠🍓
 
-Sistema integral para la gestión y seguimiento del inventario de artículos del hogar. Diseñado con una arquitectura de microservicios, permite administrar el inventario a través de una interfaz web intuitiva o interactuar mediante lenguaje natural con un Agente de IA que también atiende por Telegram.
+> 🍎 ¿Dónde quedó el taladro? 🍊 ¿Cuántas pilas nos quedan? 🍋 ¿Quién se llevó el rallador? 🍇
+> Aquí cada cosa tiene su cuarto, su lugar y un osito que la cuida.
+
+Guardacosas es un sistema para llevar el inventario de la casa sin que se sienta como una hoja de cálculo. Lo puedes manejar desde una web que parece un juguete, o simplemente platicarle al **agente de IA**, que contesta por la terminal, por una API o por **Telegram** 🍌.
+
+## 🧸 Conoce a los guardianes
+
+| Osito | Cuida | Lo suyo |
+|---|---|---|
+| 🍳 **Pimienta** | la cocina | Sabe dónde está la olla de presión y quién se llevó el rallador. |
+| 🔧 **Tuerca** | el taller | Lleva la cuenta de lo que prestaste y de lo que sigue sin arreglar. |
+| 📚 **Página** | el estudio | Ordena la biblioteca por tema y apunta una nota en cada ejemplar. |
+| 📦 **Caja** | la bodega | Cuida lo que no usas todos los días, con una foto de cada caja. |
 
 ## 🌟 Características Principales
-- **Una web que es un juguete**: todo se ve como un mundo de plastilina con osos «guardianes». La página de inicio es un parque con rueda de la fortuna, carrusel y trencito, y un osito que baja una escalera mientras haces scroll. Al iniciar sesión llegas a la entrada de una casita, y cada pantalla (buscar, habitantes, vincular el bot, guardar algo) es un menú de juego con su propio escenario de fondo.
-- **Tu casa como un barrio**: cada categoría es un cuarto y se ve como una casita de su propio color en una isla. Puedes girar la isla, elegir una casa y entrar a su cuarto, o caminar en primera persona, abrir puertas, manejar los carros y cruzar puentes a otras islitas.
-- **Cada cosa con su lugar**: los artículos se guardan con foto, cantidad, notas y una ubicación (por ejemplo, «estante de arriba»), y se ven como las casillas de un inventario de juego.
-- **Asistente de IA (Agente)**: Un agente inteligente (Python) que permite hacer consultas por coincidencia aproximada y operaciones con lenguaje natural, desde la terminal, una API HTTP o un bot de Telegram integrado, accesible desde cualquier lugar.
-- **Persistencia**: Base de datos en Supabase (PostgreSQL) e imágenes en Cloudinary.
-- **Gestión de Reportes**: Descarga y exportación de reportes de inventario a Excel.
+- 🎠 **Una web que es un juguete**: todo se ve como un mundo de plastilina con osos «guardianes». La página de inicio es un parque con rueda de la fortuna, carrusel y trencito, y un osito que baja una escalera mientras haces scroll. Al iniciar sesión llegas a la entrada de una casita, y cada pantalla (buscar, habitantes, vincular el bot, guardar algo) es un menú de juego con su propio escenario de fondo.
+- 🏘️ **Tu casa como un barrio**: cada categoría es un cuarto y se ve como una casita de su propio color en una isla. Puedes girar la isla, elegir una casa y entrar a su cuarto, o caminar en primera persona, abrir puertas, manejar los carros 🚗 y cruzar puentes a otras islitas.
+- 🍓 **Cada cosa con su lugar**: los artículos se guardan con foto, cantidad, notas y una ubicación (por ejemplo, «estante de arriba»), y se ven como las casillas de un inventario de juego.
+- 🤖 **Asistente de IA (Agente)**: un agente inteligente (Python) al que le hablas normal: «se me acabaron las pilas», «le presté el taladro a mi cuñado». Busca por coincidencia aproximada, aunque escribas mal, y funciona desde la terminal, una API HTTP o un bot de Telegram, desde cualquier lugar.
+- ☁️ **Persistencia**: base de datos en Supabase (PostgreSQL) e imágenes en Cloudinary.
+- 📊 **Reportes**: descarga y exportación del inventario a Excel.
 
 ## 🏗 Arquitectura del Sistema
 
