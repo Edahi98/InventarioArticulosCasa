@@ -6,6 +6,7 @@ import HomeCategoryBears from "../components/home/HomeCategoryBears.vue";
 import HomeClosing from "../components/home/HomeClosing.vue";
 import HomeFeatures from "../components/home/HomeFeatures.vue";
 import HomeHero from "../components/home/HomeHero.vue";
+import HomeStairs from "../components/home/HomeStairs.vue";
 
 const router = useRouter();
 const bears = listHomeBears();
@@ -22,6 +23,7 @@ function goToDashboard(): void {
 <template>
   <div class="landing">
     <HomeHero @enter="goToDashboard" />
+    <HomeStairs />
     <HomeCategoryBears :bears="bears" />
     <HomeFeatures />
     <HomeClosing :bears="bears.slice(0, 3)" @enter="goToDashboard" />
