@@ -65,7 +65,7 @@ services:
       - ./agente/.env
     environment:
       BACKEND_URL: http://inventario-backend:4000
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-4o-mini}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
       MODE: telegram
     depends_on:
       backend:
