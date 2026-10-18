@@ -8,7 +8,9 @@ import {
 } from "three";
 import { SurfaceTextures } from "../SurfaceTextures.js";
 import { BearBuilder } from "../BearBuilder.js";
+import type { WalkGap, WalkZone } from "../walk/WalkArea.js";
 import { Backdrop } from "./Backdrop.js";
+import { BridgeLinks } from "./BridgeLinks.js";
 import { DayLife } from "./DayLife.js";
 import { GuardianBear } from "./GuardianBear.js";
 import { HouseFactory } from "./HouseFactory.js";
@@ -54,6 +56,8 @@ export interface NeighborhoodWorld {
   dayLife: DayLife;
   backdrop: Backdrop;
   radius: number;
+  zones: WalkZone[];
+  gaps: WalkGap[];
 }
 
 export const ROAD_WIDTH = 1.6;
@@ -104,8 +108,10 @@ export class NeighborhoodBuilder {
     const traffic = new Traffic(plan.curve, ROAD_WIDTH, Math.min(Math.max(Math.round(count / 3) + 1, 2), 6));
     const dayLife = new DayLife(plan.islandRadius * 2, plan.islandRadius * 2);
     const backdrop = new Backdrop(plan.islandRadius, this.categories.map((category) => category.id), this.trees);
-    world.add(backdrop.group, traffic.group, dayLife.group);
-    return { world, houses, swaying, lamps: this.lampGlass, traffic, dayLife, backdrop, radius: plan.islandRadius };
+    const bridges = new BridgeLinks(this.trees).build(plan.islandRadius);
+    world.add(backdrop.group, traffic.group, dayLife.group, bridges.group);
+    this.lampGlass.push(...bridges.lamps);
+    return { world, houses, swaying, lamps: this.lampGlass, traffic, dayLife, backdrop, radius: plan.islandRadius, zones: bridges.zones, gaps: bridges.gaps };
   }
 
   private grass(plan: RingPlan): GrassField {

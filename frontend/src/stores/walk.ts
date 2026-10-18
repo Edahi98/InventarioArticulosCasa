@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 export interface DoorPrompt {
+  kind: "door" | "car";
   id: number;
   name: string;
 }
@@ -15,8 +16,9 @@ export const useWalkStore = defineStore("walk", () => {
   const lastHouseId = ref<number | null>(null);
   const resumeAtDoor = ref(false);
   const touch = ref(false);
+  const driving = ref(false);
 
-  const canInteract = computed(() => walking.value && prompt.value !== null && !entering.value);
+  const canInteract = computed(() => walking.value && (prompt.value !== null || driving.value) && !entering.value);
 
   /**
    * Marca que se pidió caminar; mientras carga la física se muestra el aviso.
@@ -43,6 +45,7 @@ export const useWalkStore = defineStore("walk", () => {
     prompt.value = null;
     entering.value = false;
     resumeAtDoor.value = false;
+    driving.value = false;
   }
 
   /**
@@ -69,5 +72,5 @@ export const useWalkStore = defineStore("walk", () => {
     return lastHouseId.value;
   }
 
-  return { walking, loading, locked, prompt, entering, lastHouseId, resumeAtDoor, touch, canInteract, begin, ready, end, enterHouse, takeResume };
+  return { walking, loading, locked, prompt, entering, lastHouseId, resumeAtDoor, touch, driving, canInteract, begin, ready, end, enterHouse, takeResume };
 });

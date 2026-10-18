@@ -1,5 +1,6 @@
 import { Object3D, Quaternion, Vector3, type Group } from "three";
 import { Solid } from "./Solid.js";
+import type { WalkGap, WalkZone } from "./WalkArea.js";
 
 type Rapier = typeof import("@dimforge/rapier3d-compat").default;
 
@@ -14,6 +15,7 @@ const RADIUS = 0.1;
 const HALF_HEIGHT = 0.14;
 const GRAVITY = 7;
 const WALL_SEGMENTS = 40;
+const CAR = { halfLength: 0.68, halfHeight: 0.24, halfWidth: 0.36, lift: 0.3 };
 
 export class WalkPhysics {
   private world!: InstanceType<Rapier["World"]>;
@@ -24,6 +26,7 @@ export class WalkPhysics {
   private velocityY = 0;
   private grounded = false;
   private solids = 0;
+  private driving = false;
 
   /**
    * Física del paseo en primera persona con Rapier: un suelo con la forma de la isla, un muro invisible en su
@@ -36,17 +39,18 @@ export class WalkPhysics {
    * Carga el motor (WebAssembly) y arma el mundo físico a partir de los objetos sólidos de la escena.
    *
    * @param scene - Grupo del mundo; todo lo que tenga una forma sólida marcada se vuelve colisionable.
-   * @param radius - Radio de la isla.
+   * @param zones - Islas caminables (círculos); cada una tiene suelo y un muro en su orilla.
+   * @param gaps - Aberturas del muro por donde se pasa a los puentes.
    * @param spawn - Dónde aparece el jugador, con los pies sobre el piso.
    * @returns La física lista para usarse.
    */
-  static async create(scene: Group, radius: number, spawn: Vector3): Promise<WalkPhysics> {
+  static async create(scene: Group, zones: WalkZone[], gaps: WalkGap[], spawn: Vector3): Promise<WalkPhysics> {
     const physics = new WalkPhysics();
     const module = await import("@dimforge/rapier3d-compat");
     physics.rapier = module.default;
     await physics.rapier.init();
     physics.world = new physics.rapier.World({ x: 0, y: -GRAVITY, z: 0 });
-    physics.buildGround(radius);
+    zones.forEach((zone) => physics.buildGround(zone, gaps));
     physics.buildSolids(scene);
     physics.buildPlayer(spawn);
     physics.world.step();
@@ -94,23 +98,94 @@ export class WalkPhysics {
   }
 
   /**
+   * Cambia la cápsula del jugador por la caja de un coche en el mismo punto: a partir de aquí las colisiones se
+   * calculan con el tamaño del coche.
+   *
+   * @param feet - Posición del suelo bajo el coche.
+   * @param heading - Giro del coche sobre el eje vertical (el mismo de `rotation.y` del modelo).
+   */
+  enterVehicle(feet: Vector3, heading: number): void {
+    const { ColliderDesc } = this.rapier;
+    this.world.removeCollider(this.collider, false);
+    this.body.setNextKinematicTranslation({ x: feet.x, y: feet.y + CAR.lift, z: feet.z });
+    this.body.setNextKinematicRotation(WalkPhysics.yawOf(heading));
+    this.collider = this.world.createCollider(ColliderDesc.cuboid(CAR.halfLength, CAR.halfHeight, CAR.halfWidth), this.body);
+    this.driving = true;
+    this.velocityY = 0;
+    this.world.step();
+  }
+
+  /**
+   * Devuelve la cápsula del jugador en el punto indicado, de pie.
+   *
+   * @param feet - Posición de los pies.
+   */
+  exitVehicle(feet: Vector3): void {
+    const { ColliderDesc } = this.rapier;
+    this.world.removeCollider(this.collider, false);
+    this.body.setNextKinematicRotation({ x: 0, y: 0, z: 0, w: 1 });
+    this.body.setNextKinematicTranslation({ x: feet.x, y: feet.y + HALF_HEIGHT + RADIUS, z: feet.z });
+    this.collider = this.world.createCollider(ColliderDesc.capsule(HALF_HEIGHT, RADIUS), this.body);
+    this.driving = false;
+    this.velocityY = 0;
+    this.world.step();
+  }
+
+  /**
+   * Avanza el coche un paso: lo orienta, lo empuja hacia delante y deja que las paredes, árboles y casas lo frenen.
+   *
+   * @param speed - Velocidad con signo, en unidades por segundo (negativa para ir de reversa).
+   * @param heading - Giro del coche sobre el eje vertical.
+   * @param dt - Segundos del cuadro.
+   * @returns La posición del suelo bajo el coche y la distancia realmente recorrida entre lo pedido (0 a 1).
+   */
+  driveStep(speed: number, heading: number, dt: number): { x: number; y: number; z: number; progress: number } {
+    this.body.setNextKinematicRotation(WalkPhysics.yawOf(heading));
+    const dx = Math.cos(heading) * speed * dt;
+    const dz = -Math.sin(heading) * speed * dt;
+    this.controller.computeColliderMovement(this.collider, { x: dx, y: -0.4 * dt, z: dz });
+    const move = this.controller.computedMovement();
+    const position = this.body.translation();
+    this.body.setNextKinematicTranslation({ x: position.x + move.x, y: position.y + move.y, z: position.z + move.z });
+    this.world.step();
+    const next = this.body.translation();
+    const wanted = Math.hypot(dx, dz);
+    return { x: next.x, y: next.y - CAR.lift, z: next.z, progress: wanted < 1e-6 ? 1 : Math.min(Math.hypot(move.x, move.z) / wanted, 1) };
+  }
+
+  /**
+   * @returns Si el jugador está dentro de un coche.
+   */
+  get inVehicle(): boolean {
+    return this.driving;
+  }
+
+  /**
    * Libera el mundo físico.
    */
   dispose(): void {
     this.world.free();
   }
 
-  private buildGround(radius: number): void {
+  private static yawOf(angle: number): { x: number; y: number; z: number; w: number } {
+    const quaternion = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), angle);
+    return { x: quaternion.x, y: quaternion.y, z: quaternion.z, w: quaternion.w };
+  }
+
+  private buildGround(zone: WalkZone, gaps: WalkGap[]): void {
     const { ColliderDesc } = this.rapier;
-    this.world.createCollider(ColliderDesc.cylinder(0.5, radius).setTranslation(0, 0.06 - 0.5, 0));
-    const wall = radius - 0.55;
+    this.world.createCollider(ColliderDesc.cylinder(0.5, zone.radius).setTranslation(zone.x, 0.06 - 0.5, zone.z));
+    const wall = zone.radius - 0.55;
+    const length = (Math.PI * 2 * wall) / WALL_SEGMENTS / 2 + 0.05;
     for (let index = 0; index < WALL_SEGMENTS; index += 1) {
       const angle = (index / WALL_SEGMENTS) * Math.PI * 2;
-      const length = (Math.PI * 2 * wall) / WALL_SEGMENTS / 2 + 0.05;
+      const x = zone.x + Math.cos(angle) * (wall + 0.2);
+      const z = zone.z + Math.sin(angle) * (wall + 0.2);
+      if (gaps.some((gap) => Math.hypot(gap.x - x, gap.z - z) < gap.half + length)) continue;
       const rotation = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -angle);
       this.world.createCollider(
         ColliderDesc.cuboid(0.2, 2, length)
-          .setTranslation(Math.cos(angle) * (wall + 0.2), 2, Math.sin(angle) * (wall + 0.2))
+          .setTranslation(x, 2, z)
           .setRotation({ x: rotation.x, y: rotation.y, z: rotation.z, w: rotation.w }),
       );
     }

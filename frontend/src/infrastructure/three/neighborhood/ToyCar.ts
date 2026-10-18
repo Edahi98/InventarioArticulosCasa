@@ -1,4 +1,4 @@
-import { BoxGeometry, BufferGeometry, CylinderGeometry, DoubleSide, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial, SphereGeometry, TorusGeometry } from "three";
+import { BoxGeometry, BufferGeometry, CylinderGeometry, DoubleSide, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial, SphereGeometry, TorusGeometry, Vector3 } from "three";
 import type { BearTone } from "../../../core/domain/inventoryBear.js";
 import { SurfaceTextures } from "../SurfaceTextures.js";
 import { VehicleCargo } from "./VehicleCargo.js";
@@ -10,6 +10,8 @@ export interface BuiltCar {
   group: Group;
   headlights: MeshStandardMaterial;
   head: Group;
+  driver: Group;
+  seat: Vector3;
 }
 
 const GLASS = 0xfff6dc;
@@ -93,7 +95,7 @@ export class ToyCar {
     car.traverse((part) => {
       part.castShadow = true;
     });
-    return { group: car, headlights, head: driver.head };
+    return { group: car, headlights, head: driver.head, driver: driver.group, seat: driver.group.position.clone().add(new Vector3(0, 0.1, 0)) };
   }
 
   /**
@@ -195,7 +197,7 @@ export class ToyCar {
     car.traverse((part) => {
       part.castShadow = true;
     });
-    return { group: car, headlights, head: driver.head };
+    return { group: car, headlights, head: driver.head, driver: driver.group, seat: driver.group.position.clone().add(new Vector3(0, 0.1, 0)) };
   }
 
   /**

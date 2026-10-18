@@ -7,6 +7,7 @@ import { useCanvasStage } from "../../composables/useCanvasStage.js";
 import { useDayClock } from "../../composables/useDayClock.js";
 import { useWindowListener } from "../../composables/useWindowListener.js";
 import { useWalkStore } from "../../stores/walk.js";
+import MapControls from "./MapControls.vue";
 
 const props = defineProps<{ categories: Category[]; counts: Record<number, number> }>();
 const emit = defineEmits<{ select: [id: number]; edit: [category: Category]; remove: [category: Category] }>();
@@ -55,6 +56,9 @@ const { host, canvas, status, stage } = useCanvasStage<NeighborhoodStage>({
         },
         onWalkLock: (locked) => {
           walk.locked = locked;
+        },
+        onWalkDrive: (driving) => {
+          walk.driving = driving;
         },
       },
       { reducedMotion },
@@ -210,12 +214,12 @@ useWindowListener("keydown", (event) => {
       <div v-if="!walk.entering && !walk.loading" class="pointer-events-none absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/90 shadow-[0_0_0_2px_rgb(42_23_48/0.35)]" aria-hidden="true" />
       <div class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-3 pb-5">
         <p v-if="walk.loading" class="menu-slot !py-1.5 text-sm font-extrabold" role="status">Preparando el paseo...</p>
-        <button v-else-if="walk.canInteract && walk.prompt" type="button" class="menu-slot pointer-events-auto !py-2 text-base font-extrabold" @click="stage?.interactWalk()">
+        <button v-else-if="walk.canInteract" type="button" class="menu-slot pointer-events-auto !py-2 text-base font-extrabold" @click="stage?.interactWalk()">
           <span class="menu-badge menu-badge-sun !h-9 !w-9">E</span>
-          Abrir la puerta de {{ walk.prompt.name }}
+          {{ walk.driving ? "Bajarte del carro" : walk.prompt?.kind === "car" ? "Subirte al carro" : `Abrir la puerta de ${walk.prompt?.name}` }}
         </button>
         <p v-if="!walk.loading && !walk.touch" class="menu-slot !py-1 text-xs font-extrabold" role="note">
-          {{ walk.locked ? "WASD moverte · Shift correr · Espacio saltar · E abrir · Esc soltar el mouse" : "Haz clic en la escena para mirar con el mouse" }}
+          {{ !walk.locked ? "Haz clic en la escena para mirar con el mouse" : walk.driving ? "W/S acelerar · A/D girar · Espacio frenar · Shift turbo · V cambiar vista · E bajarte" : "WASD moverte · Shift correr · Espacio saltar · E abrir o subirte · Esc soltar el mouse" }}
         </p>
         <button type="button" class="ui-btn ui-btn-sm ui-btn-ghost pointer-events-auto" @click="toggleWalk">
           <font-awesome-icon icon="xmark" /> Dejar de caminar
@@ -238,35 +242,23 @@ useWindowListener("keydown", (event) => {
         class="ui-btn ui-btn-primary pointer-events-auto absolute bottom-10 right-5"
         @click="stage?.interactWalk()"
       >
-        <font-awesome-icon icon="door-open" /> Abrir
+        <font-awesome-icon :icon="walk.driving ? 'xmark' : 'door-open'" /> {{ walk.driving ? "Bajar" : walk.prompt?.kind === "car" ? "Subir" : "Abrir" }}
       </button>
     </template>
 
     <div v-if="categories.length > 0 && !walk.walking" class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-3 pb-4">
-      <div class="pointer-events-auto flex w-full max-w-xl items-center gap-2">
-        <div class="flex min-w-0 flex-1 items-center gap-2.5 rounded-full bg-white/90 px-3.5 py-1.5 text-[#2a1730] shadow-[0_4px_0_var(--l-toy-edge)]">
-          <font-awesome-icon :icon="isNight ? 'moon' : 'sun'" class="shrink-0 text-[#c4235f]" />
-          <label class="sr-only" for="neighborhood-hour">Hora del día en la isla</label>
-          <input
-            id="neighborhood-hour"
-            type="range"
-            min="0"
-            max="24"
-            step="0.25"
-            :value="hour"
-            class="h-2 min-w-0 flex-1 accent-[#c4235f]"
-            :disabled="status !== 'ready' || entering"
-            @input="scrub"
-          />
-          <span class="w-[4.4rem] shrink-0 text-right text-sm font-extrabold tabular-nums">{{ clock }}</span>
-          <button v-if="manualHour" type="button" class="shrink-0 rounded-full bg-[#ffe3ee] px-2 py-0.5 text-xs font-extrabold text-[#c4235f]" @click="followClock">Ahora</button>
-        </div>
-        <button type="button" class="ui-btn ui-btn-sm ui-btn-primary shrink-0" :disabled="status !== 'ready' || entering" @click="toggleWalk">
-          <font-awesome-icon icon="person-walking" /> Caminar
-        </button>
-        <button type="button" class="ui-btn ui-btn-sm ui-btn-ghost shrink-0 !px-3" aria-label="Ver toda la isla" :disabled="status !== 'ready' || entering" @click="stage?.focus(null); stage?.resetView()">
-          <font-awesome-icon icon="map" />
-        </button>
+      <div class="pointer-events-auto flex w-full justify-center">
+        <MapControls
+          :hour="hour"
+          :clock="clock"
+          :is-night="isNight"
+          :manual-hour="manualHour"
+          :disabled="status !== 'ready' || entering"
+          @scrub="scrub"
+          @follow="followClock"
+          @walk="toggleWalk"
+          @reset="stage?.focus(null); stage?.resetView()"
+        />
       </div>
 
       <nav class="pointer-events-auto w-full max-w-full" aria-label="Cuartos de tu casa">
