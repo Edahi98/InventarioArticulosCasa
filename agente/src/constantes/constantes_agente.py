@@ -223,10 +223,6 @@ RESOURCE_FIELDS = {
 }
 
 TOOL_TEXT_MARKER = "<tool_call>"
-TOOL_TEXT_HINT = (
-    "Tu respuesta anterior escribió una herramienta como texto y no se ejecutó. Si necesitas una herramienta, "
-    "úsala como llamada real a herramienta, nunca como texto en el mensaje."
-)
 TOOL_TEXT_FAILED = (
     "🐻🥺 Se nos enredaron los deditos y no pudimos hacerlo esta vez. ¿Nos lo pides otra vez, porfa? 💗"
 )
