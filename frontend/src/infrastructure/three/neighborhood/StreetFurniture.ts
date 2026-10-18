@@ -3,6 +3,7 @@ import { SurfaceTextures } from "../SurfaceTextures.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RoadBuilder } from "./RoadBuilder.js";
 import { SeededRandom } from "./SeededRandom.js";
+import { Solid } from "../walk/Solid.js";
 
 type Maker = () => Group;
 
@@ -62,6 +63,7 @@ export class StreetFurniture {
     const back = new Mesh(new RoundedBoxGeometry(0.52, 0.14, 0.04, 2, 0.02), this.material(WOOD));
     back.position.set(0, 0.27, -0.08);
     bench.add(seat, back);
+    Solid.mark(bench, { shape: "box", size: [0.52, 0.3, 0.18], offset: [0, 0.15, 0] });
     [-0.21, 0.21].forEach((leg) => {
       const support = new Mesh(new RoundedBoxGeometry(0.04, 0.16, 0.15, 2, 0.015), this.material(POLE));
       support.position.set(leg, 0.08, 0);
@@ -77,6 +79,7 @@ export class StreetFurniture {
     const cap = new Mesh(new SphereGeometry(0.066, 14, 10), this.material(HYDRANT));
     cap.position.y = 0.23;
     hydrant.add(body, cap);
+    Solid.mark(hydrant, { shape: "cylinder", radius: 0.08, height: 0.28, offset: [0, 0.14, 0] });
     [-1, 1].forEach((side) => {
       const nub = new Mesh(new CylinderGeometry(0.022, 0.022, 0.07, 10), this.material(PAINT));
       nub.rotation.z = Math.PI / 2;
@@ -94,6 +97,7 @@ export class StreetFurniture {
     lid.position.y = 0.23;
     lid.scale.y = 0.55;
     bin.add(can, lid);
+    Solid.mark(bin, { shape: "cylinder", radius: 0.09, height: 0.26, offset: [0, 0.13, 0] });
     return bin;
   }
 
@@ -106,6 +110,7 @@ export class StreetFurniture {
     const stripe = new Mesh(new RoundedBoxGeometry(0.28, 0.025, 0.03, 2, 0.012), this.material(PAINT));
     stripe.position.set(0.1, 0.84, 0.03);
     sign.add(pole, plate, stripe);
+    Solid.mark(sign, { shape: "cylinder", radius: 0.03, height: 0.9, offset: [0, 0.45, 0] });
     return sign;
   }
 }

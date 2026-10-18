@@ -1,4 +1,5 @@
 import { createApp } from "vue";
+import { createPinia } from "pinia";
 import App from "./App.vue";
 import { router } from "./router/index.js";
 import { vAriaFocus } from "./directives/v-aria-focus.js";
@@ -31,6 +32,7 @@ import {
   faDoorOpen,
   faXmark,
   faListCheck,
+  faPersonWalking,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -55,11 +57,13 @@ library.add(
   faDoorOpen,
   faXmark,
   faListCheck,
+  faPersonWalking,
 );
 
 useTheme();
 
 const app = createApp(App);
+app.use(createPinia());
 app.use(router);
 app.directive("aria-focus", vAriaFocus);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

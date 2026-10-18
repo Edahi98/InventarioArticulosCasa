@@ -6,6 +6,7 @@ import type { NeighborhoodHover, NeighborhoodStage } from "../../infrastructure/
 import { useCanvasStage } from "../../composables/useCanvasStage.js";
 import { useDayClock } from "../../composables/useDayClock.js";
 import { useWindowListener } from "../../composables/useWindowListener.js";
+import { useWalkStore } from "../../stores/walk.js";
 
 const props = defineProps<{ categories: Category[]; counts: Record<number, number> }>();
 const emit = defineEmits<{ select: [id: number]; edit: [category: Category]; remove: [category: Category] }>();
@@ -14,11 +15,17 @@ const anchor = ref<NeighborhoodHover | null>(null);
 const pickedId = ref<number | null>(null);
 const entering = ref(false);
 const width = ref(1200);
+const walk = useWalkStore();
+const knob = ref({ x: 0, y: 0 });
 
 const { hour, manualHour, clock, isNight, scrub, followClock } = useDayClock((value) => stage.value?.setHour(value));
 
 const { host, canvas, status, stage } = useCanvasStage<NeighborhoodStage>({
   enabled: () => props.categories.length > 0,
+  onReady: (ready) => {
+    walk.touch = window.matchMedia("(pointer: coarse)").matches;
+    if (walk.walking) void startWalk(ready, walk.takeResume() ?? walk.lastHouseId, walk.lastHouseId !== null && walk.resumeAtDoor);
+  },
   onResize: (nextWidth) => {
     width.value = nextWidth;
   },
@@ -34,13 +41,20 @@ const { host, canvas, status, stage } = useCanvasStage<NeighborhoodStage>({
         onPick: (id) => {
           pickedId.value = id;
         },
-        onEnter: () => {
+        onEnter: (id) => {
           entering.value = true;
           anchor.value = null;
+          if (walk.walking) walk.enterHouse(id);
         },
         onSelect: (id) => emit("select", id),
         onHour: (next) => {
           hour.value = next;
+        },
+        onWalkPrompt: (next) => {
+          walk.prompt = next;
+        },
+        onWalkLock: (locked) => {
+          walk.locked = locked;
         },
       },
       { reducedMotion },
@@ -68,6 +82,40 @@ function countOf(id: number | undefined): number {
 function things(count: number): string {
   if (count === 0) return "Vacía y dormida";
   return count === 1 ? "Guarda 1 cosa" : `Guarda ${count} cosas`;
+}
+
+async function startWalk(target: NeighborhoodStage, houseId: number | null, fromDoor: boolean): Promise<void> {
+  try {
+    await target.startWalking(houseId, fromDoor);
+    walk.ready();
+  } catch {
+    walk.end();
+  }
+}
+
+function toggleWalk(): void {
+  if (!stage.value) return;
+  if (walk.walking) {
+    stage.value.stopWalking();
+    walk.end();
+    return;
+  }
+  walk.begin();
+  void startWalk(stage.value, pickedId.value, false);
+}
+
+function moveStick(event: PointerEvent): void {
+  const base = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const reach = base.width / 2;
+  const dx = Math.max(-1, Math.min(1, (event.clientX - (base.left + reach)) / reach));
+  const dy = Math.max(-1, Math.min(1, (event.clientY - (base.top + reach)) / reach));
+  knob.value = { x: dx, y: dy };
+  stage.value?.setWalkStick(dx, -dy);
+}
+
+function releaseStick(): void {
+  knob.value = { x: 0, y: 0 };
+  stage.value?.setWalkStick(0, 0);
 }
 
 function pick(id: number): void {
@@ -158,7 +206,43 @@ useWindowListener("keydown", (event) => {
       </div>
     </div>
 
-    <div v-if="categories.length > 0" class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-3 pb-4">
+    <template v-if="walk.walking">
+      <div v-if="!walk.entering && !walk.loading" class="pointer-events-none absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/90 shadow-[0_0_0_2px_rgb(42_23_48/0.35)]" aria-hidden="true" />
+      <div class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-3 pb-5">
+        <p v-if="walk.loading" class="menu-slot !py-1.5 text-sm font-extrabold" role="status">Preparando el paseo...</p>
+        <button v-else-if="walk.canInteract && walk.prompt" type="button" class="menu-slot pointer-events-auto !py-2 text-base font-extrabold" @click="stage?.interactWalk()">
+          <span class="menu-badge menu-badge-sun !h-9 !w-9">E</span>
+          Abrir la puerta de {{ walk.prompt.name }}
+        </button>
+        <p v-if="!walk.loading && !walk.touch" class="menu-slot !py-1 text-xs font-extrabold" role="note">
+          {{ walk.locked ? "WASD moverte · Shift correr · Espacio saltar · E abrir · Esc soltar el mouse" : "Haz clic en la escena para mirar con el mouse" }}
+        </p>
+        <button type="button" class="ui-btn ui-btn-sm ui-btn-ghost pointer-events-auto" @click="toggleWalk">
+          <font-awesome-icon icon="xmark" /> Dejar de caminar
+        </button>
+      </div>
+      <div
+        v-if="walk.touch && !walk.loading"
+        class="pointer-events-auto absolute bottom-6 left-5 h-28 w-28 touch-none rounded-full border-4 border-white/80 bg-white/30"
+        aria-label="Joystick para caminar"
+        @pointerdown.prevent="moveStick($event); ($event.currentTarget as HTMLElement).setPointerCapture($event.pointerId)"
+        @pointermove="($event.buttons || $event.pointerType === 'touch') && moveStick($event)"
+        @pointerup="releaseStick"
+        @pointercancel="releaseStick"
+      >
+        <span class="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_4px_0_var(--l-toy-edge)]" :style="{ transform: `translate(calc(-50% + ${knob.x * 2.2}rem), calc(-50% + ${knob.y * 2.2}rem))` }" />
+      </div>
+      <button
+        v-if="walk.touch && walk.canInteract"
+        type="button"
+        class="ui-btn ui-btn-primary pointer-events-auto absolute bottom-10 right-5"
+        @click="stage?.interactWalk()"
+      >
+        <font-awesome-icon icon="door-open" /> Abrir
+      </button>
+    </template>
+
+    <div v-if="categories.length > 0 && !walk.walking" class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-3 pb-4">
       <div class="pointer-events-auto flex w-full max-w-xl items-center gap-2">
         <div class="flex min-w-0 flex-1 items-center gap-2.5 rounded-full bg-white/90 px-3.5 py-1.5 text-[#2a1730] shadow-[0_4px_0_var(--l-toy-edge)]">
           <font-awesome-icon :icon="isNight ? 'moon' : 'sun'" class="shrink-0 text-[#c4235f]" />
@@ -177,6 +261,9 @@ useWindowListener("keydown", (event) => {
           <span class="w-[4.4rem] shrink-0 text-right text-sm font-extrabold tabular-nums">{{ clock }}</span>
           <button v-if="manualHour" type="button" class="shrink-0 rounded-full bg-[#ffe3ee] px-2 py-0.5 text-xs font-extrabold text-[#c4235f]" @click="followClock">Ahora</button>
         </div>
+        <button type="button" class="ui-btn ui-btn-sm ui-btn-primary shrink-0" :disabled="status !== 'ready' || entering" @click="toggleWalk">
+          <font-awesome-icon icon="person-walking" /> Caminar
+        </button>
         <button type="button" class="ui-btn ui-btn-sm ui-btn-ghost shrink-0 !px-3" aria-label="Ver toda la isla" :disabled="status !== 'ready' || entering" @click="stage?.focus(null); stage?.resetView()">
           <font-awesome-icon icon="map" />
         </button>

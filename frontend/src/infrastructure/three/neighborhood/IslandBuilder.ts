@@ -17,6 +17,7 @@ import {
 import { SurfaceTextures } from "../SurfaceTextures.js";
 import type { SeededRandom } from "./SeededRandom.js";
 import type { TreeFactory } from "./TreeFactory.js";
+import { Solid } from "../walk/Solid.js";
 
 const GRASS = 0xbfe9d5;
 const SOIL = 0xb98b73;
@@ -155,6 +156,7 @@ export class IslandBuilder {
       const rock = new Mesh(new DodecahedronGeometry(this.rng.between(0.22, 0.45), 1), this.material(ROCK));
       rock.position.set(Math.cos(angle) * (radius - 0.4), 0.1, Math.sin(angle) * (radius - 0.4));
       rock.scale.y = 0.65;
+      Solid.mark(rock, { shape: "cylinder", radius: 0.3, height: 0.3, offset: [0, 0.05, 0] });
       rock.castShadow = true;
       return rock;
     });

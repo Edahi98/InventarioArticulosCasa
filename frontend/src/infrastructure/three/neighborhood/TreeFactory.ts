@@ -1,6 +1,7 @@
 import { CylinderGeometry, Group, Mesh, MeshStandardMaterial, SphereGeometry } from "three";
 import { SurfaceTextures } from "../SurfaceTextures.js";
 import type { SeededRandom } from "./SeededRandom.js";
+import { Solid } from "../walk/Solid.js";
 
 const TRUNK = 0x9a6b52;
 const FOLIAGE = [0x86d6a8, 0xa6e29a, 0xffb3cf, 0xc2e69a] as const;
@@ -44,6 +45,7 @@ export class TreeFactory {
       puff.castShadow = true;
       tree.add(puff);
     });
+    Solid.mark(tree, { shape: "cylinder", radius: 0.17, height: 1.3, offset: [0, 0.65, 0] });
     tree.position.set(x, 0, z);
     tree.scale.setScalar(scale);
     tree.rotation.y = this.rng.between(0, Math.PI * 2);
