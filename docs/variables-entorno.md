@@ -26,7 +26,7 @@ Configuración de la IA y conexión del agente inteligente.
 * **`JWT_ISSUER`** (Opcional): Emisor esperado en los tokens (por defecto `inventario-backend`). Debe coincidir con el del backend.
 * **`FORCE_HTTPS`** (Opcional): `true` para redirigir a HTTPS en modo `server`.
 * **`OPENROUTER_API_KEY`**: API key de OpenRouter.
-* **`OPENROUTER_MODEL`**: Modelo a utilizar, con soporte de tool calling (ej. `openai/gpt-4o-mini`).
+* **`OPENROUTER_MODEL`**: Modelo de la nube, con soporte de tool calling (ej. `openai/gpt-4o-mini`). Sin valor por defecto: si no se declara, el agente usa llama.cpp.
 * **`WEB_URL`**: URL pública de la página web; el bot la menciona al pedir que vinculen su cuenta. El agente no inicia sesión por sí mismo: cada persona genera un código en la web (menú «Telegram») y lo envía al bot con `/vincular CÓDIGO`.
 * **`INVENTARIO_TOKEN`** (Opcional): solo para el modo `cli`; token obtenido al iniciar sesión en la web.
 * **`MODE`**: Modo de ejecución: `telegram` (bot de Telegram), `server` (API HTTP) o `cli` (terminal).
