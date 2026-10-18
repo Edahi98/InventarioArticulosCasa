@@ -1,7 +1,15 @@
-DEFAULT_OPENROUTER_MODEL = "openai/gpt-4o-mini"
 LLM_TIMEOUT_MS = 25000
 LLM_MAX_RETRIES = 1
 LLM_REASONING = {"effort": "low"}
+LLM_PROVIDER_OPENROUTER = "openrouter"
+LLM_PROVIDER_LLAMA = "llama"
+LLM_PROVIDER_UNKNOWN = "LLM_PROVIDER debe ser «openrouter» o «llama», no «{provider}»."
+LLAMA_CONTEXT_TOKENS = 8192
+LLAMA_TEMPERATURE = 0.2
+LLAMA_MISSING = (
+    "Para usar llama.cpp instala las dependencias locales (uv sync --extra local) y define LLAMA_MODEL_PATH "
+    "con la ruta de un modelo .gguf."
+)
 SEARCH_TOP_K = 5
 SEARCH_MIN_SCORE = 50
 AMBIGUITY_GAP = 8
