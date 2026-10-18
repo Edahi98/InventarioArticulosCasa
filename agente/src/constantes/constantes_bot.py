@@ -46,3 +46,14 @@ TIMEOUT_ERROR = (
     "hecha, así que mira tu inventario antes de repetirlo, ¿sí? 💗"
 )
 INVALID_INPUT = "🐻🥺 Hmm, no entendimos eso. {details}"
+
+HTML_MARKS = (
+    (r"(?s)\*\*(.+?)\*\*", r"<b>\1</b>"),
+    (r"(?<!\*)\*(?![\s*])(.+?)(?<![\s*])\*(?!\*)", r"<i>\1</i>"),
+    (r"~~(.+?)~~", r"<s>\1</s>"),
+    (r"\|\|(.+?)\|\|", r"<tg-spoiler>\1</tg-spoiler>"),
+)
+HTML_CODE_SPAN = r"(`[^`\n]+`)"
+HTML_QUOTE_BLOCK = r"(?m)^(?:&gt; ?.*(?:\n|$))+"
+HTML_QUOTE_PREFIX = r"(?m)^&gt; ?"
+HTML_TAG = r"<(/?)(b|i|s|code|tg-spoiler|blockquote)>"
