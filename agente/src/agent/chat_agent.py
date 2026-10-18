@@ -7,6 +7,7 @@ from langgraph.pregel import Pregel as CompiledGraph
 from src.constantes.constantes_agente import CHOICE_KEY, QUESTION_FRAME
 from src.constantes.constantes_filtro import ASKS_THRESHOLD, QUESTION_MARKS
 from src.errors.error_filtro import DecisionsError
+from src.services.adapter_llm import LlmAdapter
 from src.services.client_decisions import DecisionsClient
 from src.services.images.renderer_image import CardImageRenderer
 from src.services.memory_choice import ChoiceMemory
@@ -53,12 +54,19 @@ class AgentChat:
         self._questions.clear(key)
         self._learn_question(key, messages[-1].content)
         tools = [m for m in messages if isinstance(m, ToolMessage)]
+        logger.info("modelo que respondió: %s", self._answering_model(messages))
         logger.info("tools usadas: %s", [m.name for m in tools] or "ninguna")
         results = [Codec.parse(m.content) for m in tools]
         self._offer_choice(key, message, results)
         self._remember(key, tools, results)
         images = self._renderer.render(results)
         return messages[-1].content, images
+
+    @staticmethod
+    def _answering_model(messages: list) -> str:
+        """Modelo que generó la última respuesta del asistente, según los metadatos del mensaje."""
+        metadata = getattr(messages[-1], "response_metadata", None) or {}
+        return metadata.get("model_name") or metadata.get("model") or LlmAdapter.provider()
 
     def forget(self, key: str) -> None:
         """Olvida el contexto de esa persona (al cerrar sesión)."""
