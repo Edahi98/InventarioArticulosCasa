@@ -27,19 +27,27 @@ export class RingLayout {
    *
    * @param count - Número de casas.
    * @param rng - Azar con semilla, para que la forma del barrio no cambie.
+   * @param minOuter - Mínimo de lotes en el lado de afuera, donde se reservan las uniones, el
+   * comercio y la estación receptora; la calle crece hasta que quepan.
    * @returns Las posiciones, la curva de la calle y las medidas de la isla.
    */
-  static plan(count: number, rng: SeededRandom): RingPlan {
+  static plan(count: number, rng: SeededRandom, minOuter = 0): RingPlan {
     const phases = [rng.between(0, Math.PI * 2), rng.between(0, Math.PI * 2), rng.between(0, Math.PI * 2)] as const;
     const wobble = (theta: number): number =>
       1 + 0.07 * Math.sin(2 * theta + phases[0]) + 0.045 * Math.sin(3 * theta + phases[1]);
 
+    const wanted = Math.max(minOuter, 0);
     let road = MIN_ROAD_RADIUS;
-    while (RingLayout.capacity(road + LOT_OFFSET) + RingLayout.capacity(road - LOT_OFFSET) < count) road += 0.25;
-    const outerCapacity = RingLayout.capacity(road + LOT_OFFSET);
-    const innerCapacity = RingLayout.capacity(road - LOT_OFFSET);
-    const outer = Math.min(outerCapacity, Math.ceil((count * outerCapacity) / (outerCapacity + innerCapacity)));
-    const inner = count - outer;
+    let outer = 0;
+    let inner = 0;
+    for (let guard = 0; guard < 400; guard += 1) {
+      const outerCapacity = RingLayout.capacity(road + LOT_OFFSET);
+      const innerCapacity = RingLayout.capacity(road - LOT_OFFSET);
+      outer = Math.min(outerCapacity, Math.max(wanted, count - innerCapacity));
+      inner = count - outer;
+      if (outer >= wanted && inner >= 0 && inner <= innerCapacity) break;
+      road += 0.25;
+    }
 
     const slots = [
       ...RingLayout.side(outer, road, LOT_OFFSET, 1, phases[2], rng, wobble),
@@ -56,6 +64,54 @@ export class RingLayout {
       roadRadius: road,
       islandRadius: road * 1.1 + LOT_OFFSET + 2.7,
       plazaRadius: Math.max(road * 0.9 - LOT_OFFSET - 1.9, 0),
+    };
+  }
+
+  /**
+   * Mueve un plan completo (lotes y calle) a otro centro, para armar varias islas con el mismo trazo.
+   *
+   * @param plan - Plan armado alrededor del origen.
+   * @param x - Desplazamiento en x.
+   * @param z - Desplazamiento en z.
+   * @returns Un plan nuevo con los lotes y la curva desplazados; las medidas no cambian.
+   */
+  static shift(plan: RingPlan, x: number, z: number): RingPlan {
+    return {
+      ...plan,
+      slots: plan.slots.map((slot) => ({ ...slot, x: slot.x + x, z: slot.z + z })),
+      curve: new CatmullRomCurve3(
+        plan.curve.points.map((point) => new Vector3(point.x + x, point.y, point.z + z)),
+        true,
+        "centripetal",
+      ),
+    };
+  }
+
+  /**
+   * Gira un plan completo alrededor de su centro (el origen), para que un lote quede mirando hacia donde se necesita.
+   *
+   * @param plan - Plan armado alrededor del origen.
+   * @param angle - Giro en radianes, en el mismo sentido que `Math.atan2(z, x)`.
+   * @returns Un plan nuevo con los lotes, sus orientaciones y la curva girados.
+   */
+  static rotate(plan: RingPlan, angle: number): RingPlan {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const turn = (x: number, z: number): [number, number] => [x * cos - z * sin, x * sin + z * cos];
+    return {
+      ...plan,
+      slots: plan.slots.map((slot) => {
+        const [x, z] = turn(slot.x, slot.z);
+        return { x, z, yaw: slot.yaw - angle };
+      }),
+      curve: new CatmullRomCurve3(
+        plan.curve.points.map((point) => {
+          const [x, z] = turn(point.x, point.z);
+          return new Vector3(x, point.y, z);
+        }),
+        true,
+        "centripetal",
+      ),
     };
   }
 

@@ -3,10 +3,13 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { NAV_ITEMS, PULL_FEEDBACK_MS } from "../constantes/nav_constantes.js";
 import { authenticatedHttpClient } from "../services/http/AuthenticatedHttpClient.js";
+import { useHeightVar } from "../composables/useHeightVar.js";
 import { useTheme } from "../composables/useTheme.js";
 import AppLogoBadge from "./AppLogoBadge.vue";
 
 const router = useRouter();
+const header = ref<HTMLElement | null>(null);
+useHeightVar(header, "--header-h");
 const { isDark, toggle: toggleTheme } = useTheme();
 const pulled = ref(false);
 
@@ -25,7 +28,7 @@ function pullChain(): void {
 </script>
 
 <template>
-  <header class="shop-header sticky top-0 z-20 px-3 pt-2" style="font-family: var(--l-font)">
+  <header ref="header" class="shop-header sticky top-0 z-20 px-3 pt-2" style="font-family: var(--l-font)">
     <div class="shopfront mx-auto max-w-7xl">
       <div class="awning" aria-hidden="true" />
 
@@ -196,9 +199,6 @@ function pullChain(): void {
 .sign.router-link-active::after {
   height: calc(var(--string) + 0.3rem);
 }
-.sign.router-link-active .sign-label {
-  display: block;
-}
 .sign-star {
   position: absolute;
   top: -0.35rem;
@@ -221,7 +221,7 @@ function pullChain(): void {
   font-size: 1.25rem;
 }
 .sign-brand .sign-name {
-  display: none;
+  white-space: nowrap;
 }
 .sign-brand:hover :deep(canvas) {
   transform: rotate(-10deg) scale(1.1);
@@ -284,9 +284,13 @@ function pullChain(): void {
 }
 
 @media (min-width: 640px) {
-  .sign-brand .sign-name { display: inline; }
   .sign { padding: 0.35rem 0.5rem; }
   .sign-brand { padding: 0.2rem 0.9rem 0.2rem 0.4rem; }
+}
+@media (min-width: 900px) {
+  .sign.router-link-active .sign-label {
+    display: block;
+  }
 }
 @media (min-width: 1100px) {
   .sign:not(.sign-brand) .sign-label {
@@ -295,14 +299,40 @@ function pullChain(): void {
 }
 @media (max-width: 639px) {
   .shop-header { padding-left: 0.4rem; padding-right: 0.4rem; }
-  .rail { padding: 0 0.5rem; gap: 0.3rem; }
-  .signs { gap: 0.2rem; }
-  .sign .menu-badge { width: 1.7rem; height: 1.7rem; font-size: 0.75rem; }
-  .sign-brand { display: none; }
-  .rail { justify-content: center; }
-  .sign.router-link-active .sign-label { display: none; }
-  .sign-exit { padding: 0.4rem 0.5rem; }
-  .pull-knob { width: 1.9rem; height: 1.9rem; }
+  .rail {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0 0.3rem;
+    padding: 0 0.5rem;
+  }
+  .rail-right { display: contents; }
+  .sign-brand { padding: 0.1rem 0.6rem 0.1rem 0.25rem; font-size: 1.1rem; }
+  .pull { order: 1; margin-left: auto; }
+  .sign-exit { order: 2; padding: 0.55rem 0.65rem; }
+  .pull-chain { height: 1.8rem; }
+  .pull-knob { width: 2.1rem; height: 2.1rem; }
+  .signs {
+    --string: 0.75rem;
+    position: relative;
+    order: 3;
+    flex: 0 0 100%;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.2rem;
+  }
+  .signs::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    right: 0;
+    left: 0;
+    height: 0.6rem;
+    background:
+      radial-gradient(circle at 0.3rem 0.3rem, var(--l-ink) 0.28rem, transparent 0.3rem),
+      radial-gradient(circle at calc(100% - 0.3rem) 0.3rem, var(--l-ink) 0.28rem, transparent 0.3rem),
+      linear-gradient(var(--l-ink), var(--l-ink)) 0 0.15rem / 100% 3px no-repeat;
+  }
+  .sign .menu-badge { width: 2.2rem; height: 2.2rem; font-size: 0.85rem; }
 }
 
 @keyframes sign-sway {

@@ -1,5 +1,6 @@
 import type { CanvasTexture } from "three";
 import { TextureCanvas } from "./TextureCanvas.js";
+import { SeededRandom } from "./neighborhood/SeededRandom.js";
 
 export class SurfaceTextures {
   /**
@@ -131,6 +132,172 @@ export class SurfaceTextures {
         context.fill();
       }
     });
+  }
+
+  /**
+   * @returns Losa gastada: granito fino, vetas suaves y el borde un poco más oscuro, casi blanca para teñirla.
+   */
+  static flagstone(): CanvasTexture {
+    return TextureCanvas.build("flagstone", 128, 128, false, (context, rng, width, height) => {
+      const base = context.createRadialGradient(width / 2, height / 2, 8, width / 2, height / 2, width * 0.7);
+      base.addColorStop(0, "#ffffff");
+      base.addColorStop(1, "#d9d2d6");
+      context.fillStyle = base;
+      context.fillRect(0, 0, width, height);
+      for (let index = 0; index < 420; index += 1) {
+        context.fillStyle = rng.chance(0.55) ? `rgba(70,40,60,${rng.between(0.05, 0.16)})` : `rgba(255,255,255,${rng.between(0.4, 0.85)})`;
+        context.beginPath();
+        context.arc(rng.between(0, width), rng.between(0, height), rng.between(0.6, 2.4), 0, Math.PI * 2);
+        context.fill();
+      }
+      context.strokeStyle = "rgba(90,50,70,0.18)";
+      context.lineWidth = 1.5;
+      for (let index = 0; index < 5; index += 1) {
+        context.beginPath();
+        context.moveTo(rng.between(0, width), rng.between(0, height));
+        context.quadraticCurveTo(rng.between(0, width), rng.between(0, height), rng.between(0, width), rng.between(0, height));
+        context.stroke();
+      }
+    });
+  }
+
+  /**
+   * @returns Mosaico de piedritas redondas con junta, en mosaico, para el borde del camino; sirve también como relieve.
+   */
+  static cobble(): CanvasTexture {
+    return TextureCanvas.build("cobble", 128, 128, true, (context, rng, width, height) => {
+      context.fillStyle = "#a99aa6";
+      context.fillRect(0, 0, width, height);
+      const step = 16;
+      for (let row = 0; row < height / step; row += 1) {
+        for (let column = 0; column < width / step; column += 1) {
+          const x = column * step + (row % 2) * (step / 2) + rng.between(-2, 2);
+          const y = row * step + step / 2 + rng.between(-2, 2);
+          const light = Math.round(rng.between(225, 255));
+          context.fillStyle = `rgb(${light},${light - 6},${light - 2})`;
+          context.beginPath();
+          context.ellipse(x, y, rng.between(5.5, 7.5), rng.between(5, 7), rng.between(0, 3), 0, Math.PI * 2);
+          context.fill();
+          if (x < step) {
+            context.beginPath();
+            context.ellipse(x + width, y, 6.5, 6, 0, 0, Math.PI * 2);
+            context.fill();
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * @returns Corteza de vetas largas y onduladas, en mosaico, para troncos retorcidos; sirve también como relieve.
+   */
+  static bark(): CanvasTexture {
+    return TextureCanvas.build("bark", 256, 128, true, (context, rng, width, height) => {
+      context.fillStyle = "#f1ebe8";
+      context.fillRect(0, 0, width, height);
+      context.lineCap = "round";
+      for (let index = 0; index < 46; index += 1) {
+        const y = rng.between(0, height);
+        context.strokeStyle = rng.chance(0.6) ? `rgba(70,35,30,${rng.between(0.12, 0.3)})` : `rgba(255,255,255,${rng.between(0.5, 0.9)})`;
+        context.lineWidth = rng.between(1.5, 4.5);
+        context.beginPath();
+        context.moveTo(0, y);
+        for (let x = 0; x <= width; x += 32) context.lineTo(x, y + Math.sin(x * 0.05 + index) * rng.between(2, 7));
+        context.stroke();
+      }
+      for (let index = 0; index < 8; index += 1) {
+        context.fillStyle = "rgba(70,35,30,0.22)";
+        context.beginPath();
+        context.ellipse(rng.between(0, width), rng.between(0, height), rng.between(6, 11), rng.between(3, 6), 0, 0, Math.PI * 2);
+        context.fill();
+      }
+    });
+  }
+
+  /**
+   * @returns Tejas de escama en hileras desfasadas, casi blancas para teñirlas, en mosaico; sirve también como relieve.
+   */
+  static shingles(): CanvasTexture {
+    return TextureCanvas.build("shingles", 128, 128, true, SurfaceTextures.paintShingles);
+  }
+
+  /**
+   * @returns Las mismas tejas, repetidas para techos redondos (cúpulas y conos con coordenadas de 0 a 1).
+   */
+  static roundShingles(): CanvasTexture {
+    const texture = TextureCanvas.build("shingles-round", 128, 128, true, SurfaceTextures.paintShingles);
+    texture.repeat.set(10, 3);
+    return texture;
+  }
+
+  private static paintShingles(this: void, context: CanvasRenderingContext2D, rng: SeededRandom, width: number, height: number): void {
+    context.fillStyle = "#cfc6cc";
+    context.fillRect(0, 0, width, height);
+    const size = 16;
+    for (let row = height / size; row >= -1; row -= 1) {
+      for (let column = -1; column <= width / size; column += 1) {
+        const x = column * size + (Math.abs(row) % 2 === 0 ? 0 : size / 2);
+        const y = row * size;
+        const light = Math.round(rng.between(232, 255));
+        context.fillStyle = `rgb(${light},${light},${light})`;
+        context.strokeStyle = "rgba(80,50,70,0.35)";
+        context.lineWidth = 1.4;
+        context.beginPath();
+        context.moveTo(x, y);
+        context.lineTo(x, y + size * 0.55);
+        context.arc(x + size / 2, y + size * 0.55, size / 2, Math.PI, 0, true);
+        context.lineTo(x + size, y);
+        context.closePath();
+        context.fill();
+        context.stroke();
+      }
+    }
+  }
+
+  /**
+   * Sombrero de hongo moteado: el color de fondo con lunares blancos de varios tamaños.
+   *
+   * @param color - Color del sombrero, en hexadecimal.
+   * @returns La textura, guardada por color.
+   */
+  static spotted(color: number): CanvasTexture {
+    const css = `#${color.toString(16).padStart(6, "0")}`;
+    return TextureCanvas.build(`spotted-${css}`, 256, 128, true, (context, rng, width, height) => {
+      context.fillStyle = css;
+      context.fillRect(0, 0, width, height);
+      for (let index = 0; index < 260; index += 1) {
+        context.fillStyle = `rgba(0,0,0,${rng.between(0.03, 0.08)})`;
+        context.beginPath();
+        context.arc(rng.between(0, width), rng.between(0, height), rng.between(1, 3), 0, Math.PI * 2);
+        context.fill();
+      }
+      SurfaceTextures.dots(context, new SeededRandom("lunares"), width, height, "#fffaf2");
+    });
+  }
+
+  /**
+   * @returns Máscara de los mismos lunares de `spotted` en blanco sobre negro, para que brillen de noche.
+   */
+  static spotGlow(): CanvasTexture {
+    return TextureCanvas.build("spot-glow", 256, 128, true, (context, _rng, width, height) => {
+      context.fillStyle = "#000000";
+      context.fillRect(0, 0, width, height);
+      SurfaceTextures.dots(context, new SeededRandom("lunares"), width, height, "#ffffff");
+    });
+  }
+
+  private static dots(context: CanvasRenderingContext2D, rng: SeededRandom, width: number, height: number, fill: string): void {
+    context.fillStyle = fill;
+    for (let index = 0; index < 22; index += 1) {
+      const y = rng.between(height * 0.08, height * 0.85);
+      const radius = rng.between(5, 13) * (1 - y / height / 2);
+      const x = rng.between(0, width);
+      [x, x - width, x + width].forEach((at) => {
+        context.beginPath();
+        context.ellipse(at, y, radius * 1.3, radius, 0, 0, Math.PI * 2);
+        context.fill();
+      });
+    }
   }
 
   /**

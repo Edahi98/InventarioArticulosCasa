@@ -12,3 +12,8 @@ CLAUDE.md
 .turbo
 
 out
+
+frontend/tsconfig.tsbuildinfo
+
+.agents/
+.claude/

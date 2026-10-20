@@ -12,6 +12,7 @@ export interface BuiltCar {
   head: Group;
   driver: Group;
   seat: Vector3;
+  sirens?: MeshStandardMaterial[];
 }
 
 const GLASS = 0xfff6dc;

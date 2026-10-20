@@ -21,10 +21,17 @@ async function handleExport(): Promise<void> {
 
 <template>
   <div class="flex flex-col items-end gap-1">
-    <button type="button" class="ui-btn ui-btn-ghost" :disabled="isDownloading" @click="handleExport">
-      <font-awesome-icon v-if="!isDownloading" icon="chart-bar" />
-      {{ isDownloading ? "Armando el Excel..." : "Llevarme todo en Excel" }}
+    <button
+      type="button"
+      class="ui-btn ui-btn-ghost"
+      :disabled="isDownloading"
+      aria-label="Llevarme todo en Excel"
+      title="Llevarme todo en Excel"
+      @click="handleExport"
+    >
+      <font-awesome-icon icon="chart-bar" :class="{ 'animate-pulse': isDownloading }" />
+      <span class="hidden md:inline">{{ isDownloading ? "Armando el Excel..." : "Llevarme todo en Excel" }}</span>
     </button>
-    <p v-if="errorMessage" role="alert" class="ui-error">{{ errorMessage }}</p>
+    <p v-if="errorMessage" role="alert" class="ui-error max-w-[14rem]">{{ errorMessage }}</p>
   </div>
 </template>
