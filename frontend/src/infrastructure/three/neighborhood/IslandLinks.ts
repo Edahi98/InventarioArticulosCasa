@@ -1,5 +1,5 @@
 import { Group, Vector3, type MeshStandardMaterial } from "three";
-import { CAR_DECK_WIDTH, TRAVELERS_MAX, WALKERS_PER_LINK } from "../../../constantes/barrio_constantes.js";
+import { CAR_DECK_WIDTH, FULL_LINKS, TRAVELERS_MAX, WALKERS_PER_LINK } from "../../../constantes/barrio_constantes.js";
 import { BearBuilder } from "../BearBuilder.js";
 import type { WalkGap } from "../walk/WalkArea.js";
 import { DECK_TOP } from "./ArchBridge.js";
@@ -114,6 +114,10 @@ export class IslandLinks {
       const b = islands[link.b] as LinkIsland;
       const kinds: [Contraption, Contraption] = index % 2 === 0 ? ["gondola", "raft"] : ["zipline", "balloon"];
       this.add("car", a, link.angleA, b, link.angleB, index);
+      if (index >= FULL_LINKS) {
+        this.add(kinds[0], a, this.gap(a, link.angleA, -1, 0), b, this.gap(b, link.angleB, 1, 0), index);
+        return;
+      }
       this.add(index % 2 === 0 ? "rope" : "boardwalk", a, this.gap(a, link.angleA, 1, 0), b, this.gap(b, link.angleB, -1, 0), index);
       this.add(kinds[0], a, this.gap(a, link.angleA, -1, 0), b, this.gap(b, link.angleB, 1, 0), index);
       this.add(kinds[1], a, this.gap(a, link.angleA, 1, 1), b, this.gap(b, link.angleB, -1, 1), index);

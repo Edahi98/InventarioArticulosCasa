@@ -27,7 +27,7 @@ import {
 import { SurfaceTextures } from "../SurfaceTextures.js";
 import { BearBuilder } from "../BearBuilder.js";
 import type { WalkGap, WalkZone } from "../walk/WalkArea.js";
-import { ArchipelagoLayout, CASTLE_PARTNER, type IslandPlan, type IslandTheme } from "./ArchipelagoLayout.js";
+import { ArchipelagoLayout, type IslandPlan, type IslandTheme } from "./ArchipelagoLayout.js";
 import { BearBudget } from "./BearBudget.js";
 import { CastleIsland } from "./CastleIsland.js";
 import { CommerceDistrict } from "./CommerceDistrict.js";
@@ -61,7 +61,7 @@ import { SurfaceLife } from "./SurfaceLife.js";
 import { TrafficSignal } from "./TrafficSignal.js";
 import { LeapingFish } from "./LeapingFish.js";
 import { MushroomBuilder } from "./MushroomBuilder.js";
-import { OUTPOST_RADIUS } from "./Outpost.js";
+import { OUTPOST_RADIUS, type OutpostKind } from "./Outpost.js";
 import { PetAnimals } from "./PetAnimals.js";
 import { GrassField } from "../GrassField.js";
 import type { LotSlot } from "./RingLayout.js";
@@ -183,14 +183,13 @@ export class NeighborhoodBuilder {
     const houses: HouseEntry[] = [];
     const animated: Animated[] = [];
     const main = archipelago.islands[0] as IslandPlan;
-    const lights = new NightLights(main.x, main.z, main.plan.islandRadius);
+    const lights = new NightLights(archipelago.islands.map((island) => ({ x: island.x, z: island.z, radius: island.plan.islandRadius })));
     const circles: IslandCircle[] = archipelago.islands.map((island) => ({ x: island.x, z: island.z, radius: island.plan.islandRadius }));
-    const castlePlan = archipelago.castle;
-    const seaCircles: IslandCircle[] = [...circles, { x: castlePlan.x, z: castlePlan.z, radius: castlePlan.radius }];
+    const castles = archipelago.castles;
+    const seaCircles: IslandCircle[] = [...circles, ...castles.map((castle) => ({ x: castle.x, z: castle.z, radius: castle.radius }))];
     const particles = new ParticleSystem(seaCircles);
     const shoppers = new BearBudget(SHOPPERS_MAX);
     const folk = new BearBudget(FOLK_MAX);
-    const anchor = archipelago.islands[castlePlan.anchor] as IslandPlan;
     const castleIndex = archipelago.islands.length;
     const carLinks: CarLink[] = archipelago.islands.slice(1).map((island) => ({
       a: 0,
@@ -198,11 +197,23 @@ export class NeighborhoodBuilder {
       angleA: main.junctions.find((junction) => junction.partner === island.index)?.angle ?? 0,
       angleB: island.junctions[0]?.angle ?? 0,
     }));
+    const castleLinks: CarLink[] = castles.map((castle) => {
+      const anchor = archipelago.islands[castle.anchor] as IslandPlan;
+      return {
+        a: castle.anchor,
+        b: castleIndex + castle.id,
+        angleA: anchor.junctions.find((junction) => junction.partner === castleIndex + castle.id)?.angle ?? 0,
+        angleB: castle.angle,
+      };
+    });
     const links = new IslandLinks(
-      [...archipelago.islands.map((island) => ({ x: island.x, z: island.z, radius: island.plan.islandRadius, gaps: island.gapAngles })), { x: castlePlan.x, z: castlePlan.z, radius: castlePlan.radius, gaps: [] }],
+      [
+        ...archipelago.islands.map((island) => ({ x: island.x, z: island.z, radius: island.plan.islandRadius, gaps: island.gapAngles })),
+        ...castles.map((castle) => ({ x: castle.x, z: castle.z, radius: castle.radius, gaps: [] })),
+      ],
       carLinks,
       archipelago.outposts,
-      [{ a: castlePlan.anchor, b: castleIndex, angleA: anchor.junctions.find((junction) => junction.partner === CASTLE_PARTNER)?.angle ?? 0, angleB: castlePlan.angle }],
+      castleLinks,
     );
     const spurs = new Map<string, Spur>();
     archipelago.islands.forEach((island) => {
@@ -211,10 +222,15 @@ export class NeighborhoodBuilder {
       houses.push(...built.houses);
     });
 
-    const bridges = new BridgeLinks(this.trees).build(main.plan.islandRadius, main.x, main.z);
-    links.build(this.archPaths(main), lights, particles);
-    const castle = new CastleIsland(castlePlan, this.rng, this.trees, lights, particles);
-    swaying.push(...castle.swaying);
+    const bridges = new BridgeLinks(this.trees).build(
+      main.plan.islandRadius,
+      main.x,
+      main.z,
+      archipelago.outposts.map((spot) => ({ angle: spot.angle, kind: spot.kind })),
+    );
+    links.build(this.archPaths(main, archipelago.outposts), lights, particles);
+    const builtCastles = castles.map((castle) => new CastleIsland(castle, this.rng, this.trees, lights, particles));
+    builtCastles.forEach((castle) => swaying.push(...castle.swaying));
     world.updateMatrixWorld(true);
     const tours = carLinks.flatMap((link) => {
       const from = spurs.get(`${link.a}-${link.b}`);
@@ -236,7 +252,7 @@ export class NeighborhoodBuilder {
     const pets = new PetAnimals(archipelago.islands.map((island) => island.plan.curve), ROAD_WIDTH);
     const ducks = new DuckFlock(circles);
     const fish = new LeapingFish(seaCircles, particles);
-    const beam = new LighthouseBeam(this.lighthouse(main));
+    const beam = new LighthouseBeam(this.lighthouse(main, archipelago.outposts));
     const routes = SeaRoutes.plan([...seaCircles, ...archipelago.outposts.map((spot) => ({ x: spot.x, z: spot.z, radius: OUTPOST_RADIUS }))], links.segments, extent);
     const sea = new SeaTraffic(routes.orbit, routes.loops, particles);
     const floor = new SeaFloor(seaCircles, extent * 3.2);
@@ -257,13 +273,13 @@ export class NeighborhoodBuilder {
         return rainbowDust.set(Math.cos(rainbowTurn) * reach, -1.35 + Math.sin(rainbowTurn) * reach, -extent * 2.6);
       },
     });
-    world.add(backdrop.group, traffic.group, dayLife.group, bridges.group, links.group, sparkles.group, butterflies.group, pets.group, ducks.group, fish.group, lights.group, beam.group, sea.group, floor.group, reef.group, schools.mesh, creatures.group, surface.group, castle.group, particles.group);
-    this.lampGlass.push(...bridges.lamps, ...links.lamps, ...this.mushrooms.glows, ...sea.lanterns, ...castle.lamps);
+    world.add(backdrop.group, traffic.group, dayLife.group, bridges.group, links.group, sparkles.group, butterflies.group, pets.group, ducks.group, fish.group, lights.group, beam.group, sea.group, floor.group, reef.group, schools.mesh, creatures.group, surface.group, ...builtCastles.map((castle) => castle.group), particles.group);
+    this.lampGlass.push(...bridges.lamps, ...links.lamps, ...this.mushrooms.glows, ...sea.lanterns, ...builtCastles.flatMap((castle) => castle.lamps));
     const waving = new WaveGreeter(houses.map((house) => house.bear), traffic.cars);
     const zones: WalkZone[] = [
       ...bridges.zones,
       ...archipelago.islands.slice(1).map((island) => ({ x: island.x, z: island.z, radius: island.plan.islandRadius })),
-      { x: castlePlan.x, z: castlePlan.z, radius: castlePlan.radius },
+      ...castles.map((castle) => ({ x: castle.x, z: castle.z, radius: castle.radius })),
     ];
     return {
       world,
@@ -276,13 +292,15 @@ export class NeighborhoodBuilder {
       radius: extent,
       zones,
       gaps: [...bridges.gaps, ...links.gaps],
-      extras: [links, sparkles, butterflies, pets, ducks, fish, lights, beam, sea, floor, reef, schools, creatures, surface, castle, waving, ...animated, particles],
+      extras: [links, sparkles, butterflies, pets, ducks, fish, lights, beam, sea, floor, reef, schools, creatures, surface, ...builtCastles, waving, ...animated, particles],
     };
   }
 
-  private lighthouse(main: IslandPlan): Vector3 {
+  private lighthouse(main: IslandPlan, outposts: { angle: number; kind: OutpostKind }[]): Vector3 {
     const distance = main.plan.islandRadius + ARCH_SPAN + OUTPOST_RADIUS - 1;
-    return new Vector3(main.x + Math.cos(OUTPOST_ANGLE) * distance - 0.4, DECK_TOP + 3.6, main.z + Math.sin(OUTPOST_ANGLE) * distance - 0.2);
+    const faro = outposts.find((spot) => spot.kind === "faro") ?? outposts[0];
+    const angle = faro?.angle ?? OUTPOST_ANGLE;
+    return new Vector3(main.x + Math.cos(angle) * distance - 0.4, DECK_TOP + 3.6, main.z + Math.sin(angle) * distance - 0.2);
   }
 
   private static tourRoute(a: Spur, b: Spur): CatmullRomCurve3 {
@@ -437,11 +455,10 @@ export class NeighborhoodBuilder {
     return spots;
   }
 
-  private archPaths(main: IslandPlan): ((u: number) => Vector3)[] {
+  private archPaths(main: IslandPlan, outposts: { angle: number }[]): ((u: number) => Vector3)[] {
     const radius = main.plan.islandRadius;
-    return [0, 1, 2].map((index) => {
-      const angle = OUTPOST_ANGLE + (index / 3) * Math.PI * 2;
-      const direction = new Vector3(Math.cos(angle), 0, Math.sin(angle));
+    return outposts.map((outpost) => {
+      const direction = new Vector3(Math.cos(outpost.angle), 0, Math.sin(outpost.angle));
       const start = direction.clone().multiplyScalar(radius - 1.2).add(new Vector3(main.x, DECK_TOP, main.z));
       const end = direction.clone().multiplyScalar(radius + ARCH_SPAN + OUTPOST_RADIUS - 1 - OUTPOST_RADIUS + 0.9).add(new Vector3(main.x, DECK_TOP, main.z));
       return (u: number): Vector3 => start.clone().lerp(end, u);

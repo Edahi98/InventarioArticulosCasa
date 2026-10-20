@@ -51,15 +51,16 @@ export class CastleIsland {
     inner.position.copy(center);
     inner.rotation.y = -plan.angle;
     this.keep = new CastleKeep(lights);
+    const villageTurn = plan.id * 0.83;
     const spots = Array.from({ length: 3 + VILLAGE_HOUSES }, (_, index) => ({
-      angle: 0.8 + (index / (3 + VILLAGE_HOUSES)) * (Math.PI * 2 - 1.6),
+      angle: 0.8 + (index / (3 + VILLAGE_HOUSES)) * (Math.PI * 2 - 1.6) + villageTurn,
       distance: index % 2 === 0 ? 8.3 : 9.4,
     }));
     this.village = new MedievalVillage(spots, particles, { x: plan.x, z: plan.z, turn: -plan.angle });
     this.guards = new KnightPatrol(plan.radius);
     inner.add(this.keep.group, this.village.group, this.guards.group);
     const grass = new GrassField({
-      seed: "castillo-pasto",
+      seed: `castillo-pasto-${plan.id}`,
       radius: plan.radius - 0.6,
       y: 0.05,
       center: [plan.x, plan.z],

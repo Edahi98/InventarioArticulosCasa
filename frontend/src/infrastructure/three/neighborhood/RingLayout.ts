@@ -27,19 +27,27 @@ export class RingLayout {
    *
    * @param count - Número de casas.
    * @param rng - Azar con semilla, para que la forma del barrio no cambie.
+   * @param minOuter - Mínimo de lotes en el lado de afuera, donde se reservan las uniones, el
+   * comercio y la estación receptora; la calle crece hasta que quepan.
    * @returns Las posiciones, la curva de la calle y las medidas de la isla.
    */
-  static plan(count: number, rng: SeededRandom): RingPlan {
+  static plan(count: number, rng: SeededRandom, minOuter = 0): RingPlan {
     const phases = [rng.between(0, Math.PI * 2), rng.between(0, Math.PI * 2), rng.between(0, Math.PI * 2)] as const;
     const wobble = (theta: number): number =>
       1 + 0.07 * Math.sin(2 * theta + phases[0]) + 0.045 * Math.sin(3 * theta + phases[1]);
 
+    const wanted = Math.max(minOuter, 0);
     let road = MIN_ROAD_RADIUS;
-    while (RingLayout.capacity(road + LOT_OFFSET) + RingLayout.capacity(road - LOT_OFFSET) < count) road += 0.25;
-    const outerCapacity = RingLayout.capacity(road + LOT_OFFSET);
-    const innerCapacity = RingLayout.capacity(road - LOT_OFFSET);
-    const outer = Math.min(outerCapacity, Math.ceil((count * outerCapacity) / (outerCapacity + innerCapacity)));
-    const inner = count - outer;
+    let outer = 0;
+    let inner = 0;
+    for (let guard = 0; guard < 400; guard += 1) {
+      const outerCapacity = RingLayout.capacity(road + LOT_OFFSET);
+      const innerCapacity = RingLayout.capacity(road - LOT_OFFSET);
+      outer = Math.min(outerCapacity, Math.max(wanted, count - innerCapacity));
+      inner = count - outer;
+      if (outer >= wanted && inner >= 0 && inner <= innerCapacity) break;
+      road += 0.25;
+    }
 
     const slots = [
       ...RingLayout.side(outer, road, LOT_OFFSET, 1, phases[2], rng, wobble),

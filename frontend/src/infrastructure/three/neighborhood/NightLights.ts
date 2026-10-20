@@ -26,29 +26,32 @@ export class NightLights {
   private readonly bulbGeometry = new SphereGeometry(0.045, 8, 6);
   private readonly rayMaterial = new MeshBasicMaterial({ map: NightLights.rayTexture(), color: 0xffd6a0, transparent: true, opacity: 0, depthWrite: false, blending: AdditiveBlending, side: DoubleSide, fog: false });
   private readonly blinkers: MeshStandardMaterial[] = [];
-  private readonly plaza: PointLight;
+  private readonly plazas: PointLight[] = [];
   private readonly rays = new Group();
 
   /**
    * Luces de la noche del archipiélago, casi todas sin luces reales: halos aditivos alrededor de faroles y farolitos,
    * guirnaldas de foquitos de colores, balizas que parpadean (helipuerto), haces de luz cálida al amanecer y al
-   * atardecer y una sola luz puntual cálida sobre la isla principal.
+   * atardecer y una luz puntual cálida sobre cada isla, para que el barrio entero se encienda por igual.
    *
-   * @param x - Centro de la isla principal en x.
-   * @param z - Centro de la isla principal en z.
-   * @param radius - Radio de la isla principal.
+   * @param spots - Cada isla con su centro y su radio; la primera es la principal, donde nacen los haces de luz.
    */
-  constructor(x: number, z: number, radius: number) {
-    this.plaza = new PointLight(PLAZA_LIGHT, 0, radius * 1.4, 1.6);
-    this.plaza.position.set(x, 3.2, z);
+  constructor(spots: { x: number; z: number; radius: number }[]) {
+    const main = spots[0] ?? { x: 0, z: 0, radius: 1 };
+    spots.forEach((spot) => {
+      const light = new PointLight(PLAZA_LIGHT, 0, spot.radius * 1.4, 1.6);
+      light.position.set(spot.x, 3.2, spot.z);
+      this.plazas.push(light);
+      this.group.add(light);
+    });
     for (let index = 0; index < GOD_RAYS; index += 1) {
-      const ray = new Mesh(new PlaneGeometry(1.6 + index * 0.4, radius * 1.3), this.rayMaterial);
+      const ray = new Mesh(new PlaneGeometry(1.6 + index * 0.4, main.radius * 1.3), this.rayMaterial);
       const angle = (index / GOD_RAYS) * Math.PI * 0.8 - 0.4;
-      ray.position.set(x + Math.cos(angle) * radius * 0.45, radius * 0.45, z + Math.sin(angle) * radius * 0.45 - radius * 0.3);
+      ray.position.set(main.x + Math.cos(angle) * main.radius * 0.45, main.radius * 0.45, main.z + Math.sin(angle) * main.radius * 0.45 - main.radius * 0.3);
       ray.rotation.set(0, angle, 0.45);
       this.rays.add(ray);
     }
-    this.group.add(this.plaza, this.rays);
+    this.group.add(this.rays);
     this.update(0, 0, false);
   }
 
@@ -104,7 +107,9 @@ export class NightLights {
     const dusk = Math.max(0, 1 - Math.abs(night - 0.38) / 0.28);
     this.rayMaterial.opacity = dusk * 0.22;
     this.rays.visible = dusk > 0.01;
-    this.plaza.intensity = night * 6;
+    this.plazas.forEach((plaza) => {
+      plaza.intensity = night * 6;
+    });
     const on = !moving || Math.sin(elapsed * 4) > 0;
     this.blinkers.forEach((material, index) => {
       material.emissiveIntensity = night > 0.1 && (on || index % 2 === 1) ? 0.6 + night * 2 : 0.2;
