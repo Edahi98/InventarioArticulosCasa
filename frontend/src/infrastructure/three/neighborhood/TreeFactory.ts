@@ -2,6 +2,7 @@ import { CylinderGeometry, Group, Mesh, MeshStandardMaterial, SphereGeometry } f
 import { SurfaceTextures } from "../SurfaceTextures.js";
 import type { SeededRandom } from "./SeededRandom.js";
 import { Solid } from "../walk/Solid.js";
+import { MeshMerger } from "../MeshMerger.js";
 
 const TRUNK = 0x9a6b52;
 const FOLIAGE = [0x86d6a8, 0xa6e29a, 0xffb3cf, 0xc2e69a] as const;
@@ -49,7 +50,7 @@ export class TreeFactory {
     tree.position.set(x, 0, z);
     tree.scale.setScalar(scale);
     tree.rotation.y = this.rng.between(0, Math.PI * 2);
-    return tree;
+    return MeshMerger.merge(tree);
   }
 
   private material(color: number): MeshStandardMaterial {

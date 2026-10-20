@@ -10,10 +10,12 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   RingGeometry,
+  SphereGeometry,
   SRGBColorSpace,
   Vector2,
   type BufferGeometry,
 } from "three";
+import { LILY_PADS } from "../../../constantes/barrio_constantes.js";
 import { SurfaceTextures } from "../SurfaceTextures.js";
 import type { SeededRandom } from "./SeededRandom.js";
 import type { TreeFactory } from "./TreeFactory.js";
@@ -43,13 +45,16 @@ export class IslandBuilder {
    *
    * @param radius - Radio de la isla.
    * @param plaza - Radio libre en el centro, para el árbol grande y el estanque.
+   * @param clear - Ángulos de la orilla donde llegan puentes y teleféricos; ahí no se ponen árboles.
    * @returns La isla y los árboles que se mecen.
    */
-  build(radius: number, plaza: number): { group: Group; swaying: Group[] } {
+  build(radius: number, plaza: number, clear: number[] = []): { group: Group; swaying: Group[] } {
     const group = new Group();
     const swaying: Group[] = [];
-    group.add(this.water(radius), this.foam(radius), this.soil(radius), this.grass(radius), ...this.patches(radius), ...this.rocks(radius));
+    const free = (angle: number): boolean => clear.every((spot) => Math.abs(Math.atan2(Math.sin(angle - spot), Math.cos(angle - spot))) > 1.9 / radius);
+    group.add(this.water(radius), this.foam(radius), this.soil(radius), this.grass(radius), ...this.patches(radius), ...this.rocks(radius).filter((rock) => free(Math.atan2(rock.position.z, rock.position.x))));
     for (let angle = 0; angle < Math.PI * 2; angle += this.rng.between(0.2, 0.32)) {
+      if (!free(angle)) continue;
       const tree = this.trees.build(Math.cos(angle) * (radius - 0.95), Math.sin(angle) * (radius - 0.95), this.rng.between(0.8, 1.25));
       group.add(tree);
       swaying.push(tree);
@@ -115,8 +120,8 @@ export class IslandBuilder {
     const context = surface.getContext("2d");
     if (context) {
       const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
-      gradient.addColorStop(0, "rgba(143,211,240,0.95)");
-      gradient.addColorStop(0.55, "rgba(143,211,240,0.55)");
+      gradient.addColorStop(0, "rgba(143,211,240,0.5)");
+      gradient.addColorStop(0.55, "rgba(143,211,240,0.22)");
       gradient.addColorStop(1, "rgba(143,211,240,0)");
       context.fillStyle = gradient;
       context.fillRect(0, 0, 128, 128);
@@ -175,6 +180,20 @@ export class IslandBuilder {
       stone.position.set(Math.cos(angle) * Math.min(plaza * 0.55, 1.15) * 1.08, 0.07, Math.sin(angle) * Math.min(plaza * 0.55, 1.15) * 1.08);
       stone.scale.y = 0.7;
       pond.add(stone);
+    }
+    const reach = Math.min(plaza * 0.55, 1.15);
+    for (let index = 0; index < LILY_PADS; index += 1) {
+      const angle = this.rng.between(0, Math.PI * 2);
+      const distance = Math.sqrt(this.rng.next()) * reach * 0.8;
+      const pad = new Mesh(new CylinderGeometry(0.13, 0.13, 0.012, 16, 1, false, 0.3, Math.PI * 1.8), this.material(0x7fc96a));
+      pad.position.set(Math.cos(angle) * distance, 0.072, Math.sin(angle) * distance);
+      pad.rotation.y = this.rng.between(0, Math.PI * 2);
+      pond.add(pad);
+      if (index % 3 !== 0) continue;
+      const bloom = new Mesh(new SphereGeometry(0.05, 10, 8), this.material(index % 2 === 0 ? 0xff9fc8 : 0xfffaf2));
+      bloom.scale.set(1, 0.6, 1);
+      bloom.position.set(pad.position.x, 0.09, pad.position.z);
+      pond.add(bloom);
     }
     pond.position.set(Math.min(plaza * 0.3, 0.7), 0, Math.min(plaza * 0.2, 0.5));
     const tree = this.trees.build(-Math.min(plaza * 0.35, 0.8), -Math.min(plaza * 0.25, 0.5), Math.min(Math.max(plaza * 0.75, 0.9), 1.9), true);

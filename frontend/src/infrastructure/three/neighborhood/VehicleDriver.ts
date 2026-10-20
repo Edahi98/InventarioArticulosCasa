@@ -3,7 +3,7 @@ import type { BearTone } from "../../../core/domain/inventoryBear.js";
 import { listHomeBears } from "../../../core/usecases/listHomeBears.js";
 import { BearBuilder } from "../BearBuilder.js";
 
-export type DriverHat = "gorra" | "marinero" | "capitan" | "lentes" | "ninguno";
+export type DriverHat = "gorra" | "marinero" | "capitan" | "lentes" | "pirata" | "ninguno";
 
 const BEAR_SCALE = 0.18;
 const UP = new Vector3(0, 1, 0);
@@ -36,6 +36,28 @@ export class VehicleDriver {
   }
 
   /**
+   * Osito completo de pie (pirata, vigía o marinero), con los brazos colgando y su sombrero. Mira hacia +z y tiene los
+   * pies en y = 0.
+   *
+   * @param tone - Color del pelaje.
+   * @param hat - Qué lleva puesto.
+   * @param scale - Tamaño del osito.
+   * @returns El osito y su cabeza.
+   */
+  static standing(tone: BearTone, hat: DriverHat, scale: number): { group: Group; head: Group } {
+    const bear = listHomeBears().find((item) => item.tone === tone) ?? listHomeBears()[0];
+    if (!bear) throw new Error("No hay ositos guardianes definidos.");
+    const rig = this.builder.rig(bear);
+    const accessories = this.hat(hat);
+    if (accessories.length > 0) rig.head.add(...accessories);
+    rig.root.position.y = 0.8;
+    const group = new Group();
+    group.add(rig.root);
+    group.scale.setScalar(scale);
+    return { group, head: rig.head };
+  }
+
+  /**
    * @returns Un volante pequeño, inclinado hacia el conductor.
    */
   static wheel(): Group {
@@ -59,6 +81,17 @@ export class VehicleDriver {
         const bridge = this.mesh(new CylinderGeometry(0.02, 0.02, 0.2, 6), 0x2a2233, [0, 0.1, 0.54]);
         bridge.rotation.z = Math.PI / 2;
         return [this.mesh(new SphereGeometry(0.17, 14, 10), 0x2a2233, [-0.22, 0.08, 0.52], [1.2, 0.8, 0.5]), this.mesh(new SphereGeometry(0.17, 14, 10), 0x2a2233, [0.22, 0.08, 0.52], [1.2, 0.8, 0.5]), bridge];
+      },
+      pirata: () => {
+        const tricorn = [0, 1, 2].map((corner) => {
+          const flap = this.mesh(new CylinderGeometry(0.34, 0.4, 0.2, 3), 0x2a2233, [0, 0.62, 0]);
+          flap.rotation.y = corner * 0.08;
+          return flap;
+        });
+        const patch = this.mesh(new SphereGeometry(0.1, 12, 8), 0x2a2233, [0.22, 0.05, 0.53], [1.1, 1, 0.4]);
+        const strap = this.mesh(new TorusGeometry(0.55, 0.018, 6, 24), 0x2a2233, [0, 0.12, 0]);
+        strap.rotation.x = Math.PI / 2 - 0.25;
+        return [...tricorn, this.mesh(new SphereGeometry(0.34, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), 0x2a2233, [0, 0.62, 0]), this.mesh(new SphereGeometry(0.07, 10, 8), 0xfffaf2, [0, 0.82, 0.3]), patch, strap];
       },
       ninguno: () => [],
     };

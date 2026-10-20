@@ -21,8 +21,15 @@ import { ToyBoat, type BoatKind } from "./ToyBoat.js";
 import { ToyHelicopter, type HelicopterKind } from "./ToyHelicopter.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { HueSequence } from "./HueSequence.js";
+import { TextureCanvas } from "../TextureCanvas.js";
+import { MeshMerger } from "../MeshMerger.js";
 import { SeededRandom } from "./SeededRandom.js";
 import type { TreeFactory } from "./TreeFactory.js";
+import { FARM_HILLS, HILL_COTTAGES, RAINBOW_COLORS } from "../../../constantes/barrio_constantes.js";
+import { CloudPuffs } from "./CloudPuffs.js";
+import { FarmAnimals, type FarmKind } from "./FarmAnimals.js";
+import { GiantTreeBuilder } from "./GiantTreeBuilder.js";
+import { HouseFactory } from "./HouseFactory.js";
 
 interface Floater {
   group: Group;
@@ -44,7 +51,6 @@ const WATER = 0x9fd8f0;
 const SOIL = 0xb98b73;
 const GRASS = 0xbfe9d5;
 const HILLS = [0xa9ddc5, 0xcfc3e6, 0xffd9c7, 0xc7e3b2, 0xb7d2f0] as const;
-const RAINBOW = [0xff8fb7, 0xffb066, 0xffe35c, 0x86d6a8, 0x7fd0ea, 0xb89cf2] as const;
 const UP = new Vector3(0, 1, 0);
 const WATER_Y = -1.35;
 const HELI_KINDS: HelicopterKind[] = ["carguero", "rescate", "reparto"];
@@ -64,10 +70,15 @@ export class Backdrop {
   private readonly blades = new Group();
   private readonly materials = new Map<number, MeshStandardMaterial>();
   private readonly rng = new SeededRandom("fondo");
+  private readonly giants = new GiantTreeBuilder(new SeededRandom("gigantes-lomas"));
+  private readonly puffs = new CloudPuffs();
+  private readonly grazers: { head: Group; phase: number }[] = [];
+  private readonly cottages = new HouseFactory();
 
   /**
-   * Telón de fondo de la isla: agua, colinas pastel lejanas con árboles y un molino, islitas flotantes,
-   * globos aerostáticos rayados con los colores de las categorías, un arcoíris y barquitos.
+   * Telón de fondo del archipiélago: agua, colinas pastel lejanas con árboles gigantes, casitas de cuento, ovejas y
+   * vacas que pastan y un molino, islitas flotantes, globos aerostáticos rayados con los colores de las categorías,
+   * un arcoíris grande con nubes esponjosas en sus pies y barquitos.
    *
    * @param radius - Radio de la isla; el resto se reparte a su alrededor.
    * @param categoryIds - Identificadores de las categorías, para pintar las rayas de los globos.
@@ -108,7 +119,11 @@ export class Backdrop {
       if (heli.sling) heli.sling.rotation.z = Math.sin(t * 1.3 + heli.orbiter.phase) * 0.14;
     });
     this.blades.rotation.z = t * 0.9;
-    const visible = (1 - night) * 0.6;
+    this.grazers.forEach((grazer) => {
+      grazer.head.rotation.x = 0.35 + Math.sin(t * 1.4 + grazer.phase) * 0.3;
+    });
+    this.puffs.tint(night);
+    const visible = (1 - night) * 0.8;
     this.rainbowMaterials.forEach((material) => {
       material.opacity = visible;
     });
@@ -130,10 +145,25 @@ export class Backdrop {
   }
 
   private water(): Mesh {
-    const plane = new Mesh(new CircleGeometry(this.radius * 12, 72), new MeshStandardMaterial({ color: WATER, roughness: 0.55, map: SurfaceTextures.ripples(), bumpMap: SurfaceTextures.ripples(), bumpScale: 0.5 }));
+    const plane = new Mesh(
+      new CircleGeometry(this.radius * 12, 72),
+      new MeshStandardMaterial({ color: WATER, roughness: 0.35, map: SurfaceTextures.ripples(), bumpMap: SurfaceTextures.ripples(), bumpScale: 0.5, transparent: true, alphaMap: Backdrop.depthFade(), depthWrite: false }),
+    );
     plane.rotation.x = -Math.PI / 2;
     plane.position.y = WATER_Y;
     return plane;
+  }
+
+  private static depthFade(): CanvasTexture {
+    return TextureCanvas.build("agua-profunda", 128, 128, false, (context, _rng, width, height) => {
+      const fade = context.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width / 2);
+      fade.addColorStop(0, "rgb(120,120,120)");
+      fade.addColorStop(0.12, "rgb(150,150,150)");
+      fade.addColorStop(0.25, "rgb(255,255,255)");
+      fade.addColorStop(1, "rgb(255,255,255)");
+      context.fillStyle = fade;
+      context.fillRect(0, 0, width, height);
+    });
   }
 
   private hills(): Group[] {
@@ -148,6 +178,13 @@ export class Backdrop {
       const dome = new Mesh(new SphereGeometry(1, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), this.material(this.rng.pick(HILLS)));
       dome.scale.set(width, height, width * 0.85);
       hill.add(dome);
+      if (index % 3 === 0) {
+        const giant = this.giants.build(-width * 0.3, 0, this.rng.between(1.3, 1.9));
+        giant.position.y = this.surface(width, height, -width * 0.3, 0) - 0.1;
+        hill.add(giant);
+      }
+      if (index < FARM_HILLS) this.herd(hill, width, height, index);
+      if (index >= FARM_HILLS && index < FARM_HILLS + HILL_COTTAGES) hill.add(this.cottage(width, height, index));
       for (let tree = 0; tree < this.rng.between(1, 4); tree += 1) {
         const dx = this.rng.between(-0.5, 0.5) * width;
         const lift = height * Math.sqrt(Math.max(1 - (dx / width) ** 2, 0)) * 0.97;
@@ -156,12 +193,43 @@ export class Backdrop {
         hill.add(planted);
       }
       hill.add(this.hillGrass(width, height, index));
+      MeshMerger.merge(hill, [this.blades, ...this.grazers.map((grazer) => grazer.head)]);
       hill.position.set(Math.cos(angle) * distance, WATER_Y, Math.sin(angle) * distance);
       hill.rotation.y = this.rng.between(0, Math.PI * 2);
       hills.push(hill);
       if (index === 3) hill.add(this.windmill(width, height));
     }
     return hills;
+  }
+
+  private surface(width: number, height: number, x: number, z: number): number {
+    const depth = width * 0.85;
+    return height * Math.sqrt(Math.max(1 - (x / width) ** 2 - (z / depth) ** 2, 0));
+  }
+
+  private herd(hill: Group, width: number, height: number, index: number): void {
+    const kinds: FarmKind[] = index % 2 === 0 ? ["oveja", "oveja", "vaca"] : ["vaca", "oveja", "oveja"];
+    const size = Math.max(this.radius * 0.05, 1.1);
+    kinds.forEach((kind, item) => {
+      const x = width * this.rng.between(0.05, 0.45);
+      const z = width * this.rng.between(-0.35, 0.35);
+      const built = FarmAnimals.build(kind);
+      built.group.position.set(x, this.surface(width, height, x, z) - 0.05, z);
+      built.group.rotation.y = this.rng.between(0, Math.PI * 2);
+      built.group.scale.setScalar(size * (kind === "vaca" ? 1.2 : 1));
+      this.grazers.push({ head: built.head, phase: index * 2 + item });
+      hill.add(built.group);
+    });
+  }
+
+  private cottage(width: number, height: number, index: number): Group {
+    const house = this.cottages.create(9001 + index * 37).group;
+    const x = -width * 0.05;
+    const z = width * 0.2;
+    house.position.set(x, this.surface(width, height, x, z) - 0.1, z);
+    house.scale.setScalar(Math.max(this.radius * 0.05, 1));
+    house.rotation.y = this.rng.between(0, Math.PI * 2);
+    return house;
   }
 
   private hillGrass(width: number, height: number, index: number): Group {
@@ -171,6 +239,7 @@ export class Backdrop {
       seed: `loma-${index}`,
       radius: width * 0.95,
       density: 4,
+      scale: Math.max(1, width / 9),
       accept: (x, z) => inside(x, z) > 0.1,
       ground: (x, z) => height * Math.sqrt(Math.max(inside(x, z), 0)),
     }).group;
@@ -319,13 +388,22 @@ export class Backdrop {
   }
 
   private makeRainbow(): Group {
-    RAINBOW.forEach((color, index) => {
-      const material = new MeshBasicMaterial({ color, transparent: true, opacity: 0.6, depthWrite: false });
+    const inner = this.radius * 1.55;
+    const band = this.radius * 0.055;
+    RAINBOW_COLORS.forEach((color, index) => {
+      const material = new MeshBasicMaterial({ color, transparent: true, opacity: 0.75, depthWrite: false });
       this.rainbowMaterials.push(material);
-      const band = new Mesh(new TorusGeometry(this.radius * 1.5 + index * this.radius * 0.07, this.radius * 0.032, 8, 90, Math.PI), material);
-      this.rainbow.add(band);
+      const arc = new Mesh(new TorusGeometry(inner + index * band * 1.6, band, 10, 120, Math.PI), material);
+      arc.scale.z = 0.35;
+      this.rainbow.add(arc);
     });
-    this.rainbow.position.set(0, WATER_Y, -this.radius * 2.7);
+    const reach = inner + (RAINBOW_COLORS.length - 1) * band * 0.8;
+    [-1, 1].forEach((side) => {
+      const cloud = this.puffs.build(this.rng, this.radius * 0.11);
+      cloud.position.set(side * reach, this.radius * 0.03, 0);
+      this.rainbow.add(cloud);
+    });
+    this.rainbow.position.set(0, WATER_Y, -this.radius * 2.6);
     return this.rainbow;
   }
 }

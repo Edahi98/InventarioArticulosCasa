@@ -1,4 +1,5 @@
-import { BoxGeometry, Color, Group, Mesh, MeshStandardMaterial, SphereGeometry } from "three";
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial, SphereGeometry } from "three";
+import { CloudPuffs } from "./CloudPuffs.js";
 import { SeededRandom } from "./SeededRandom.js";
 
 interface Bird {
@@ -10,15 +11,13 @@ interface Bird {
   phase: number;
 }
 
-const DAY_CLOUD = new Color(0xffffff);
-const NIGHT_CLOUD = new Color(0x6a70c8);
 const BIRD = 0x5a3d57;
 
 export class DayLife {
   readonly group = new Group();
   private readonly clouds: Group[] = [];
   private readonly birds: Bird[] = [];
-  private readonly cloudMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 1, emissive: 0xffe3ee, emissiveIntensity: 0.3 });
+  private readonly puffs = new CloudPuffs();
   private readonly birdMaterial = new MeshStandardMaterial({ color: BIRD, roughness: 0.8 });
   private readonly span: number;
 
@@ -29,9 +28,10 @@ export class DayLife {
   constructor(width: number, depth: number) {
     const rng = new SeededRandom("dia");
     this.span = width + 40;
-    for (let index = 0; index < 8; index += 1) {
-      const cloud = this.cloud(rng);
-      cloud.position.set(-this.span / 2 + (index / 8) * this.span, rng.between(9, 15), -depth / 2 - rng.between(8, 24));
+    for (let index = 0; index < 10; index += 1) {
+      const cloud = new Group();
+      cloud.add(this.puffs.build(rng, rng.between(0.9, 1.7)));
+      cloud.position.set(-this.span / 2 + (index / 10) * this.span, rng.between(9, 16), (index % 2 === 0 ? -1 : 1) * (depth / 2 + rng.between(6, 22)));
       cloud.userData.home = cloud.position.x;
       this.clouds.push(cloud);
       this.group.add(cloud);
@@ -52,8 +52,7 @@ export class DayLife {
    */
   update(elapsed: number, night: number, moving: boolean): void {
     const t = moving ? elapsed : 0;
-    this.cloudMaterial.color.copy(DAY_CLOUD).lerp(NIGHT_CLOUD, night);
-    this.cloudMaterial.emissiveIntensity = 0.3 * (1 - night);
+    this.puffs.tint(night);
     this.clouds.forEach((cloud, index) => {
       const drift = (cloud.userData.home as number) + t * (0.25 + (index % 3) * 0.1);
       cloud.position.x = ((drift + this.span / 2) % this.span) - this.span / 2;
@@ -69,17 +68,6 @@ export class DayLife {
       bird.wings[0].rotation.z = flap;
       bird.wings[1].rotation.z = -flap;
     });
-  }
-
-  private cloud(rng: SeededRandom): Group {
-    const cloud = new Group();
-    [-0.8, 0, 0.8].forEach((offset, part) => {
-      const puff = new Mesh(new SphereGeometry(part === 1 ? 0.95 : 0.65, 12, 10), this.cloudMaterial);
-      puff.position.set(offset, part === 1 ? 0.18 : 0, 0);
-      cloud.add(puff);
-    });
-    cloud.scale.setScalar(rng.between(1.1, 2));
-    return cloud;
   }
 
   private bird(rng: SeededRandom): Bird {

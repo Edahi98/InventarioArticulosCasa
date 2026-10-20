@@ -22,12 +22,13 @@ import {
   type Texture,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { WINDOW_STAGGER } from "../../../constantes/barrio_constantes.js";
 import { SkyTexture } from "../SkyTexture.js";
 import type { WalkGap, WalkZone } from "../walk/WalkArea.js";
 import type { DoorPrompt, WalkMode } from "../walk/WalkMode.js";
 import type { Backdrop } from "./Backdrop.js";
 import type { DayLife } from "./DayLife.js";
-import { NeighborhoodBuilder, type HouseEntry, type MapCategory } from "./NeighborhoodBuilder.js";
+import { NeighborhoodBuilder, type Animated, type HouseEntry, type MapCategory } from "./NeighborhoodBuilder.js";
 import type { Traffic } from "./Traffic.js";
 import { NightSky } from "./NightSky.js";
 import { SkyCycle, type SkyState } from "./SkyCycle.js";
@@ -103,6 +104,7 @@ export class NeighborhoodStage {
   private readonly traffic: Traffic;
   private readonly dayLife: DayLife;
   private readonly backdrop: Backdrop;
+  private readonly extras: Animated[];
   private hourOverride: number | null = null;
   private state: SkyState;
   private hoverId: number | null = null;
@@ -140,7 +142,8 @@ export class NeighborhoodStage {
     this.scene.background = this.sky;
     this.scene.fog = this.fog;
 
-    const { world, houses, swaying, lamps, traffic, dayLife, backdrop, radius, zones, gaps } = new NeighborhoodBuilder(categories).build();
+    const { world, houses, swaying, lamps, traffic, dayLife, backdrop, radius, zones, gaps, extras } = new NeighborhoodBuilder(categories).build();
+    this.extras = extras ?? [];
     this.backdrop = backdrop;
     this.traffic = traffic;
     this.dayLife = dayLife;
@@ -190,6 +193,8 @@ export class NeighborhoodStage {
     this.camera.position.set(Math.sin(yaw) * distance * 0.8, distance * 0.6, Math.cos(yaw) * distance * 0.8);
     this.fog.near = distance * 0.9;
     this.fog.far = distance * 2.7;
+    this.camera.far = Math.max(600, distance * 3);
+    this.camera.updateProjectionMatrix();
     this.controls.update();
     this.renderOnce();
   }
@@ -490,6 +495,19 @@ export class NeighborhoodStage {
     this.controls.update();
   }
 
+  /**
+   * Encendido escalonado al atardecer: cada luz tiene su propio umbral de noche, así que las ventanas y faroles se van
+   * prendiendo uno por uno en vez de todos a la vez.
+   *
+   * @param night - Qué tan de noche es, entre 0 y 1.
+   * @param seed - Número de la luz, para darle su umbral.
+   * @returns Qué tan encendida está, entre 0 y 1.
+   */
+  private static staggered(night: number, seed: number): number {
+    const threshold = WINDOW_STAGGER[0] + (((seed * 0.6180339) % 1) + 1) % 1 * (WINDOW_STAGGER[1] - WINDOW_STAGGER[0]);
+    return MathUtils.clamp((night - threshold) / 0.18, 0, 1);
+  }
+
   private static easeInOut(t: number): number {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
@@ -611,7 +629,9 @@ export class NeighborhoodStage {
     this.animateHouses(t);
     this.traffic.update(t, this.state.night, !this.options.reducedMotion);
     this.dayLife.update(t, this.state.night, !this.options.reducedMotion);
-    this.backdrop.update(t, this.state.night, !this.options.reducedMotion);    this.swaying.forEach((tree, index) => {
+    this.backdrop.update(t, this.state.night, !this.options.reducedMotion);
+    this.extras.forEach((extra) => extra.update(t, this.state.night, !this.options.reducedMotion));
+    this.swaying.forEach((tree, index) => {
       tree.rotation.z = Math.sin(t * 1.1 + index) * 0.025;
     });
     this.flyCamera(now);
@@ -636,8 +656,11 @@ export class NeighborhoodStage {
     this.hemisphere.color.setHex(this.state.hemiSky);
     this.hemisphere.groundColor.setHex(this.state.hemiGround);
     this.nightSky.update(this.state, t);
-    this.lamps.forEach((lamp) => {
-      lamp.emissiveIntensity = 0.35 + night * 1.9;
+    const moving = !this.options.reducedMotion;
+    this.lamps.forEach((lamp, index) => {
+      const on = NeighborhoodStage.staggered(night, index);
+      const flicker = moving ? Math.sin(t * 7.3 + index * 1.7) * Math.sin(t * 2.1 + index) * 0.08 * on : 0;
+      lamp.emissiveIntensity = 0.3 + on * 1.95 + flicker;
     });
     if (Math.abs(hour - this.lastHour) > 0.004) {
       this.lastHour = hour;
@@ -654,7 +677,9 @@ export class NeighborhoodStage {
       this.levels.set(house.id, level);
       house.group.position.y = house.baseY + level * LIFT;
       house.group.scale.setScalar(1 + level * GROW);
-      const resting = house.count > 0 ? 0.12 + night * 1.5 : 0.02;
+      const lit = NeighborhoodStage.staggered(night, house.id * 7);
+      const flicker = this.options.reducedMotion ? 0 : Math.sin(t * 5.1 + house.id) * Math.sin(t * 1.3 + house.id * 2) * 0.05 * lit;
+      const resting = house.count > 0 ? 0.12 + lit * 1.5 + flicker : 0.02;
       house.glass.emissiveIntensity = resting + level * GLOW;
       const walkAngle = this.walker?.doorAngle(house.id) ?? null;
       if (walkAngle !== null) house.door.rotation.y = walkAngle;
