@@ -146,15 +146,15 @@ useWindowListener("keydown", (event) => {
       :class="status === 'ready' ? 'opacity-100' : 'opacity-0'"
     />
 
-    <div class="pointer-events-none absolute inset-x-0 top-24 flex items-start justify-between gap-2 px-3 md:px-8">
-      <div class="pointer-events-auto rounded-[1.4rem] bg-white/90 px-4 py-2 text-[#2a1730] shadow-[0_4px_0_var(--l-toy-edge)]">
-        <h1 class="text-xl leading-tight sm:text-3xl" style="font-family: var(--l-display)">Tu casa</h1>
+    <div class="pointer-events-none absolute inset-x-0 top-[calc(var(--header-h,6rem)+0.5rem)] flex items-start justify-between gap-2 px-3 md:px-8">
+      <div class="pointer-events-auto min-w-0 rounded-[1.4rem] bg-white/90 px-4 py-2 text-[#2a1730] shadow-[0_4px_0_var(--l-toy-edge)]">
+        <h1 class="whitespace-nowrap text-xl leading-tight sm:text-3xl" style="font-family: var(--l-display)">Tu casa</h1>
         <p class="text-xs font-semibold text-[#6b5470] sm:text-sm">
           {{ categories.length }} {{ categories.length === 1 ? "cuarto" : "cuartos" }} · {{ totalItems }}
           {{ totalItems === 1 ? "cosa" : "cosas" }}
         </p>
       </div>
-      <div class="pointer-events-auto flex items-center gap-2">
+      <div class="pointer-events-auto flex shrink-0 items-center gap-2">
         <slot name="actions" />
       </div>
     </div>

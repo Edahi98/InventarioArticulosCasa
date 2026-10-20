@@ -44,7 +44,7 @@ function handleCategoryDeleted(id: number): void {
       <template #actions>
         <ExportButton />
         <router-link to="/articles/new" class="ui-btn ui-btn-primary" aria-label="Guardar algo nuevo">
-          <font-awesome-icon icon="plus" /> <span class="hidden sm:inline">Guardar algo nuevo</span>
+          <font-awesome-icon icon="plus" /> <span class="hidden md:inline">Guardar algo nuevo</span>
         </router-link>
       </template>
     </NeighborhoodMap>
