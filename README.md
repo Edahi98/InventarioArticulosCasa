@@ -57,6 +57,14 @@ graph TD
     Agente -.->|Inferencia NLP| LLM[("OpenRouter")]
 ```
 
+### 🗺 Mapas del sistema
+
+![Arquitectura del sistema](docs/arquitectura/imagenes/arquitectura-sistema.png)
+
+En [`docs/arquitectura`](docs/arquitectura/README.md) hay tres mapas del sistema: el panorama
+completo, el viaje de una petición (de la pantalla hasta la base de datos) y cómo conversa el agente
+con sus herramientas. Cada uno se puede abrir en el navegador para recorrerlo nodo por nodo.
+
 ## 🛠 Stack Tecnológico
 
 *   **Frontend**: Vue 3, Vite, Tailwind CSS, TypeScript, three.js para las escenas 3D (con física de Rapier) y Pinia para el estado del paseo.
@@ -120,4 +128,5 @@ Vercel, nunca en el código.
 *   `/frontend`: Cliente web (SPA) para la gestión visual.
 *   `/agente`: Servicio de inteligencia artificial que procesa intenciones y coordina respuestas; incluye el bot de Telegram.
 *   `/docs`: Guías y documentación técnica del proyecto.
+*   `/docs/arquitectura`: Diagramas de arquitectura, del ciclo de una petición y del flujo del agente, en HTML interactivo.
 *   `/supabase`: Scripts SQL de inicialización para el entorno de base de datos local.
