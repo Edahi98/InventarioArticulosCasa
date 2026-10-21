@@ -66,5 +66,15 @@ delante:
 ## Cómo se mantienen estos mapas
 
 Los tres diagramas se sacan del código, no de memoria: cada caja apunta a los archivos reales del
-repositorio. Si cambia el sistema, se regeneran con el comando que está en
-[`candidatos/`](candidatos/) y se vuelve a copiar la imagen a `imagenes/`.
+repositorio. Si cambia el sistema, se edita el diagrama en [`candidatos/`](candidatos/) y se vuelve a
+generar:
+
+```bash
+node scripts/archify/run-archify.mjs finalize architecture \
+  docs/arquitectura/candidatos/arquitectura-sistema.json \
+  docs/arquitectura/arquitectura-sistema.html \
+  --quality showcase --repo-root . --json
+```
+
+Después se copia la captura nueva a `imagenes/`. El comando usa el Chrome que encuentre en el
+equipo (o el de pruebas que trae la skill) para comprobar el resultado en un navegador de verdad.
