@@ -207,6 +207,8 @@ These rules **override** any default attribution of the tooling.
 - **Review the index before every commit:** `git commit` includes everything already staged, not just what was just added.
 - **Do not create branches or pull requests on your own initiative.** Only when the user explicitly asks; until then, changes stay in the working tree or in a local commit on the current branch.
 - Never rewrite already-pushed commits or use `--force`; only rewrite local, unpushed commits. Push with a normal `git push` to the working branch, not to `master`.
+- The flow is: work on `dev`, open a pull request into `master`, merge it there. `master` is what deploys to Vercel.
+- The working tree often carries unrelated modifications (Windows line endings on files nobody touched). Stage by explicit path and never sweep them into a commit; the repository identity lives in the local `user.name`/`user.email` config, so a WSL shell inherits it and a Windows shell uses the global one.
 
 ## Safety and execution limits
 
@@ -228,14 +230,43 @@ These rules **override** any default attribution of the tooling.
 ## Infrastructure
 
 - `docker-compose.yaml`: `db` (`supabase/postgres:15.8`, with the bootstrap script in `supabase/init/`), `backend`, `frontend` (nginx) and `agente`. Managed through `scripts/docker.mjs` (see the rule about not running Docker without confirmation).
-- `docs/`: `variables-entorno.md`, `crear-usuarios.md` and the user manual (`manual-usuario/`, PDF and HTML with screenshots).
-- `scripts/`: `docker.mjs` (Docker stack) and `todo.mjs`.
+- `docs/`: `variables-entorno.md`, `crear-usuarios.md`, the user manual (`manual-usuario/`, PDF and HTML with screenshots) and `arquitectura/` (the architecture maps).
+- `scripts/`: `docker.mjs` (Docker stack), `todo.mjs` and `archify/` (regenerating the architecture maps).
 
 **Deploy**
 
 - Frontend → Vercel (`frontend/vercel.json`).
 - Backend → Vercel serverless (`backend/api/index.ts`, `backend/vercel.json`).
 - Agent → Vercel (`agente/api/index.py`) or a container; see `agente/README.md`.
+
+## Architecture documentation
+
+`docs/arquitectura/` holds the system's maps, generated with the Archify skill and read straight from the code:
+
+- `arquitectura-sistema.html` — the whole system: web and Telegram entry points, frontend, backend, agent, and where the data, the images and the agent's state live.
+- `ciclo-peticion.html` — one authenticated request, from the screen to the database.
+- `flujo-agente.html` — the instruction filter, the LangGraph nodes, the tools and the tool loop.
+- `imagenes/` — the PNG used by the READMEs; `candidatos/` — the editable IR of each diagram.
+- `README.md` — the same maps explained in plain language, for humans.
+
+Rules for the maps:
+
+- **They come from the code, not from memory.** Every node carries `sources` with the repository-relative path and line range that proves it, and the viewer links to that code at the pinned revision.
+- **Regenerate instead of hand-editing the HTML.** Edit the candidate JSON, then run the whole finalizer; the previous receipts belong to the previous bytes.
+- **The published HTML is heavy** (~780 KB each, viewer and fonts embedded). The PNGs and the candidate JSONs are the light parts; the HTML can be regenerated at any time.
+
+```bash
+# regenerate one map (uses the Chrome for Testing build when there is no system Chrome)
+node scripts/archify/run-archify.mjs finalize architecture \
+  docs/arquitectura/candidatos/arquitectura-sistema.json \
+  docs/arquitectura/arquitectura-sistema.html \
+  --quality showcase --repo-root . --json
+
+# the candidates already carry the Spanish catalogue; re-inject it after adding a locale
+node scripts/archify/inject-locale.mjs docs/arquitectura/candidatos/arquitectura-sistema.json
+```
+
+Working folders and verification receipts live in `.archify/` (git-ignored); the publishable copy is `docs/arquitectura/`.
 
 ## System skills
 
@@ -252,6 +283,7 @@ These rules **override** any default attribution of the tooling.
 ## Related documents
 
 - `README.md` — product overview, stack, deployment and repo layout.
+- `docs/arquitectura/README.md` — the system maps, explained in plain language.
 - `docs/variables-entorno.md` — environment variables per service.
 - `docs/crear-usuarios.md` — creating users.
 - `agente/README.md` — agent specifics and how it is published.
