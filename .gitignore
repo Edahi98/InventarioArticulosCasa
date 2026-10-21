@@ -17,3 +17,6 @@ frontend/tsconfig.tsbuildinfo
 
 .agents/
 .claude/
+
+# Archify: artefactos generados y recibos de verificación (la copia publicable vive en docs/arquitectura/)
+.archify/
