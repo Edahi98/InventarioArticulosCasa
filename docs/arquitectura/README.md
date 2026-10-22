@@ -1,6 +1,6 @@
 # 🏗 Arquitectura de Guardacosas
 
-Tres mapas del sistema para entender de un vistazo cómo encaja todo. Cada diagrama tiene además
+Cuatro mapas del sistema para entender de un vistazo cómo encaja todo. Cada diagrama tiene además
 una versión interactiva en HTML: se abre con doble clic y puedes buscar nodos, recorrer las rutas
 una por una, cambiar a modo oscuro y exportar la imagen.
 
@@ -8,6 +8,7 @@ una por una, cambiar a modo oscuro y exportar la imagen.
 |---|---|
 | El sistema completo | [`arquitectura-sistema.html`](arquitectura-sistema.html) |
 | El viaje de una petición | [`ciclo-peticion.html`](ciclo-peticion.html) |
+| El viaje del token | [`auth-flow.html`](auth-flow.html) |
 | Cómo conversa el agente | [`flujo-agente.html`](flujo-agente.html) |
 
 ---
@@ -63,9 +64,27 @@ delante:
 
 ---
 
+## 4. El flujo de autenticación
+
+![Flujo de autenticación](imagenes/auth-flow.png)
+
+El token JWT empieza en el login del frontend y termina cerrándose en el logout:
+
+1. La persona envía `username` y `password` al frontend, que llama a `POST /auth/login`.
+2. El backend valida las credenciales con `UserCredentialsVerifier` y firma un token con `TokenIssuer`
+   (RS256).
+3. `sessionService.create` registra la sesión en la tabla `sessions` de Supabase (con hash SHA-256 del token).
+4. Al resto de peticiones se añade el token en el header `Authorization: Bearer <token>` desde
+   `AuthenticatedHttpClient`.
+5. El backend, con el `authMiddleware`, comprueba la firma y la vigencia de la sesión.
+6. Si la sesión no es válida o se cerró, responde `401` y la web limpia el token.
+7. En el logout, `sessionService.revoke` elimina la sesión y el frontend limpia `localStorage`.
+
+---
+
 ## Cómo se mantienen estos mapas
 
-Los tres diagramas se sacan del código, no de memoria: cada caja apunta a los archivos reales del
+Los cuatro diagramas se sacan del código, no de memoria: cada caja apunta a los archivos reales del
 repositorio. Si cambia el sistema, se edita el diagrama en [`candidatos/`](candidatos/) y se vuelve a
 generar:
 
@@ -73,6 +92,15 @@ generar:
 node scripts/archify/run-archify.mjs finalize architecture \
   docs/arquitectura/candidatos/arquitectura-sistema.json \
   docs/arquitectura/arquitectura-sistema.html \
+  --quality showcase --repo-root . --json
+```
+
+Para un diagrama de secuencia:
+
+```bash
+node scripts/archify/run-archify.mjs finalize sequence \
+  docs/arquitectura/candidatos/auth-flow.json \
+  docs/arquitectura/auth-flow.html \
   --quality showcase --repo-root . --json
 ```
 

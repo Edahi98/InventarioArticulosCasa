@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Guardacosas · Flujo de Autenticación",
+    "output": ".archify/sequence-guardacosas-auth-20250620-184530/guardacosas-auth-flow.html",
+    "quality_profile": "showcase",
+    "locale": "es",
+    "repository": {
+      "url": "https://github.com/Edahi98/InventarioArticulosCasa.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "5e3ccecb9e633422534b83c66e0093896b69f5ac"
+    }
+  },
+  "participants": [
+    {
+      "id": "ui",
+      "type": "frontend",
+      "label": "Frontend",
+      "sublabel": "Vue 3 · TokenStorage · AuthenticatedHttpClient",
+      "sources": [
+        {
+          "path": "frontend/src/services/http/AuthenticatedHttpClient.ts",
+          "line": 6,
+          "end_line": 26,
+          "label": "TokenStorage guarda el token en localStorage"
+        },
+        {
+          "path": "frontend/src/services/http/AuthenticatedHttpClient.ts",
+          "line": 58,
+          "end_line": 72,
+          "label": "login guarda el token JWT"
+        },
+        {
+          "path": "frontend/src/services/http/AuthenticatedHttpClient.ts",
+          "line": 33,
+          "end_line": 56,
+          "label": "request agrega Authorization: Bearer"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Auth API",
+      "sublabel": "Express · JWT RS256 · Drizzle",
+      "sources": [
+        {
+          "path": "backend/src/routes/authRoutes.ts",
+          "line": 21,
+          "end_line": 33,
+          "label": "POST /auth/login"
+        },
+        {
+          "path": "backend/src/routes/authRoutes.ts",
+          "line": 41,
+          "end_line": 47,
+          "label": "POST /auth/logout"
+        },
+        {
+          "path": "backend/src/middleware/authMiddleware.ts",
+          "line": 31,
+          "end_line": 68,
+          "label": "authMiddleware verifica JWT y sesión"
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Supabase",
+      "sublabel": "PostgreSQL · tabla sessions",
+      "sources": [
+        {
+          "path": "backend/src/services/sessionService.ts",
+          "line": 23,
+          "end_line": 26,
+          "label": "sessionService.create registra la sesión"
+        },
+        {
+          "path": "backend/src/services/sessionService.ts",
+          "line": 35,
+          "end_line": 47,
+          "label": "sessionService.isActive valida vigencia"
+        },
+        {
+          "path": "backend/src/services/sessionService.ts",
+          "line": 54,
+          "end_line": 56,
+          "label": "sessionService.revoke cierra la sesión"
+        }
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "from": "ui",
+      "to": "api",
+      "y": 160,
+      "label": "POST /auth/login",
+      "variant": "emphasis"
+    },
+    {
+      "from": "api",
+      "to": "db",
+      "y": 204,
+      "label": "sessionService.create",
+      "variant": "default"
+    },
+    {
+      "from": "db",
+      "to": "api",
+      "y": 248,
+      "label": "sesión registrada",
+      "variant": "return"
+    },
+    {
+      "from": "api",
+      "to": "ui",
+      "y": 292,
+      "label": "200 + {token}",
+      "variant": "return"
+    },
+    {
+      "from": "ui",
+      "to": "api",
+      "y": 336,
+      "label": "Bearer token",
+      "variant": "default"
+    },
+    {
+      "from": "api",
+      "to": "db",
+      "y": 380,
+      "label": "sessionService.isActive",
+      "variant": "default"
+    },
+    {
+      "from": "db",
+      "to": "api",
+      "y": 424,
+      "label": "activa / expirada",
+      "variant": "return"
+    },
+    {
+      "from": "api",
+      "to": "ui",
+      "y": 468,
+      "label": "401 sesión inválida",
+      "variant": "security"
+    },
+    {
+      "from": "ui",
+      "to": "api",
+      "y": 512,
+      "label": "POST /auth/logout",
+      "variant": "emphasis"
+    },
+    {
+      "from": "api",
+      "to": "db",
+      "y": 556,
+      "label": "sessionService.revoke",
+      "variant": "default"
+    },
+    {
+      "from": "db",
+      "to": "api",
+      "y": 600,
+      "label": "sesión revocada",
+      "variant": "return"
+    },
+    {
+      "from": "api",
+      "to": "ui",
+      "y": 644,
+      "label": "204",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Inicio de sesión",
+      "items": [
+        "El usuario envía username y password al frontend (frontend/src/services/http/AuthenticatedHttpClient.ts).",
+        "El backend valida con UserCredentialsVerifier (backend/src/verefiers/userCredentialsVerifier.ts).",
+        "TokenIssuer firma el token con RS256 (backend/src/token/tokenIsUser.ts).",
+        "sessionService.create registra la sessión en Supabase (backend/src/services/sessionService.ts)."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Petición autenticada",
+      "items": [
+        "AuthenticatedHttpClient agrega Authorization: Bearer <token> a cada petición (frontend/src/services/http/AuthenticatedHttpClient.ts).",
+        "authMiddleware verifica la firma del JWT y la vigencia de la sessión en la base de datos (backend/src/middleware/authMiddleware.ts).",
+        "Si la sessión no es activa, responde 401 y el cliente limpia el token."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Cierre de sessión",
+      "items": [
+        "POST /auth/logout con el token en el encabezado de autorización.",
+        "sessionService.revoke elimina el hash del token de la tabla sessions en Supabase (backend/src/services/sessionService.ts).",
+        "El frontend borra el token de localStorage (TokenStorage.clearToken())."
+      ]
+    }
+  ]
+}
